@@ -24,7 +24,7 @@ type Simplify<
 	? Flatten<AnyType, Options>
 	: AnyType
 
-type DeepWriteable<T> = { -readonly [P in keyof T]: T[P] extends object ? DeepWriteable<T[P]> : T[P] }
+type DeepWriteable<T> = Simplify<{ -readonly [P in keyof T]: T[P] extends object ? DeepWriteable<T[P]> : T[P] }>
 
 type Nullable<T> = T | undefined
 
