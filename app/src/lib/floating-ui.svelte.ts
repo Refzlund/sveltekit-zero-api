@@ -77,7 +77,7 @@ export function floatingUI(options: Options) {
 		},
 		/**
 		 * Any additional logic according to https://floating-ui.com/docs
-		 */
+		*/
 		then(cb: (computed: ComputePositionReturn) => void) {
 			then = cb
 			return this

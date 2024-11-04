@@ -11,19 +11,36 @@
 
 -->
 
-<script lang="ts">
+<script module lang='ts'>
+	
+	import { createContext } from '$lib/context.svelte'
+	import type { OptionProps } from './Option.svelte'
+
+	interface Context {
+		selectValue: (value: any) => void
+		options: OptionProps[]
+		selected?: OptionProps
+		open: boolean
+	}
+
+	export const selectContext = createContext<Context>('select-component')
+
+</script>
+
+<script lang="ts" generics="T">
 
 	import { setContext, type Snippet } from 'svelte'
-	import type { OptionProps } from './Option.svelte'
+	
 	import { flip, floatingUI, offset } from '$lib/floating-ui.svelte'
 	import { portal } from '$lib/portal.svelte'
 	import { fly } from 'svelte/transition'
+	
 
 	interface Props {
 		/** Shown when empty value*/
 		label?: string
 		children: Snippet
-		value?: any
+		value?: T
 	}
 
 	let { 
@@ -34,8 +51,6 @@
 
 	const options = $state([] as OptionProps[])
 
-	setContext('select-options', options)
-
 	let float = floatingUI({
 		placement: 'bottom',
 		middleware: [
@@ -44,35 +59,45 @@
 		]
 	})
 
-	let width = $state(10)
+	let width = $state(0)
 
-	let selected = $derived(options.find(o => o.value === value))
+	let context: Context = $state({
+		selected: options.find(o => o.value === value),
+		selectValue,
+		options,
+		open: false
+	})
 
-	let open = $state(false)
+	selectContext.set(context)
+
+	$effect.pre(() => {
+		context.selected = options.find(o => o.value === value)
+	})
+
+	function selectValue(_value: T) {
+		value = _value
+		context.open = false
+	}
 
 </script>
 <!---------------------------------------------------->
 
-{@render children?.()}
-
 <button
-	class='select'
-	class:open
-	onclick={() => open = !open}
+	class:open={context.open}
+	onclick={() => context.open = !context.open}
 	bind:clientWidth={width}
 	use:float.ref
 >
-	<span>
-		{#if !selected}
-			{label ?? 'Select'}
+	{#if !context.selected}
+		<span>{label ?? 'Select'}</span>
+	{:else}
+		{#if context.selected.children}
+			{@render context.selected.children(true)}
 		{:else}
-			{#if selected.children}
-				{@render selected.children?.()}
-			{:else}
-				{selected.value}
-			{/if}
+			<span>{context.selected.value}</span>
 		{/if}
-	</span>
+	{/if}
+	
 	<icon class='iconify fluent--chevron-right-20-regular'></icon>
 </button>
 
@@ -83,45 +108,30 @@
 	We portal it to the body, for potential unsupported browsers.
 -->
 
-{#if open}
-	<dialog
-		open
-		style='width: {width}px'
-		transition:fly|global={{ y: -10, duration: 150 }}
-		use:float
-		use:portal
-	>
-		{#each options as option (option)}
-			{#if option.value !== value}
-				<button
-					class='item'
-					onclick={() => {
-						value = option.value
-						open = false
-					}}
-				>
-					{#if option.children}
-						{@render option.children?.()}
-					{:else}
-						{option.value}
-					{/if}
-				</button>
-			{/if}
-		{/each}
-	</dialog>
-{/if}
+<dialog
+	open={context.open}
+	style:width='{width}px'
+	use:float
+	use:portal
+>
+	{@render children?.()}
+</dialog>
 
 <!---------------------------------------------------->
 <style lang='postcss'>
 
-	button.select {
+	button {
 		@apply 
-			flex rounded justify-between px-3 py-2 border border-primary 
+			flex rounded justify-between px-3 py-2 border border-primary gap-1.5
 			border-opacity-50 hover:border-opacity-75 duration-100 items-center
 		;
 		&.open { @apply border-opacity-100; }
 		icon { @apply size-5 duration-150 rotate-0; }
 		&.open icon { @apply rotate-90; }
+	}
+
+	span {
+		@apply flex gap-2;
 	}
 	
 	dialog {
@@ -130,13 +140,28 @@
 			m-0 bg-gray-950 bg-opacity-30 text-gray-200 z-[1000]
 			px-1.5 py-2 rounded-lg backdrop-blur-sm border border-gray-800
 		;
+
+		&[open] {
+			animation: fly 150ms ease-in-out forwards;
+			
+		}
+		&:not([open]) {
+			animation: fly 150ms ease-in-out forwards reverse;
+		}
 	}
 
-	.item {
-		@apply flex items-center p-2 cursor-pointer rounded;
-
-		&:hover {
-			@apply bg-gray-600 bg-opacity-30;
+	@keyframes fly {
+		0% {
+			display: none;
+		}
+		0.1% {
+			display: grid;
+			opacity: 0;
+			transform: translateY(-10px);
+		}
+		100% {
+			opacity: 1;
+			transform: translateY(0);
 		}
 	}
 

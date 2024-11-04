@@ -1,7 +1,6 @@
 <!-- @component
 
-	This is a description, \
-	on how to use this.
+	Header for the site
 
 @example
 <Header />
@@ -11,7 +10,10 @@
 <script lang="ts">
 	
 	import Logo from '$lib/Logo.svelte'
+	import Pill from '$lib/Pill.svelte'
 	import Select from '$lib/Select'
+
+	let documentationVersion = $state('2.0.0')
 
 </script>
 <!---------------------------------------------------->
@@ -20,14 +22,28 @@
 <header>
 
 	<Logo class='scale-125 origin-left' />
-	
-	<span>
+
+	<div>
 		Seamless TypeSafety === Better DX
-	</span>
+	</div>
 	
-	<Select value='Documentation v2.0.0'>
-		<Select.Option value='Documentation v2.0.0' />
-		<Select.Option value='Documentation v0.15.8' />
+	<Select bind:value={documentationVersion}>
+		<Select.Option value='2.0.0'>
+			{#snippet children(selected)}
+				<span class:selected>
+					Docs v2.0.0
+					<Pill pink>Next</Pill>
+				</span>
+			{/snippet}
+		</Select.Option>
+		<Select.Option value='0.15.8'>
+			{#snippet children(selected)}
+				<span class:selected>
+					Docs v0.15.8
+					<Pill>Svelte 4</Pill>
+				</span>
+			{/snippet}
+		</Select.Option>
 	</Select>
 
 	<circle id=a />
@@ -42,7 +58,7 @@
 	header {
 		@apply 
 			relative grid col-span-2 bg-gray-950 items-center 
-			grid-cols-[1fr,4fr,1fr] px-24 overflow-hidden
+			grid-cols-[230px,1fr,230px] px-24 overflow-hidden
 		;
 
 		&::after {
@@ -56,8 +72,15 @@
 		}
 	}
 
-	span {
+	div {
 		@apply text-2xl font-light italic text-gray-500 text-center;
+	}
+
+	span {
+		@apply flex w-full justify-between items-center;
+	}
+	span.selected {
+		@apply text-primary text-opacity-85 hover:text-opacity-100;
 	}
 
 	circle {

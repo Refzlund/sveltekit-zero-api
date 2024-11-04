@@ -3,7 +3,7 @@
 	SvelteKit zero API logo
 
 @example
-<Logo />
+<Logo class='scale-125 origin-left' />
 
 -->
 
