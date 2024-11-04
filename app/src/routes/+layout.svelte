@@ -11,7 +11,7 @@
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin='anonymous'>
 </svelte:head>
 
-<site>
+<site style='display: contents'>
 	{@render children()}
 </site>
 

@@ -58,7 +58,7 @@
 	header {
 		@apply 
 			relative grid col-span-2 bg-gray-950 items-center 
-			grid-cols-[15rem,1fr,15rem] px-24 overflow-hidden
+			grid-cols-[14rem,1fr,14rem] px-24 overflow-hidden
 		;
 
 		&::after {
@@ -73,7 +73,8 @@
 	}
 
 	div {
-		@apply text-xl font-light italic text-gray-500 text-center;
+		@apply font-light italic text-gray-500 text-center sm:md:opacity-0 lg:opacity-100;
+		font-size: clamp(theme('fontSize.base'), 1.75vw, theme('fontSize.xl'));
 	}
 
 	span {
