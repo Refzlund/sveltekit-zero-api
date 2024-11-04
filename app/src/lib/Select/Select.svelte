@@ -123,7 +123,7 @@
 
 	button {
 		@apply 
-			flex rounded justify-between px-3 py-2 border border-primary gap-1.5
+			flex rounded justify-between px-4 py-2 border border-primary gap-1.5
 			border-opacity-50 hover:border-opacity-75 duration-100 items-center
 		;
 		&.open { @apply border-opacity-100; }
@@ -139,7 +139,7 @@
 		@apply
 			grid grid-flow-row gap-1
 			m-0 bg-gray-950 bg-opacity-30 text-gray-200 z-[1000]
-			px-1.5 py-2 rounded-lg backdrop-blur-sm border border-gray-800
+			px-2 py-2 rounded-lg backdrop-blur-sm border border-gray-800
 		;
 
 		transition: transform 150ms ease-in-out, opacity 150ms ease-in-out;

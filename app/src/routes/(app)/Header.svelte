@@ -21,7 +21,7 @@
 
 <header>
 
-	<Logo class='scale-125 origin-left' />
+	<Logo />
 
 	<div>
 		Seamless TypeSafety === Better DX
@@ -58,7 +58,7 @@
 	header {
 		@apply 
 			relative grid col-span-2 bg-gray-950 items-center 
-			grid-cols-[230px,1fr,230px] px-24 overflow-hidden
+			grid-cols-[15rem,1fr,15rem] px-24 overflow-hidden
 		;
 
 		&::after {
@@ -73,7 +73,7 @@
 	}
 
 	div {
-		@apply text-2xl font-light italic text-gray-500 text-center;
+		@apply text-xl font-light italic text-gray-500 text-center;
 	}
 
 	span {

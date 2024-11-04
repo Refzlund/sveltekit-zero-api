@@ -21,8 +21,11 @@
 
 	site {
 		@apply block w-screen h-screen overflow-auto;
+	}
+
+	:global html {
 		font-family: Inter, Arial, Helvetica, sans-serif;
-		font-size: 16px;
+		font-size: 18px;
 	}
 
 </style>

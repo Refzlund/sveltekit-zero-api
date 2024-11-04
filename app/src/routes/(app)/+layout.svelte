@@ -38,7 +38,7 @@
 	
 	app {
 		@apply
-			grid grid-rows-[200px,1fr] grid-cols-[360px,1fr] 
+			grid grid-rows-[200px,1fr] grid-cols-[calc(15rem+6rem),1fr] 
 			h-screen w-screen text-gray-300
 		;
 	}
