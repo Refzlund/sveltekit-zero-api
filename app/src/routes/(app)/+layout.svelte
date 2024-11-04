@@ -37,7 +37,10 @@
 <style lang='postcss'>
 	
 	app {
-		@apply grid grid-rows-[200px,1fr] grid-cols-[200px,1fr] h-full w-full text-gray-300;
+		@apply
+			grid grid-rows-[200px,1fr] grid-cols-[360px,1fr] 
+			h-screen w-screen text-gray-300
+		;
 	}
 
 	content {

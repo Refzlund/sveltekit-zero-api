@@ -84,6 +84,7 @@
 
 <button
 	class:open={context.open}
+	class='group'
 	onclick={() => context.open = !context.open}
 	bind:clientWidth={width}
 	use:float.ref
@@ -126,7 +127,7 @@
 			border-opacity-50 hover:border-opacity-75 duration-100 items-center
 		;
 		&.open { @apply border-opacity-100; }
-		icon { @apply size-5 duration-150 rotate-0; }
+		icon { @apply size-5 motion-safe:duration-150 rotate-0; }
 		&.open icon { @apply rotate-90; }
 	}
 
@@ -141,21 +142,19 @@
 			px-1.5 py-2 rounded-lg backdrop-blur-sm border border-gray-800
 		;
 
-		&[open] {
-			animation: fly 150ms ease-in-out forwards;
-			
-		}
+		transition: transform 150ms ease-in-out, opacity 150ms ease-in-out;
 		&:not([open]) {
-			animation: fly 150ms ease-in-out forwards reverse;
+			display: none;
+			/* doesnt work🤷 I'll deal with it later */
+			/* @apply motion-safe:animate-[fly_150ms_ease-in-out_forwards_reverse]; */
+		}
+		&[open] {
+			@apply motion-safe:animate-[fly_150ms_ease-in-out_forwards];
 		}
 	}
 
 	@keyframes fly {
 		0% {
-			display: none;
-		}
-		0.1% {
-			display: grid;
 			opacity: 0;
 			transform: translateY(-10px);
 		}

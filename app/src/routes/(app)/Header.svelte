@@ -78,9 +78,9 @@
 
 	span {
 		@apply flex w-full justify-between items-center;
-	}
-	span.selected {
-		@apply text-primary text-opacity-85 hover:text-opacity-100;
+		&.selected {
+			@apply text-primary text-opacity-85 hover:text-opacity-100 group-hover:text-opacity-100;
+		}
 	}
 
 	circle {
