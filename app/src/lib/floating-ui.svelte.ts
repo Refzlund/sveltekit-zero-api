@@ -50,13 +50,13 @@ export function floatingUI(options: Options) {
 	let ref = $state(undefined as HTMLElement | undefined)
 	let float = $state(undefined as HTMLElement | undefined)
 	let then = $state(undefined as ((computed: ComputePositionReturn) => void) | undefined)
+	let tether = $state(undefined as HTMLElement | undefined)
 
 	function setFloat(node: HTMLElement) {
 		float = node
 		return {
 			destroy: () => {
-				if (float === node)
-					float = undefined
+				if (float === node) float = undefined
 			}
 		}
 	}
@@ -70,17 +70,35 @@ export function floatingUI(options: Options) {
 			ref = node
 			return {
 				destroy: () => {
-					if (ref === node)
-						ref = undefined
+					if (ref === node) ref = undefined
 				}
 			}
 		},
 		/**
 		 * Any additional logic according to https://floating-ui.com/docs
-		*/
+		 */
 		then(cb: (computed: ComputePositionReturn) => void) {
 			then = cb
 			return this
+		},
+		/**
+		 * You can do use:float.tether and do float.untether()
+		 * to attach the floating element to a temporary target.
+		 */
+		tether(node: HTMLElement) {
+			tether = node
+			return {
+				destroy: () => {
+					if (tether === node) tether = undefined
+				}
+			}
+		},
+		/**
+		 * You can do use:float.tether and do float.untether()
+		 * to attach the floating element to a temporary target.
+		*/
+		untether() {
+			tether = undefined
 		}
 	}
 
@@ -88,10 +106,10 @@ export function floatingUI(options: Options) {
 
 	const compute = (options: Options) => () => {
 		if (!ref || !float) return
-		
+
 		options.strategy ??= 'absolute'
 
-		computePosition(ref, float, options).then((v) => {
+		computePosition(tether || ref, float, options).then((v) => {
 			if (options.strategy === 'absolute') {
 				Object.assign(float!.style, {
 					position: 'absolute',
@@ -112,7 +130,7 @@ export function floatingUI(options: Options) {
 		cleanup?.()
 		if (!ref || !float) return
 		compute(options)
-		cleanup = autoUpdate(ref, float, compute(options), options.autoUpdate)
+		cleanup = autoUpdate(tether || ref, float, compute(options), options.autoUpdate)
 	})
 
 	type SvelteFloatingUI = typeof setFloat & typeof value

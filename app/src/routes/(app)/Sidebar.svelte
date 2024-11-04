@@ -9,32 +9,47 @@
 -->
 
 <script lang="ts">
+	import { floatingUI } from '$lib/floating-ui.svelte'
 
-	
+	let float = floatingUI({
+		placement: 'left',
+	})
 
 </script>
 <!---------------------------------------------------->
 
+{#snippet navitem(text: string, href: string = '', selected = false)}
+	{#if selected}
+		<a {href} class:selected use:float.ref onmouseenter={() => float.untether()}>
+			{text}
+		</a>
+	{:else}
+		<a {href} onmouseenter={(e) => float.tether(e.target as HTMLElement)}>
+			{text}
+		</a>
+	{/if}
+{/snippet}
 
 <nav>
-	<div class='grid-flow-row'>
-		<a class='selected'>Home</a>
+	<div class='grid-flow-row' onmouseleave={() => float.untether()}>
+		<cursor use:float></cursor>
+		{@render navitem('Home', '/', true)}
 		<section>
 			<h4>Get Started</h4>
-			<a>Install</a>
-			<a>Configuration</a>
+			{@render navitem('Install')}
+			{@render navitem('Configuration')}
 		</section>
 		<section>
 			<h4>Backend</h4>
-			<a>Basics</a>
-			<a>Functions</a>
-			<a>Error handling</a>
+			{@render navitem('Basics')}
+			{@render navitem('Functions')}
+			{@render navitem('Error handling')}
 		</section>
 		<section>
 			<h4>Frontend</h4>
-			<a>Fetching</a>
-			<a>Runes API</a>
-			<a>Form API</a>
+			{@render navitem('Fetching')}
+			{@render navitem('Runes API')}
+			{@render navitem('Form API')}
 		</section>
 	</div>
 	<span></span>
@@ -57,9 +72,16 @@
 
 <!---------------------------------------------------->
 <style lang='postcss'>
+
+	cursor {
+		@apply absolute left-12 w-[2px] translate-x-[1px] h-10 duration-300 fluent--bring-to-front-20-regular bg-primary;
+
+		mix-blend-mode: soft-light;
+		backdrop-filter: brightness(2);
+	}
 	
 	nav {
-		@apply grid grid-rows-[min-content,1fr,min-content] py-12
+		@apply relative grid grid-rows-[min-content,1fr,min-content] py-12
 			bg-gray-950 border-r border-gray-800 border-opacity-85;
 		
 		> div {
