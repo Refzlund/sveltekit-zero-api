@@ -13,14 +13,16 @@
 	import type { Snippet } from 'svelte'
 	import Header from './Header.svelte'
 	import Sidebar from './Sidebar.svelte'
+	import type { LayoutData } from './$types'
 
 	interface Props {
 		children?: Snippet
+		data: LayoutData
 	}
 
-	let { children }: Props = $props()
+	let { children, data }: Props = $props()
 
-	let clientWidth = $state(800)
+	let clientWidth = $state(data.mobile ? 425 : 800)
 	let mobile = $derived(clientWidth < 800)
 
 </script>
@@ -33,9 +35,15 @@
 		<Header />
 	{/if}
 	<Sidebar {mobile} />
-	<content>
-		{@render children?.()}
-	</content>
+	<page>
+		{#if !mobile}
+			<centered>
+				{@render children?.()}
+			</centered>
+		{:else}
+			{@render children?.()}
+		{/if}
+	</page>
 </app>
 
 
@@ -48,17 +56,25 @@
 			h-screen w-screen text-gray-300 bg-gray-900 overflow-hidden
 		;
 
+		page {
+			@apply grid justify-center h-full w-full overflow-auto py-4 px-6;
+		}
+
+		centered {
+			@apply block max-w-2xl py-8;
+		}
+
 		&.mobile {
 			@apply grid-rows-1 grid-cols-1;
 
-			content {
-				@apply ml-5;
+			page {
+				@apply block ml-5 p-7;
 			}
 		}
 	}
 
-	content {
-		@apply h-full w-full overflow-auto py-4 px-6;
-	}
+	
+
+	
 
 </style>

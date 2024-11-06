@@ -1,14 +1,14 @@
 <!-- @component
 
-	This is a description, \
-	on how to use this.
+	Navbar for the site
 
 @example
-<Component />
+<Sidebar mobile={false} />
 
 -->
 
 <script lang="ts">
+	import { drag } from '$lib/drag.svelte'
 	import { floatingUI } from '$lib/floating-ui.svelte'
 	import Logo from '$lib/Logo.svelte'
 	import Stats from './Stats.svelte'
@@ -24,89 +24,13 @@
 	let {
 		mobile
 	}: Props = $props()
-
-
-
-	/** Finish drag tomorrow🦒 */
-	function drag() {
-		let state = $state({
-			x: 0,
-			y: 0,
-			minX: -Infinity,
-			maxX: Infinity,
-			moving: false,
-			action
-		})
-
-		function action(node: HTMLElement) {
-			function stop() {
-				window.removeEventListener('mousemove', move)
-				window.removeEventListener('mouseup', stop)
-				window.removeEventListener('touchmove', move)
-				window.removeEventListener('touchend', stop)
-
-				if(state.minX !== -Infinity && state.maxX !== Infinity) {
-					// snap state.x to minX or maxX
-					let distMin = Math.abs(state.x - state.minX)
-					let distMax = Math.abs(state.x - state.maxX)
-
-					if(distMin < distMax) {
-						state.x = state.minX
-					} else {
-						state.x = state.maxX
-					}
-				}
-
-				state.moving = false
-			}
-
-			function start() {
-				window.addEventListener('mousemove', move)
-				window.addEventListener('mouseup', stop)
-				window.addEventListener('touchmove', move)
-				window.addEventListener('touchend', stop)
-
-				state.moving = true
-			}
-
-			let previousTouch: Touch
-			function move(e: MouseEvent | TouchEvent) {
-				if('movementX' in e) {
-					state.x += e.movementX
-					state.y += e.movementY
-					return
-				}
-
-				if(previousTouch) {
-					state.x = Math.max(state.minX, Math.min(state.maxX,
-						state.x + e.touches[0].pageX - previousTouch?.pageX
-					))
-					state.y += e.touches[0].pageY - previousTouch?.pageY
-				}
-
-				previousTouch = e.touches[0]
-			}
-
-			node.addEventListener('mousedown', start)
-			node.addEventListener('touchstart', start)
-			return {
-				destroy() {
-					node.removeEventListener('mousedown', start)
-					stop()
-				}
-			}
-		}
-
-		
-
-		return state
-	}
-
-	let clientWidth = $state(0)
-	$effect(() => { test.minX = -clientWidth + 25 })
 	
-	let test = drag()
-	test.maxX = 0
+	let navdrag = drag({ maxX: 0 })
+	
+	let clientWidth = $state(0)
+	$effect.pre(() => {
+		navdrag.minX = -clientWidth + 25
+	})
 
 </script>
 <!---------------------------------------------------->
@@ -125,13 +49,13 @@
 
 <nav 
 	bind:clientWidth 
-	class:moving={test.moving} 
+	class:moving={navdrag.moving} 
 	class:mobile 
-	style={mobile ? `transform: translateX(${test.x}px)` : ''}
+	style={mobile ? `transform: translateX(${navdrag.x}px)` : ''}
 >
 	<div>
 		{#if mobile}
-			<handle use:test.action>
+			<handle use:navdrag.action>
 				<icon class='iconify fluent--re-order-20-regular pointer-events-none'></icon>
 			</handle>
 

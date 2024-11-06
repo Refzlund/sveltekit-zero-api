@@ -21,6 +21,7 @@
 		"@tailwindcss/container-queries": "^0.1.1",
 		"@tailwindcss/forms": "^0.5.9",
 		"@tailwindcss/typography": "^0.5.15",
+		"@types/ua-parser-js": "^0.7.39",
 		"autoprefixer": "^10.4.20",
 		"postcss-import": "^16.1.0",
 		"postcss-import-url": "^7.2.0",
@@ -29,6 +30,7 @@
 		"sveltekit-zero-api": "workspace:*",
 		"tailwindcss": "^3.4.9",
 		"typescript": "^5.0.0",
+		"ua-parser-js": "^1.0.39",
 		"vite": "^5.0.3"
 	}
 }
