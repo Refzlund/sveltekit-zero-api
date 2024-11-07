@@ -15,6 +15,7 @@
 
 	let float = floatingUI({
 		placement: 'left',
+		strategy: 'fixed'
 	})
 
 	interface Props {
@@ -53,9 +54,9 @@
 	bind:clientWidth 
 	class:moving={navdrag.moving} 
 	class:mobile 
-	style={mobile ? `transform: translateX(${navdrag.x}px)` : `margin-top: ${marginTop}px; padding-top: ${200-marginTop}px;`}
+	style={mobile ? `transform: translateX(${navdrag.x}px)` : `margin-top: ${marginTop}px;`}
 >
-	<div>
+	<div style={mobile ? `` : `padding-top: ${200-marginTop+48}px;`}>
 		{#if mobile}
 			<handle use:navdrag.action>
 				<icon class='iconify fluent--re-order-20-regular pointer-events-none'></icon>
@@ -72,19 +73,20 @@
 			<section>
 				<h4>Get Started</h4>
 				{@render navitem('Install', '/install')}
-				{@render navitem('Configuration', '/config')}
+				{@render navitem('Configuration', '/configuration')}
 			</section>
 			<section>
-				<h4>Backend</h4>
-				{@render navitem('Basics', '/basics')}
+				<h4>Concepts</h4>
+				{@render navitem('Endpoints', '/endpoints')}
 				{@render navitem('Functions', '/functions')}
-				{@render navitem('Error handling')}
+				{@render navitem('Stremaing', '/streaming')}
+				{@render navitem('Error handling', '/errors')}
 			</section>
 			<section>
-				<h4>Frontend</h4>
-				{@render navitem('Fetching')}
-				{@render navitem('Runes API')}
-				{@render navitem('Form API')}
+				<h4>Svelte</h4>
+				{@render navitem('Fetching', '/fetching')}
+				{@render navitem('Runes API', '/runes')}
+				{@render navitem('Form API', '/forms')}
 			</section>
 		</div>
 		{#if !mobile}
@@ -99,7 +101,7 @@
 <style lang='postcss'>
 
 	cursor {
-		@apply absolute left-12 w-[2px] translate-x-[1px] h-10 duration-300 fluent--bring-to-front-20-regular bg-primary;
+		@apply fixed w-[2px] translate-x-[1px] top-1/2 -left-1/2 h-10 duration-300 fluent--bring-to-front-20-regular bg-primary;
 
 		mix-blend-mode: soft-light;
 		backdrop-filter: brightness(2);
@@ -112,7 +114,7 @@
 		transition: transform 300ms ease-in-out;
 		
 		> div {
-			@apply grid grid-rows-[min-content,1fr,min-content] py-12 overflow-auto h-full;
+			@apply grid grid-rows-[min-content,1fr,min-content] pb-12 overflow-auto h-full;
 		}
 
 		> div > div {

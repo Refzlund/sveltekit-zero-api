@@ -110,13 +110,11 @@ export function floatingUI(options: Options) {
 		options.strategy ??= 'absolute'
 
 		computePosition(tether || ref, float, options).then((v) => {
-			if (options.strategy === 'absolute') {
-				Object.assign(float!.style, {
-					position: 'absolute',
-					left: `${v.x}px`,
-					top: `${v.y}px`
-				})
-			}
+			Object.assign(float!.style, {
+				position: options.strategy!,
+				left: `${v.x}px`,
+				top: `${v.y}px`
+			})
 
 			then?.(v)
 		})

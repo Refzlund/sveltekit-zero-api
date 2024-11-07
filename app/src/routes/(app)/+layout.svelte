@@ -46,7 +46,7 @@
 
 <svelte:body bind:clientWidth />
 
-<app class:mobile >
+<app class:mobile>
 	{#if !mobile}
 		<Header height={header} />
 	{/if}
@@ -91,6 +91,31 @@
 
 			page {
 				@apply block ml-5 p-7;
+			}
+		}
+
+		&:not(.mobile) :global {
+			/* scrollbar-color: theme('colors.gray.800') theme('colors.gray.950');
+			scrollbar-width: thin; */
+
+			/* width */
+			::-webkit-scrollbar {
+				@apply w-2;
+			}
+
+			/* Track */
+			::-webkit-scrollbar-track {
+				@apply bg-transparent;
+			}
+
+			/* Handle */
+			::-webkit-scrollbar-thumb {
+				@apply bg-gray-800 rounded-full cursor-grab;
+			}
+
+			/* Handle on hover */
+			::-webkit-scrollbar-thumb:hover {
+				@apply bg-gray-700;
 			}
 		}
 	}

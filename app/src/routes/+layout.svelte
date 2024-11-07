@@ -25,7 +25,8 @@
 
 	:global html {
 		font-family: Inter, Arial, Helvetica, sans-serif;
-		font-size: 18px;
+		
+		@apply lg:text-[18px] md:text-[16px] max-sm:text-[14px] ;
 	}
 
 </style>

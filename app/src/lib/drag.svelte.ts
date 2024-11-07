@@ -9,13 +9,13 @@ export function drag({ minX = -Infinity, maxX = Infinity, snap = true } = {}) {
 		action
 	})
 
-	function action(node: HTMLElement) {
-		function stop() {
-			window.removeEventListener('mousemove', move)
-			window.removeEventListener('mouseup', stop)
-			window.removeEventListener('touchmove', move)
-			window.removeEventListener('touchend', stop)
+	$effect.pre(() => {
+		state.x = Math.max(
+			state.minX,
+			Math.min(state.maxX, state.x)
+		)
 
+		if(!state.moving) {
 			if (state.snap && (state.minX !== -Infinity || state.maxX !== Infinity)) {
 				// snap state.x to minX or maxX
 				let distMin = Math.abs(state.x - state.minX)
@@ -27,7 +27,15 @@ export function drag({ minX = -Infinity, maxX = Infinity, snap = true } = {}) {
 					state.x = state.maxX
 				}
 			}
+		}
+	})
 
+	function action(node: HTMLElement) {
+		function stop() {
+			window.removeEventListener('mousemove', move)
+			window.removeEventListener('mouseup', stop)
+			window.removeEventListener('touchmove', move)
+			window.removeEventListener('touchend', stop)
 			state.moving = false
 		}
 
@@ -49,10 +57,7 @@ export function drag({ minX = -Infinity, maxX = Infinity, snap = true } = {}) {
 			}
 
 			if (previousTouch) {
-				state.x = Math.max(
-					state.minX,
-					Math.min(state.maxX, state.x + e.touches[0].pageX - previousTouch?.pageX)
-				)
+				state.x += e.touches[0].pageX - previousTouch?.pageX
 				state.y += e.touches[0].pageY - previousTouch?.pageY
 			}
 
