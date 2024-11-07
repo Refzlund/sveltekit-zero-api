@@ -41,7 +41,7 @@
 <style lang='postcss'>
 	
 	h1 {
-		@apply grid grid-cols-[min-content,1fr] gap-x-1.5 text-gray-200 w-fit;
+		@apply grid grid-cols-[min-content,1fr] gap-x-1.5 text-gray-200 w-fit cursor-default;
 	}
 
 	sveltekit {

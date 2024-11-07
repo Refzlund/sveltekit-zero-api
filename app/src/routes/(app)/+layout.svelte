@@ -24,24 +24,42 @@
 
 	let clientWidth = $state(data.mobile ? 425 : 800)
 	let mobile = $derived(clientWidth < 800)
+	
+	let fromTop = $state(0)
+	let page: HTMLElement = $state(undefined as any)
+
+	function onScroll() {
+		fromTop = page.scrollTop
+	}
+
+	let header = $derived(
+		Math.max(100,
+			Math.min(
+				200,
+				200 / Math.max(1, 1 + fromTop * 0.005)
+			)
+		)
+	)
 
 </script>
 <!---------------------------------------------------->
 
 <svelte:body bind:clientWidth />
 
-<app class:mobile>
+<app class:mobile >
 	{#if !mobile}
-		<Header />
+		<Header height={header} />
 	{/if}
-	<Sidebar {mobile} />
-	<page>
+	<Sidebar marginTop={header} {mobile} />
+	<page bind:this={page} onscroll={onScroll}>
 		{#if !mobile}
-			<centered>
+			<desktop>
 				{@render children?.()}
-			</centered>
+			</desktop>
 		{:else}
-			{@render children?.()}
+			<mobile>
+				{@render children?.()}
+			</mobile>
 		{/if}
 	</page>
 </app>
@@ -52,16 +70,20 @@
 	
 	app {
 		@apply
-			grid grid-rows-[200px,1fr] grid-cols-[calc(15rem+6rem),1fr] 
+			grid grid-cols-[calc(15rem+6rem),1fr] grid-rows-1
 			h-screen w-screen text-gray-300 bg-gray-900 overflow-hidden
 		;
 
 		page {
-			@apply grid justify-center h-full w-full overflow-auto py-4 px-6;
+			@apply flex justify-center h-full w-full overflow-auto py-4 px-6 pt-[200px];
 		}
 
-		centered {
-			@apply block max-w-2xl py-8;
+		desktop {
+			@apply max-w-2xl w-full py-14;
+		}
+
+		desktop, mobile {
+			@apply flex flex-col h-max pb-[75vh];
 		}
 
 		&.mobile {

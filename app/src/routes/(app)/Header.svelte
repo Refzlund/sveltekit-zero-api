@@ -13,13 +13,21 @@
 	import Pill from '$lib/Pill.svelte'
 	import Select from '$lib/Select'
 
+	interface Props {
+		height: number
+	}
+	
+	let {
+		height
+	}: Props = $props()
+	
 	let documentationVersion = $state('2.0.0')
 
 </script>
 <!---------------------------------------------------->
 
 
-<header>
+<header style='height: {height}px'>
 
 	<Logo />
 
@@ -57,8 +65,8 @@
 	
 	header {
 		@apply 
-			relative grid col-span-2 bg-gray-950 items-center 
-			grid-cols-[14rem,1fr,14rem] px-24 overflow-hidden
+			fixed top-0 left-0 right-0 grid bg-gray-950 items-center z-[9999]
+			grid-cols-[14rem,1fr,14rem] px-24 overflow-hidden bg-opacity-80 backdrop-blur-lg
 		;
 
 		&::after {

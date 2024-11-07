@@ -19,10 +19,12 @@
 
 	interface Props {
 		mobile: boolean
+		marginTop: number
 	}
 	
 	let {
-		mobile
+		mobile,
+		marginTop
 	}: Props = $props()
 	
 	let navdrag = drag({ maxX: 0 })
@@ -41,7 +43,7 @@
 			{text}
 		</a>
 	{:else}
-		<a {href} onmouseenter={(e) => float.tether(e.target as HTMLElement)}>
+		<a {href} onmouseenter={(e) => float.tether(e.target as HTMLElement)} aria-details='>v0.0.1'>
 			{text}
 		</a>
 	{/if}
@@ -51,7 +53,7 @@
 	bind:clientWidth 
 	class:moving={navdrag.moving} 
 	class:mobile 
-	style={mobile ? `transform: translateX(${navdrag.x}px)` : ''}
+	style={mobile ? `transform: translateX(${navdrag.x}px)` : `margin-top: ${marginTop}px; padding-top: ${200-marginTop}px;`}
 >
 	<div>
 		{#if mobile}
@@ -69,13 +71,13 @@
 			{@render navitem('Home', '/', true)}
 			<section>
 				<h4>Get Started</h4>
-				{@render navitem('Install')}
-				{@render navitem('Configuration')}
+				{@render navitem('Install', '/install')}
+				{@render navitem('Configuration', '/config')}
 			</section>
 			<section>
 				<h4>Backend</h4>
-				{@render navitem('Basics')}
-				{@render navitem('Functions')}
+				{@render navitem('Basics', '/basics')}
+				{@render navitem('Functions', '/functions')}
 				{@render navitem('Error handling')}
 			</section>
 			<section>
@@ -104,7 +106,7 @@
 	}
 	
 	nav {
-		@apply relative overflow-hidden
+		@apply relative overflow-hidden z-[9999]
 			bg-gray-950 border-r border-gray-800 border-opacity-85;
 
 		transition: transform 300ms ease-in-out;

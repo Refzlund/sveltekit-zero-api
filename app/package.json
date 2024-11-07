@@ -23,6 +23,7 @@
 		"@tailwindcss/typography": "^0.5.15",
 		"@types/ua-parser-js": "^0.7.39",
 		"autoprefixer": "^10.4.20",
+		"highlight.js": "^11.10.0",
 		"postcss-import": "^16.1.0",
 		"postcss-import-url": "^7.2.0",
 		"svelte": "^5.0.0",

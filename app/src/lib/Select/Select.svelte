@@ -138,7 +138,7 @@
 	dialog {
 		@apply
 			grid grid-flow-row gap-1
-			m-0 bg-gray-950 bg-opacity-30 text-gray-200 z-[1000]
+			m-0 bg-gray-950 bg-opacity-30 text-gray-200 z-[1000000]
 			px-2 py-2 rounded-lg backdrop-blur-sm border border-gray-800
 		;
 
