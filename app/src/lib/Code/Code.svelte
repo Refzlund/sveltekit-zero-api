@@ -32,7 +32,7 @@
 		return formatted
 	})
 
-	let height = $state(0)
+	let height = $state(28)
 	
 	let active = $state(Object.keys(code)[0])
 
@@ -76,7 +76,7 @@
 		@apply block;
 
 		:global .line-count {
-			@apply inline-flex opacity-20 w-8 pointer-events-none select-none;
+			@apply inline-flex opacity-20 w-8 items-center justify-end pointer-events-none select-none -translate-x-6;
 		}
 
 		code :global {
