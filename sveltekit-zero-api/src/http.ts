@@ -14,22 +14,25 @@ export class KitResponse<Status extends number = number, StatusText extends stri
 	headers: Headers
 	status: Status
 	statusText: StatusText
-	body: Body
+	body?: Body
 
-	constructor(body: Body, options: ResponseOptions<Status, StatusText>) {
+	constructor(body?: Body, options: ResponseOptions<Status, StatusText> = {}) {
 		super()
 		this.body = body
 		this.headers = new Headers(options.headers)
 		this.status = (options.status || 200) as Status
 		this.statusText = (options.statusText || 'OK') as StatusText
 		this.cause = options.cause
-		this.message = ` ${this.statusText}
+		this.message = `Kit ${this.statusText}
 
-    \x1b[94m  ${this.status < 400 ? '\x1b[32m' : '\x1b[91m'}${this.status} ${this.statusText}
-\x1b[90m——————————————${Array(this.statusText.length + 2).join('—')}\x1b[0m
+    \x1b[94m  ${this.status < 400 ? '\x1b[32m' : '\x1b[91m'}${this.status} ${this.statusText}\x1b[0m
+`
+		if(this.body) {
+			this.message += `\x1b[90m————————————————${Array(this.statusText.length).join('—')}\x1b[0m
 ${JSON.stringify(body, null, 4)}
 
-		`
+`
+		}
 	}
 }
 
@@ -47,7 +50,7 @@ ${JSON.stringify(body, null, 4)}
  * the request or ignore it if it is already finished
 */
 export class Continue<T> extends KitResponse<100, 'Continue', T> {
-	constructor(body: T, options: Options = {}) {
+	constructor(body?: T, options: Options = {}) {
 		super(body, { ...options, status: 100, statusText: 'Continue' })
 	}
 }
@@ -58,7 +61,7 @@ export class Continue<T> extends KitResponse<100, 'Continue', T> {
  * [Upgrade](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Upgrade) request header received from a client.
 */
 export class SwitchingProtocols<T> extends KitResponse<101, 'SwitchingProtocols', T> {
-	constructor(body: T, options: Options = {}) {
+	constructor(body?: T, options: Options = {}) {
 		super(body, { ...options, status: 101, statusText: 'SwitchingProtocols' })
 	}
 }
@@ -68,7 +71,7 @@ export class SwitchingProtocols<T> extends KitResponse<101, 'SwitchingProtocols'
  * An interim response used to inform the client that the server has accepted the complete request but has not yet completed it
 */
 export class Processing<T> extends KitResponse<102, 'Processing', T> {
-	constructor(body: T, options: Options = {}) {
+	constructor(body?: T, options: Options = {}) {
 		super(body, { ...options, status: 102, statusText: 'Processing' })
 	}
 }
@@ -79,7 +82,7 @@ export class Processing<T> extends KitResponse<102, 'Processing', T> {
  * header to allow the user agent to start preloading resources while the server is still preparing a response
 */
 export class EarlyHints<T> extends KitResponse<103, 'EarlyHints', T> {
-	constructor(body: T, options: Options = {}) {
+	constructor(body?: T, options: Options = {}) {
 		super(body, { ...options, status: 103, statusText: 'EarlyHints' })
 	}
 }
@@ -100,7 +103,7 @@ export class EarlyHints<T> extends KitResponse<103, 'EarlyHints', T> {
  * indicates that the request has succeeded. A 200 response is cacheable by default.
 */
 export class OK<T> extends KitResponse<200, 'OK', T> {
-	constructor(body: T, options: Options = {}) {
+	constructor(body?: T, options: Options = {}) {
 		super(body, { ...options, status: 200, statusText: 'OK' })
 	}
 }
@@ -115,7 +118,7 @@ export class OK<T> extends KitResponse<200, 'OK', T> {
  * header.
 */
 export class Created<T> extends KitResponse<201, 'Created', T> {
-	constructor(body: T, options: Options = {}) {
+	constructor(body?: T, options: Options = {}) {
 		super(body, { ...options, status: 201, statusText: 'Created' })
 	}
 }
@@ -128,7 +131,7 @@ export class Created<T> extends KitResponse<201, 'Created', T> {
  * actually takes place.
 */
 export class Accepted<T> extends KitResponse<202, 'Accepted', T> {
-	constructor(body: T, options: Options = {}) {
+	constructor(body?: T, options: Options = {}) {
 		super(body, { ...options, status: 202, statusText: 'Accepted' })
 	}
 }
@@ -141,7 +144,7 @@ export class Accepted<T> extends KitResponse<202, 'Accepted', T> {
  * (OK) response.
 */
 export class NonAuthoritativeInformation<T> extends KitResponse<203, 'NonAuthoritativeInformation', T> {
-	constructor(body: T, options: Options = {}) {
+	constructor(body?: T, options: Options = {}) {
 		super(body, { ...options, status: 203, statusText: 'NonAuthoritativeInformation' })
 	}
 }
@@ -152,7 +155,7 @@ export class NonAuthoritativeInformation<T> extends KitResponse<203, 'NonAuthori
  * from its current page.
 */
 export class NoContent<T> extends KitResponse<204, 'NoContent', T> {
-	constructor(body: T, options: Options = {}) {
+	constructor(body?: T, options: Options = {}) {
 		super(body, { ...options, status: 204, statusText: 'NoContent' })
 	}
 }
@@ -163,7 +166,7 @@ export class NoContent<T> extends KitResponse<204, 'NoContent', T> {
  * a form, reset a canvas state, or to refresh the UI.
 */
 export class ResetContent<T> extends KitResponse<205, 'ResetContent', T> {
-	constructor(body: T, options: Options = {}) {
+	constructor(body?: T, options: Options = {}) {
 		super(body, { ...options, status: 205, statusText: 'ResetContent' })
 	}
 }
@@ -174,7 +177,7 @@ export class ResetContent<T> extends KitResponse<205, 'ResetContent', T> {
  * of data, as described in the Range header of the request.
 */
 export class PartialContent<T> extends KitResponse<206, 'PartialContent', T> {
-	constructor(body: T, options: Options = {}) {
+	constructor(body?: T, options: Options = {}) {
 		super(body, { ...options, status: 206, statusText: 'PartialContent' })
 	}
 }
@@ -185,7 +188,7 @@ export class PartialContent<T> extends KitResponse<206, 'PartialContent', T> {
  * might be appropriate.
 */
 export class MultiStatus<T> extends KitResponse<207, 'MultiStatus', T> {
-	constructor(body: T, options: Options = {}) {
+	constructor(body?: T, options: Options = {}) {
 		super(body, { ...options, status: 207, statusText: 'MultiStatus' })
 	}
 }
@@ -196,7 +199,7 @@ export class MultiStatus<T> extends KitResponse<207, 'MultiStatus', T> {
  * members of multiple bindings to the same collection repeatedly.
 */
 export class AlreadyReported<T> extends KitResponse<208, 'AlreadyReported', T> {
-	constructor(body: T, options: Options = {}) {
+	constructor(body?: T, options: Options = {}) {
 		super(body, { ...options, status: 208, statusText: 'AlreadyReported' })
 	}
 }
@@ -208,7 +211,7 @@ export class AlreadyReported<T> extends KitResponse<208, 'AlreadyReported', T> {
  * the current instance.
 */
 export class IMUsed<T> extends KitResponse<226, 'IMUsed', T> {
-	constructor(body: T, options: Options = {}) {
+	constructor(body?: T, options: Options = {}) {
 		super(body, { ...options, status: 226, statusText: 'IMUsed' })
 	}
 }
@@ -231,7 +234,7 @@ export class IMUsed<T> extends KitResponse<226, 'IMUsed', T> {
  * the responses, this response code is very rarely used.
 */
 export class MultipleChoices<T> extends KitResponse<300, 'MultipleChoices', T> {
-	constructor(body: T, options: Options = {}) {
+	constructor(body?: T, options: Options = {}) {
 		super(body, { ...options, status: 300, statusText: 'MultipleChoices' })
 	}
 }
@@ -242,7 +245,7 @@ export class MultipleChoices<T> extends KitResponse<300, 'MultipleChoices', T> {
  * future references should use a new URI with their requests.
 */
 export class MovedPermanently<T> extends KitResponse<301, 'MovedPermanently', T> {
-	constructor(body: T, options: Options = {}) {
+	constructor(body?: T, options: Options = {}) {
 		super(body, { ...options, status: 301, statusText: 'MovedPermanently' })
 	}
 }
@@ -253,7 +256,7 @@ export class MovedPermanently<T> extends KitResponse<301, 'MovedPermanently', T>
  * future references should still use the original URI to access the resource.
 */
 export class Found<T> extends KitResponse<302, 'Found', T> {
-	constructor(body: T, options: Options = {}) {
+	constructor(body?: T, options: Options = {}) {
 		super(body, { ...options, status: 302, statusText: 'Found' })
 	}
 }
@@ -263,7 +266,7 @@ export class Found<T> extends KitResponse<302, 'Found', T> {
  * indicates that the response to the request can be found under a different URI.
 */
 export class SeeOther<T> extends KitResponse<303, 'SeeOther', T> {
-	constructor(body: T, options: Options = {}) {
+	constructor(body?: T, options: Options = {}) {
 		super(body, { ...options, status: 303, statusText: 'SeeOther' })
 	}
 }
@@ -273,7 +276,7 @@ export class SeeOther<T> extends KitResponse<303, 'SeeOther', T> {
  * indicates that the request has not been modified since the last request.
 */
 export class NotModified<T> extends KitResponse<304, 'NotModified', T> {
-	constructor(body: T, options: Options = {}) {
+	constructor(body?: T, options: Options = {}) {
 		super(body, { ...options, status: 304, statusText: 'NotModified' })
 	}
 }
@@ -285,7 +288,7 @@ export class NotModified<T> extends KitResponse<304, 'NotModified', T> {
  * effective request URI for future requests.
 */
 export class TemporaryRedirect<T> extends KitResponse<307, 'TemporaryRedirect', T> {
-	constructor(body: T, options: Options = {}) {
+	constructor(body?: T, options: Options = {}) {
 		super(body, { ...options, status: 307, statusText: 'TemporaryRedirect' })
 	}
 }
@@ -296,7 +299,7 @@ export class TemporaryRedirect<T> extends KitResponse<307, 'TemporaryRedirect', 
  * future references should use a new URI with their requests.
 */
 export class PermanentRedirect<T> extends KitResponse<308, 'PermanentRedirect', T> {
-	constructor(body: T, options: Options = {}) {
+	constructor(body?: T, options: Options = {}) {
 		super(body, { ...options, status: 308, statusText: 'PermanentRedirect' })
 	}
 }
@@ -318,7 +321,7 @@ export class PermanentRedirect<T> extends KitResponse<308, 'PermanentRedirect', 
  * client error.
 */
 export class BadRequest<T> extends KitResponse<400, 'BadRequest', T> {
-	constructor(body: T, options: Options = {}) {
+	constructor(body?: T, options: Options = {}) {
 		super(body, { ...options, status: 400, statusText: 'BadRequest' })
 	}
 }
@@ -329,7 +332,7 @@ export class BadRequest<T> extends KitResponse<400, 'BadRequest', T> {
  * credentials for the target resource.
 */
 export class Unauthorized<T> extends KitResponse<401, 'Unauthorized', T> {
-	constructor(body: T, options: Options = {}) {
+	constructor(body?: T, options: Options = {}) {
 		super(body, { ...options, status: 401, statusText: 'Unauthorized' })
 	}
 }
@@ -341,7 +344,7 @@ export class Unauthorized<T> extends KitResponse<401, 'Unauthorized', T> {
  * and this code is not usually used.
 */
 export class PaymentRequired<T> extends KitResponse<402, 'PaymentRequired', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 402, statusText: 'PaymentRequired' });
     }
 }
@@ -351,7 +354,7 @@ export class PaymentRequired<T> extends KitResponse<402, 'PaymentRequired', T> {
  * indicates that the server understood the request but refuses to authorize it.
 */
 export class Forbidden<T> extends KitResponse<403, 'Forbidden', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 403, statusText: 'Forbidden' });
     }
 }
@@ -362,7 +365,7 @@ export class Forbidden<T> extends KitResponse<403, 'Forbidden', T> {
  * target resource or is not willing to disclose that one exists.
 */
 export class NotFound<T> extends KitResponse<404, 'NotFound', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 404, statusText: 'NotFound' });
     }
 }
@@ -373,7 +376,7 @@ export class NotFound<T> extends KitResponse<404, 'NotFound', T> {
  * server but not supported by the target resource.
 */
 export class MethodNotAllowed<T> extends KitResponse<405, 'MethodNotAllowed', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 405, statusText: 'MethodNotAllowed' });
     }
 }
@@ -386,7 +389,7 @@ export class MethodNotAllowed<T> extends KitResponse<405, 'MethodNotAllowed', T>
  * headers, and that the server is unwilling to supply a default representation.
 */
 export class NotAcceptable<T> extends KitResponse<406, 'NotAcceptable', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 406, statusText: 'NotAcceptable' });
     }
 }
@@ -397,7 +400,7 @@ export class NotAcceptable<T> extends KitResponse<406, 'NotAcceptable', T> {
  * [proxy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Proxy_servers).
 */
 export class ProxyAuthenticationRequired<T> extends KitResponse<407, 'ProxyAuthenticationRequired', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 407, statusText: 'ProxyAuthenticationRequired' });
     }
 }
@@ -408,7 +411,7 @@ export class ProxyAuthenticationRequired<T> extends KitResponse<407, 'ProxyAuthe
  * the time that it was prepared to wait.
 */
 export class RequestTimeout<T> extends KitResponse<408, 'RequestTimeout', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 408, statusText: 'RequestTimeout' });
     }
 }
@@ -419,7 +422,7 @@ export class RequestTimeout<T> extends KitResponse<408, 'RequestTimeout', T> {
  * current state of the target resource.
 */
 export class Conflict<T> extends KitResponse<409, 'Conflict', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 409, statusText: 'Conflict' });
     }
 }
@@ -430,7 +433,7 @@ export class Conflict<T> extends KitResponse<409, 'Conflict', T> {
  * origin server and that this condition is likely to be permanent.
 */
 export class Gone<T> extends KitResponse<410, 'Gone', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 410, statusText: 'Gone' });
     }
 }
@@ -441,7 +444,7 @@ export class Gone<T> extends KitResponse<410, 'Gone', T> {
  * [Content-Length](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Length).
 */
 export class LengthRequired<T> extends KitResponse<411, 'LengthRequired', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 411, statusText: 'LengthRequired' });
     }
 }
@@ -452,7 +455,7 @@ export class LengthRequired<T> extends KitResponse<411, 'LengthRequired', T> {
  * evaluated to false when tested on the server.
 */
 export class PreconditionFailed<T> extends KitResponse<412, 'PreconditionFailed', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 412, statusText: 'PreconditionFailed' });
     }
 }
@@ -463,7 +466,7 @@ export class PreconditionFailed<T> extends KitResponse<412, 'PreconditionFailed'
  * request payload is larger than the server is willing or able to process.
 */
 export class PayloadTooLarge<T> extends KitResponse<413, 'PayloadTooLarge', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 413, statusText: 'PayloadTooLarge' });
     }
 }
@@ -474,7 +477,7 @@ export class PayloadTooLarge<T> extends KitResponse<413, 'PayloadTooLarge', T> {
  * request-target is longer than the server is willing to interpret.
 */
 export class URITooLong<T> extends KitResponse<414, 'URITooLong', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 414, statusText: 'URITooLong' });
     }
 }
@@ -485,7 +488,7 @@ export class URITooLong<T> extends KitResponse<414, 'URITooLong', T> {
  * format not supported by this method on the target resource.
 */
 export class UnsupportedMediaType<T> extends KitResponse<415, 'UnsupportedMediaType', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 415, statusText: 'UnsupportedMediaType' });
     }
 }
@@ -498,7 +501,7 @@ export class UnsupportedMediaType<T> extends KitResponse<415, 'UnsupportedMediaT
  * invalid ranges or an excessive request of small or overlapping ranges.
 */
 export class RangeNotSatisfiable<T> extends KitResponse<416, 'RangeNotSatisfiable', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 416, statusText: 'RangeNotSatisfiable' });
     }
 }
@@ -510,7 +513,7 @@ export class RangeNotSatisfiable<T> extends KitResponse<416, 'RangeNotSatisfiabl
  * by at least one of the inbound servers.
 */
 export class ExpectationFailed<T> extends KitResponse<417, 'ExpectationFailed', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 417, statusText: 'ExpectationFailed' });
     }
 }
@@ -522,7 +525,7 @@ export class ExpectationFailed<T> extends KitResponse<417, 'ExpectationFailed', 
  * This error is a reference to Hyper Text Coffee Pot Control Protocol defined in April Fools' jokes in 1998 and 2014.
 */
 export class ImATeapot<T> extends KitResponse<418, 'ImATeapot', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 418, statusText: 'ImATeapot' });
     }
 }
@@ -532,7 +535,7 @@ export class ImATeapot<T> extends KitResponse<418, 'ImATeapot', T> {
  * indicates that the request was directed at a server that is not able to produce a response.
 */
 export class MisdirectedRequest<T> extends KitResponse<421, 'MisdirectedRequest', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 421, statusText: 'MisdirectedRequest' });
     }
 }
@@ -546,7 +549,7 @@ export class MisdirectedRequest<T> extends KitResponse<421, 'MisdirectedRequest'
  * status code is inappropriate) but was unable to process the contained instructions.
 */
 export class UnprocessableEntity<T> extends KitResponse<422, 'UnprocessableEntity', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 422, statusText: 'UnprocessableEntity' });
     }
 }
@@ -556,7 +559,7 @@ export class UnprocessableEntity<T> extends KitResponse<422, 'UnprocessableEntit
  * indicates that the access to the target resource is denied.
 */
 export class Locked<T> extends KitResponse<423, 'Locked', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 423, statusText: 'Locked' });
     }
 }
@@ -567,7 +570,7 @@ export class Locked<T> extends KitResponse<423, 'Locked', T> {
  * requested action depended on another action and that action failed.
 */
 export class FailedDependency<T> extends KitResponse<424, 'FailedDependency', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 424, statusText: 'FailedDependency' });
     }
 }
@@ -578,7 +581,7 @@ export class FailedDependency<T> extends KitResponse<424, 'FailedDependency', T>
  * be replayed.
 */
 export class TooEarly<T> extends KitResponse<425, 'TooEarly', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 425, statusText: 'TooEarly' });
     }
 }
@@ -591,7 +594,7 @@ export class TooEarly<T> extends KitResponse<425, 'TooEarly', T> {
  * header field in a 426 response to indicate the required protocol(s).
 */
 export class UpgradeRequired<T> extends KitResponse<426, 'UpgradeRequired', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 426, statusText: 'UpgradeRequired' });
     }
 }
@@ -601,7 +604,7 @@ export class UpgradeRequired<T> extends KitResponse<426, 'UpgradeRequired', T> {
  * indicates that the origin server requires the request to be conditional.
 */
 export class PreconditionRequired<T> extends KitResponse<428, 'PreconditionRequired', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 428, statusText: 'PreconditionRequired' });
     }
 }
@@ -611,7 +614,7 @@ export class PreconditionRequired<T> extends KitResponse<428, 'PreconditionRequi
  * indicates that the user has sent too many requests in a given amount of time ("rate limiting").
 */
 export class TooManyRequests<T> extends KitResponse<429, 'TooManyRequests', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 429, statusText: 'TooManyRequests' });
     }
 }
@@ -623,7 +626,7 @@ export class TooManyRequests<T> extends KitResponse<429, 'TooManyRequests', T> {
  * header fields.
 */
 export class RequestHeaderFieldsTooLarge<T> extends KitResponse<431, 'RequestHeaderFieldsTooLarge', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 431, statusText: 'RequestHeaderFieldsTooLarge' });
     }
 }
@@ -634,7 +637,7 @@ export class RequestHeaderFieldsTooLarge<T> extends KitResponse<431, 'RequestHea
  * such as a web page censored by a government.
 */
 export class UnavailableForLegalReasons<T> extends KitResponse<451, 'UnavailableForLegalReasons', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 451, statusText: 'UnavailableForLegalReasons' });
     }
 }
@@ -660,7 +663,7 @@ export class UnavailableForLegalReasons<T> extends KitResponse<451, 'Unavailable
  * from fulfilling the request.
 */
 export class InternalServerError<T> extends KitResponse<500, 'InternalServerError', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 500, statusText: 'InternalServerError' });
     }
 }
@@ -670,7 +673,7 @@ export class InternalServerError<T> extends KitResponse<500, 'InternalServerErro
  * indicates that the server does not support the functionality required to fulfill the request.
 */
 export class NotImplemented<T> extends KitResponse<501, 'NotImplemented', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 501, statusText: 'NotImplemented' });
     }
 }
@@ -681,7 +684,7 @@ export class NotImplemented<T> extends KitResponse<501, 'NotImplemented', T> {
  * from the upstream server it accessed in attempting to fulfill the request.
 */
 export class BadGateway<T> extends KitResponse<502, 'BadGateway', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 502, statusText: 'BadGateway' });
     }
 }
@@ -692,7 +695,7 @@ export class BadGateway<T> extends KitResponse<502, 'BadGateway', T> {
  * or scheduled maintenance, which will likely be alleviated after some delay.
 */
 export class ServiceUnavailable<T> extends KitResponse<503, 'ServiceUnavailable', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 503, statusText: 'ServiceUnavailable' });
     }
 }
@@ -705,7 +708,7 @@ export class ServiceUnavailable<T> extends KitResponse<503, 'ServiceUnavailable'
  * it needed to access in attempting to complete the request.
 */
 export class GatewayTimeout<T> extends KitResponse<504, 'GatewayTimeout', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 504, statusText: 'GatewayTimeout' });
     }
 }
@@ -717,7 +720,7 @@ export class GatewayTimeout<T> extends KitResponse<504, 'GatewayTimeout', T> {
  * in the request message.
 */
 export class HTTPVersionNotSupported<T> extends KitResponse<505, 'HTTPVersionNotSupported', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 505, statusText: 'HTTPVersionNotSupported' });
     }
 }
@@ -729,7 +732,7 @@ export class HTTPVersionNotSupported<T> extends KitResponse<505, 'HTTPVersionNot
  * end point in the negotiation process.
 */
 export class VariantAlsoNegotiates<T> extends KitResponse<506, 'VariantAlsoNegotiates', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 506, statusText: 'VariantAlsoNegotiates' });
     }
 }
@@ -740,7 +743,7 @@ export class VariantAlsoNegotiates<T> extends KitResponse<506, 'VariantAlsoNegot
  * to store the representation needed to successfully complete the request.
 */
 export class InsufficientStorage<T> extends KitResponse<507, 'InsufficientStorage', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 507, statusText: 'InsufficientStorage' });
     }
 }
@@ -751,7 +754,7 @@ export class InsufficientStorage<T> extends KitResponse<507, 'InsufficientStorag
  * processing a request with "Depth: infinity". This status indicates that the entire operation failed.
 */
 export class LoopDetected<T> extends KitResponse<508, 'LoopDetected', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 508, statusText: 'LoopDetected' });
     }
 }
@@ -761,7 +764,7 @@ export class LoopDetected<T> extends KitResponse<508, 'LoopDetected', T> {
  * indicates that further extensions to the request are required for the server to fulfill it.
 */
 export class NotExtended<T> extends KitResponse<510, 'NotExtended', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 510, statusText: 'NotExtended' });
     }
 }
@@ -771,7 +774,7 @@ export class NotExtended<T> extends KitResponse<510, 'NotExtended', T> {
  * indicates that the client needs to authenticate to gain network access.
 */
 export class NetworkAuthenticationRequired<T> extends KitResponse<511, 'NetworkAuthenticationRequired', T> {
-    constructor(body: T, options: Options = {}) {
+    constructor(body?: T, options: Options = {}) {
         super(body, { ...options, status: 511, statusText: 'NetworkAuthenticationRequired' });
     }
 }
