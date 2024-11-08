@@ -32,7 +32,7 @@
 		return formatted
 	})
 
-	let height = $state(28)
+	let height = $state(24)
 	
 	let active = $state(Object.keys(code)[0])
 
