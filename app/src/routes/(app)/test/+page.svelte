@@ -46,6 +46,8 @@ import { writable } from 'svelte/store'
 	<input placeholder="Name" use:userForm.$.name />
 	<input name='name' placeholder="Name">
 	
+	<div contenteditable bind:innerText={$userForm.name}>Text</div>
+
 	<!-- <input name='so.name' /> -->
 	<input use:userForm.$.so.name placeholder="SO Name" />
 	<input use:userForm.$.so.so.so.so.name placeholder='Deeply nested' />
@@ -57,7 +59,7 @@ import { writable } from 'svelte/store'
 		>
 			Add child
 		</button>
-		{#each $userForm.children ?? [] as _, i}
+		{#each $userForm.children ?? [] as _, i}	
 			{@const child = userForm.$.children[i]}
 			<input aria-label='Child' use:child.name />
 			<input name='children[{i}].name' />

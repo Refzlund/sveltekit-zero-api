@@ -15,9 +15,15 @@
 
 	interface Props {
 		code: Record<string, string>
+		height?: number
+		dynamicHeight?: boolean
 	}
 
-	let { code }: Props = $props()
+	let { 
+		code,
+		height = $bindable(24),
+		dynamicHeight = true
+	}: Props = $props()
 
 	let formatted = $derived.by(() => {
 		let formatted = {...code}
@@ -32,8 +38,6 @@
 		return formatted
 	})
 
-	let height = $state(24)
-	
 	let active = $state(Object.keys(code)[0])
 
 </script>
@@ -54,7 +58,11 @@
 		{/each}
 	</tabs>
 	<container style='height: {height}px'>
-		<pre bind:clientHeight={height}><code>{@html formatted[active]}</code></pre>
+		{#if dynamicHeight}
+			<pre bind:clientHeight={height}><code>{@html formatted[active]}</code></pre>
+			{:else}
+			<pre><code>{@html formatted[active]}</code></pre>
+		{/if}
 	</container>
 </code-container>
 

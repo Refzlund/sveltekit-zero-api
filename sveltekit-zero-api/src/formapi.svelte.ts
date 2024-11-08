@@ -1,7 +1,9 @@
 import { type Writable, toStore } from 'svelte/store'
 import { enhance as svelteEnhance } from '$app/forms'
+import { SvelteMap, SvelteSet } from 'svelte/reactivity'
 
 import { proxyCrawl } from './utils/proxy-crawl'
+import { untrack } from 'svelte'
 
 interface Options<T extends Record<PropertyKey, any>> {
 	/** @default true */
@@ -51,78 +53,88 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 ) {
 	let value = $state({} as Record<PropertyKey, any>)
 	let errors = $state({})
-	let inputs = new WeakSet()
+	
+	let inputMap = new SvelteMap<PropertyKey[], SvelteSet<HTMLInputElement>>()
+	let mapped = new SvelteSet<PropertyKey[]>()
+
+	function getParent(
+		keys: PropertyKey[], 
+		/** `null` returns undefined if missing, `make` creates parent tree, `nearest` returns nearest parent in the tree */
+		reaction: null | 'make' | 'nearest'
+	) {
+		let parent = value as Record<PropertyKey, any> | Array<any>
+		let property = keys[keys.length - 1]
+
+		for (let i = 0; i < keys.length - 1; i++) {
+			let key = keys[i]
+			if (!parent[key]) {
+				if (reaction === null) return undefined
+				if (reaction === 'nearest') return parent
+
+				let childKey = keys[i + 1] ?? property
+				parent[key] = typeof childKey === 'number' ? Array(childKey) : {}
+			}
+			parent = parent[key]
+		}
+		return parent
+	}
+
+	function setValue(node: HTMLInputElement, v: any) {
+		if (node.type === 'checkbox') {
+			node.checked = v ?? null
+		} else {
+			node.value = v ?? null
+		}
+	}
+
+	// Logic to update value-inputs is at the root-level
+	// of FormAPI to be called on component initialization
+	$effect(() => {
+		for (const keys of mapped) {
+			for (const node of inputMap.get(keys)!) {
+				getParent(keys, 'nearest') // updates the below $effect, when structure changes
+				$effect(() => {
+					setValue(node, getParent(keys, null)?.[keys[keys.length - 1]])
+				})
+			}
+		}
+	})
 
 	const proxies = {
 		$: proxyCrawl({
 			apply(state) {
 				// ex.   <input use:form.$.nested.string />
-				const propertyParents = [...state.keys] as PropertyKey[]
-				const property = propertyParents.pop()!
+				let propertyKeys = [...state.keys] as PropertyKey[]
 				const [node] = state.args as [HTMLInputElement]
-				inputs.add(node)
-
-				function getParent(make = true) {
-					let parent = value as Record<PropertyKey, any> | Array<any>
-
-					for (let i = 0; i < propertyParents.length; i++) {
-						let key = propertyParents[i]
-						if (!parent[key]) {
-							if (!make) return undefined
-
-							let childKey = propertyParents[i + 1] ?? property
-							parent[key] = typeof childKey === 'number' ? Array(childKey) : {}
-						}
-						parent = parent[key]
-					}
-
-					return parent
+				
+				const propertiesStr = propertyKeys.join('.')
+				for(const keys of mapped) {
+					if(keys.join('.') === propertiesStr)
+						propertyKeys = keys
 				}
 
-				function updateSelf() {
-					if (node.type === 'checkbox') {
-						node.checked = getParent(false)?.[property] ?? null
-					} else {
-						node.value = getParent(false)?.[property] ?? null
-					}
+				let set = inputMap.get(propertyKeys)
+				if(!set) {
+					set = new SvelteSet()
+					inputMap.set(propertyKeys, set)
+					mapped.add(propertyKeys)
 				}
+				set.add(node)
 
 				function updateParent() {
-					getParent(true)![property] = node.value
-				}
-
-				let unsub = () => {}
-
-				try {
-					$effect(updateSelf)
-				} catch (error) {
-					// * Doesn't work
-					// TODO move $effect out of this apply() fn and make inputs reactive via a ex. Map with WeakArray
-					/*
-						let map = new Map<string, WeakSet<HTMLInputElement>>()
-						let ver = $state({} as Record<string, number>)
-
-						$effect(() => {
-							for(const key of map.keys()) {
-								ver[key]
-								untrack(() => {
-									map.get(key)?.forEach(node => {
-										
-									})
-								})
-							}
-						})
-					
-					*/
-					unsub = formEnhance.subscribe(updateSelf)
+					getParent(propertyKeys, 'make')![propertyKeys[propertyKeys.length - 1]] =
+						node.type === 'checkbox' ? node.checked : node.value
 				}
 
 				node.addEventListener('input', updateParent)
 				return {
 					destroy() {
-						inputs.delete(node)
-						unsub()
 						node.removeEventListener('input', updateParent)
+						set.delete(node)
+						if(set.size === 0) {
+							inputMap.delete(propertyKeys)
+							mapped.delete(propertyKeys)
+						}
 					}
 				}
 			}
