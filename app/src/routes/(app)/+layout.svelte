@@ -118,6 +118,27 @@
 				@apply bg-gray-700;
 			}
 		}
+
+		:global {
+			input {
+				@apply block bg-gray-950 rounded-lg border border-gray-800 ring-transparent;
+
+				&:focus {
+					@apply border-primary border-opacity-50;
+				}
+
+				&::placeholder {
+					&::before {
+						content: 'text';
+						@apply block  text-gray-400 text-sm select-none pointer-events-none;
+					}
+				}
+
+				&::after {
+					
+				}
+			}
+		}
 	}
 
 	
