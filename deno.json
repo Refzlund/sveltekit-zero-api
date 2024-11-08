@@ -1,0 +1,23 @@
+{
+	"tasks": {
+		"app": "cd app && bun dev"
+	},
+	"compilerOptions": {
+		"lib": ["deno.window", "ESNext", "DOM", "DOM.Iterable", "DOM.AsyncIterable"],
+		"noImplicitAny": false
+	},
+	"lint": {
+		"rules": {
+			"include": [],
+			"exclude": ["no-explicit-any", "no-unused-vars", "prefer-const"]
+		}
+	},
+	"fmt": {
+		"lineLength": 100,
+		"tabWidth": 4,
+		"useTabs": true,
+		"singleQuote": true,
+		"semiColons": false,
+		"proseWrap": "preserve"
+	}
+}

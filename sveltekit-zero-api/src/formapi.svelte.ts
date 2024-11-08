@@ -2,7 +2,7 @@ import { type Writable, toStore } from 'svelte/store'
 import { enhance as svelteEnhance } from '$app/forms'
 import { SvelteMap, SvelteSet } from 'svelte/reactivity'
 
-import { proxyCrawl } from './utils/proxy-crawl'
+import { proxyCrawl } from './utils/proxy-crawl.ts'
 import { untrack } from 'svelte'
 
 interface Options<T extends Record<PropertyKey, any>> {
