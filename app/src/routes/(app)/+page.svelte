@@ -44,7 +44,7 @@
 		developing between frontend and backend.
 	</p>
 	<p>
-		I think it's well established, the code can talk for itself<img class='inline !m-0' src='/star_struck.gif' alt='star-struck' width="30" />
+		I think it's well established, the code can speak for itself<img class='inline !m-0' src='/star_struck.gif' alt='star-struck' width="30" />
 	</p>
 
 	<Code {code} />
