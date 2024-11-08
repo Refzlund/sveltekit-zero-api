@@ -8,5 +8,8 @@
 	"peerDependencies": {
 		"svelte": "^5.1.12",
 		"@sveltejs/kit": "^2.8.0"
+	},
+	"devDependencies": {
+		"zod": "^3.23.8"
 	}
 }

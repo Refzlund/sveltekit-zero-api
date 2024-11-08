@@ -50,7 +50,7 @@ export function proxyCrawl(handler: CrawlHandler) {
 			apply(_, thisArg, args) {
 				return handler.apply?.({ keys, args }) ?? thisArg(...args)
 			}
-		}) as Record<PropertyKey, any> & Function
+		}) as Record<PropertyKey, any> & ((...args: any[]) => any)
 	}
 		
 	return createCrawler([])
