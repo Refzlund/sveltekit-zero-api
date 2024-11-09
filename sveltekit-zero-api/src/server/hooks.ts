@@ -20,6 +20,8 @@ import { KitResponse } from './http.ts'
  *
  */
 export const zeroAPI: Handle = async ({ event, resolve }) => {
+	// @ts-expect-error RequestEvent should not have `results` inside of it.
+	event.results ??= {}
 	let response: unknown
 
 	try {

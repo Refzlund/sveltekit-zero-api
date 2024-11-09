@@ -1,5 +1,6 @@
+import { proxyCrawl } from "../utils/proxy-crawl.ts";
 import { FixKeys, Simplify } from '../utils/types.ts'
-import { KitResponse, OK } from './http.ts'
+import { KitResponse, OK, StatusCode } from './http.ts'
 import { KitEvent, KitEventFn, ParseKitEvent } from './kitevent.ts'
 
 /**
@@ -20,7 +21,17 @@ interface Callback<Event extends KitEvent<any, any>, Result extends CbResultType
  * 
  * This should work the same on frontend and backend.
 */
-type EndpointProxy = Promise<unknown> & { _ } // TODO
+type EndpointProxy<Results extends KitResponse> = Promise<Results> & {
+	// [K in (Results extends KitResponse<infer A, infer B, infer C> ? B : never)]: 
+	// 	(cb: (response: Results extends KitResponse<A, B> ? Results : never) => void) => EndpointProxy<Results>
+} & {
+	informational: (cb: (response: Results extends KitResponse<StatusCode['Informational'], infer B, infer C> ? Results : never) => void) => EndpointProxy<Results>
+	success: (cb: (response: Results extends KitResponse<StatusCode['Success'], infer B, infer C> ? Results : never) => void) => EndpointProxy<Results>
+	redirect: (cb: (response: Results extends KitResponse<StatusCode['Redirect'], infer B, infer C> ? Results : never) => void) => EndpointProxy<Results>
+	clientError: (cb: (response: Results extends KitResponse<StatusCode['ClientError'], infer B, infer C> ? Results : never) => void) => EndpointProxy<Results>
+	serverError: (cb: (response: Results extends KitResponse<StatusCode['ServerError'], infer B, infer C> ? Results : never) => void) => EndpointProxy<Results>
+	error: (cb: (response: Results extends KitResponse<StatusCode['Error'], infer B, infer C> ? Results : never) => void) => EndpointProxy<Results>
+}
 
 /**
  * The input for an endpoint.
@@ -36,7 +47,7 @@ interface EndpointResponse<Results extends CbResultType> {
 	(event: KitEvent): Promise<Extract<Results, KitResponse>>
 
 	// on frontend we grab the second parameter Input-type, for zeroapi
-	(event: KitEvent, input: EndpointInput<Results>): EndpointProxy
+	(event: KitEvent, input: EndpointInput<Results>): EndpointProxy<Extract<Results, KitResponse>>
 }
 
 
@@ -98,34 +109,63 @@ function endpoint<B1 extends CbResultType, B2 extends CbResultType, B3 extends C
 
 function endpoint<const Callbacks extends [...Callback<KitEvent, CbResultType>[]]>(...callbacks: Callbacks) {
 	// * Return Proxy instead (ergo my belowed proxyCrawler)? Allowing ex. GET(event, { body, query }).OK(...)
-	return async (event: KitEvent, input?: { body?: unknown, query?: unknown }) => {
-		event.results ??= {}
-
-		if(input) {
-			event.request ??= {} as typeof event.request
-			event.request.json = () => new Promise((r) => r(input.body))
-			event.query ??= {}
-			Object.assign(event.query, input.query ?? {})
-
-			// @ts-expect-error Assign to readable
-			event.request.headers ??= new Headers()
-			event.request.headers.set('content-type', 'application/json')
-		}
+	return (event: KitEvent, input?: { body?: unknown, query?: unknown }) => {
 		
-		let prev: unknown
-		for (const callback of callbacks) {
-			let result = await callback(event)
-			if (result instanceof KitResponse) return result
-			if (result instanceof ParseKitEvent) {
-				event.body = result.body
-				event.query = result.query ?? event.query
-				continue
+		async function endpointHandler() {
+			event.results ??= {}
+
+			if (input) {
+				event.request ??= {} as typeof event.request
+				event.request.json = () => new Promise((r) => r(input.body))
+				event.query ??= {}
+				Object.assign(event.query, input.query ?? {})
+
+				// @ts-expect-error Assign to readable
+				event.request.headers ??= new Headers()
+				event.request.headers.set('content-type', 'application/json')
 			}
-			
-			Object.assign(event.results!, result)
-			prev = result
+
+			let prev: unknown
+			for (const callback of callbacks) {
+				let result = await callback(event)
+				if (result instanceof KitResponse) return result
+				if (result instanceof ParseKitEvent) {
+					event.body = result.body
+					event.query ??= {}
+					Object.assign(event.query, result.query ?? {})
+					continue
+				}
+
+				Object.assign(event.results!, result)
+				prev = result
+			}
+
+			return prev
 		}
-		return prev
+
+		const promise = endpointHandler()
+		if(!input) {
+			// End early to avoid adding additional logic for every request.
+			return promise
+		}
+
+		// Proxy
+		// ex. `let [result] = GET(event, { body: { ... }}).error(...).$.OK(...)`
+
+		return proxyCrawl({
+			get(state) {
+				
+				return state.crawl(state.key)
+			},
+			apply(state) {
+				if (state.key === 'then') promise.then.apply(promise, state.args as [])
+				if (state.key === 'catch') promise.catch.apply(promise, state.args as [])
+				if (state.key === 'finally') promise.finally.apply(promise, state.args as [])
+				
+				return state.crawl([])
+			}
+		})
+
 	}
 }
 

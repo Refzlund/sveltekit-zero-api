@@ -92,7 +92,11 @@ Deno.test('kitevent', async () => {
 		}
 	)
 
-	const result = await fn(new FakeKitEvent(), { body: { name: 'bob' } })
+	const result = fn(new FakeKitEvent(), { body: { name: 'bobbb' } })
+	result
+		.success(r => {
+			
+		})
 
-	throw result
+	console.log(await result)
 })

@@ -102,9 +102,11 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 
 	const proxies = {
 		$: proxyCrawl({
+			matchStringedKeys: true,
+			numberedKeys: true,
 			apply(state) {
 				// ex.   <input use:form.$.nested.string />
-				let propertyKeys = [...state.keys] as PropertyKey[]
+				let propertyKeys = [...state.keys, state.key] as PropertyKey[]
 				const [node] = state.args as [HTMLInputElement]
 				
 				const propertiesStr = propertyKeys.join('.')

@@ -66,7 +66,7 @@
 		{/each}
 	</div>
 	<input use:userForm.$.pets[0] placeholder='Pets[0]' />
-	<input use:userForm.$.pets[0] placeholder='Pets[0]' />
+	<input name='pets[0]' placeholder='Pets[0]' />
 
 </form>
 

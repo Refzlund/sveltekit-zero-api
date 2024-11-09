@@ -10,6 +10,8 @@ interface Options {
 	cause?: unknown
 }
 
+const customInspectSymbol = Symbol.for('nodejs.util.inspect.custom')
+
 /**
  * The reason `KitResponse` extends `Error` is so that we can `throw` it.
  * 
@@ -23,7 +25,7 @@ export class KitResponse<Status extends number = number, StatusText extends stri
 
 	constructor(body?: Body, options: ResponseOptions<Status, StatusText> = {}) {
 		super()
-		
+
 		this.body = body
 		this.headers = new Headers(options.headers)
 		this.status = (options.status || 200) as Status
@@ -33,16 +35,56 @@ export class KitResponse<Status extends number = number, StatusText extends stri
 
     \x1b[94m  ${this.status < 400 ? '\x1b[32m' : '\x1b[91m'}${this.status} ${this.statusText}\x1b[0m
 `
-		if(this.body) {
+		if (this.body) {
 			this.message += `\x1b[90m————————————————${Array(this.statusText.length).join('—')}\x1b[0m
 ${JSON.stringify(body, null, 4)}
-
 `
 		}
+	}
+
+	[customInspectSymbol]() {
+		return '\n' + this.stack!.split('\n').slice(2, -2).join('\n').replace(/\n.*at endpointHandler .*\n/, '\n')
 	}
 }
 
 
+export interface StatusCode {
+	Informational: 100 | 101 | 102 | 103
+	Success: 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 226
+	Redirect: 300 | 301 | 302 | 303 | 304 | 307 | 308
+	ClientError:
+		| 400
+		| 401
+		| 402
+		| 403
+		| 404
+		| 405
+		| 406
+		| 407
+		| 408
+		| 409
+		| 410
+		| 411
+		| 412
+		| 413
+		| 414
+		| 415
+		| 416
+		| 417
+		| 418
+		| 421
+		| 422
+		| 423
+		| 424
+		| 425
+		| 426
+		| 428
+		| 429
+		| 431
+		| 451
+	ServerError: 500 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511
+	Error: this['ClientError'] | this['ServerError']
+}
 
 
 // *                     *
