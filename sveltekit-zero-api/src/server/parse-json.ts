@@ -13,7 +13,7 @@ export function parseJSON() {
 				error: 'Bad Content-Type header',
 				details: {
 					expected: contentTypes,
-					received: contentType
+					received: (contentType as string) || 'undefined'
 				}
 			})
 		}

@@ -1,13 +1,13 @@
 import z from 'zod'
 import { BadRequest, OK } from './http.ts'
-import { KitEvent, ParseKitEvent, fakeKitEvent } from './kitevent.ts'
+import { KitEvent, ParseKitEvent, FakeKitEvent } from './kitevent.ts'
 import { endpoint } from "./endpoint.ts";
 
 function zod<
 	Body extends z.ZodTypeAny = never,
 	Query extends z.ZodTypeAny = never
 >({ body, query }: { body?: Body, query?: Query }) {
-	return async (event: KitEvent) => {
+	return async (event: KitEvent<any, any>) => {
 		let json: Record<PropertyKey, any> | Array<any>
 
 		let contentTypes = ['application/json', 'multipart/form-data'] as const
@@ -19,7 +19,7 @@ function zod<
 				error: 'Bad Content-Type header',
 				details: {
 					expected: contentTypes,
-					received: contentType
+					received: contentType as string || 'undefined'
 				}
 			})
 		}
@@ -84,15 +84,15 @@ Deno.test('kitevent', async () => {
 
 	const fn = endpoint(
 		zod({ body }),
-		event => {
+		(event) => {
 			return { previousFn: event.body }
 		},
-		event => {
+		(event) => {
 			return new OK(event.results.previousFn)
 		}
 	)
 
-	const result = await fn(fakeKitEvent(), { body: { name: 'Some name' } })
+	const result = await fn(new FakeKitEvent(), { body: { name: 'bob' } })
 
 	throw result
 })

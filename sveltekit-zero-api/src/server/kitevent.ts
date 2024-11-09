@@ -1,14 +1,14 @@
-import { Handle, RequestEvent } from "@sveltejs/kit"
+import { Cookies, Handle, RequestEvent } from "@sveltejs/kit"
 import { KitResponse } from "./http.ts";
 import { CbResultType } from "./endpoint.ts";
-import { Simplify } from "../utils/types.ts";
+import { Simplify, UnionToIntersection } from "../utils/types.ts";
 
 export interface KitEvent<
 	Input extends {
 		body?: unknown
 		query?: Record<string | number, any>
-	} = never,
-	Results = Record<PropertyKey, unknown>
+	} = any,
+	Results = any
 > extends RequestEvent {
 	body: [Input['body']] extends [never] ? unknown : Input['body']
 	query: [Input['query']] extends [never] ? Record<string | number, unknown> : Input['query']
@@ -24,6 +24,9 @@ export interface KitEvent<
  * of endpoint functions.
 */
 export type KitEventFn<
+	// note:  I wanted to omit keys from returned records
+	//        that overlapped with previous ones. However,
+	//        that may come at a later time as it seems "overcomplicative".
 	R1 extends CbResultType,
 	R2 extends CbResultType = never,
 	R3 extends CbResultType = never,
@@ -33,8 +36,7 @@ export type KitEventFn<
 	R7 extends CbResultType = never
 > = KitEvent<
 	Simplify<Pick<Extract<R1 | R2 | R3 | R4 | R5 | R6 | R7, ParseKitEvent<any, any>>, 'body' | 'query'>>,
-	// Remove KitResponse nad ParseKitEvent to only receive returned records
-	Exclude<R1 | R2 | R3 | R4 | R5 | R6 | R7, KitResponse<any, any, any> | ParseKitEvent<any, any>>
+	UnionToIntersection<Exclude<R1 | R2 | R3 | R4 | R5 | R6 | R7, KitResponse<any, any, any> | ParseKitEvent<any, any>>>
 > extends KitEvent<infer A, infer B>
 	? KitEvent<A, B>
 	: never
@@ -114,12 +116,46 @@ interface FakeOptions {
 	hooks?: Handle
 	/** Pre-fill locals, e.g. `isTest: true` */
 	locals?: Record<PropertyKey, any>
+
+	params?: Record<PropertyKey, any>
+	platform?: Record<PropertyKey, any>
+	requestInit?: RequestInit
 }
 
 /**
- * Emulate a SvelteKit RequestEvent (ergo KitEvent) 
- * for testing.
+ * Emulate a SvelteKit RequestEvent (ergo KitEvent) for testing.
+ * 
+ * To check if currnetly processing a test event, you can do
+ * 
+ * @example
+ * if(event instanceof FakeKitEvent) {
+ *     /// running a test
+ * }
 */
-export function fakeKitEvent(options: FakeOptions = {}) {
-	return {} as KitEvent
+export class FakeKitEvent implements KitEvent {
+	body = {} as any
+	query = {} as any
+	fetch = fetch
+	request = {} as any
+	locals = {} as any
+	getClientAddress = () => '127.0.0.1'
+	isDataRequest = false
+	isSubRequest = false
+	params = {}
+	platform = {}
+	results = {}
+	route = {} as any
+	setHeaders = {} as any
+	url = {} as any
+	cookies = {} as any
+
+	hooks: Handle | undefined
+
+	constructor(options: FakeOptions = {}) {
+		Object.assign(this, options)
+
+		this.request = new Request(new URL('http://localhost:5173'), options.requestInit ?? {})
+
+		// TODO
+	}
 }

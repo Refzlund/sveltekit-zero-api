@@ -43,7 +43,7 @@ interface EndpointResponse<Results extends CbResultType> {
 
 // * Note:  I believe there's a limit to the amount of parameters
 // *        so I'm limiting it to 7. Might be decreased in the future.
-// #region endpoint
+// #region endpoint overloads
 
 function endpoint<B1 extends KitResponse>(callback1: Callback<KitEvent, B1>): EndpointResponse<B1>
 
@@ -122,7 +122,7 @@ function endpoint<const Callbacks extends [...Callback<KitEvent, CbResultType>[]
 				continue
 			}
 			
-			Object.assign(event.results, result)
+			Object.assign(event.results!, result)
 			prev = result
 		}
 		return prev
