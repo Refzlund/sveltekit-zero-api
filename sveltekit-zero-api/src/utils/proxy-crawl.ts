@@ -11,14 +11,21 @@ interface CrawlHandler {
 		 *
 		 * @example // return a function to be called that replaces current key, with other key
 		 * return function fn(str: string) { return crawl(str) }
-		*/
-		crawl: (key?: PropertyKey) => ReturnType<typeof proxyCrawl>
+		 */
+		crawl: (key: PropertyKey | PropertyKey[]) => ReturnType<typeof proxyCrawl>
 	}): any
 	apply?(state: {
 		/** All keys crawled, including the key being called upon */
 		keys: PropertyKey[]
 		/** Arguments provided to the function */
 		args: any[]
+		/**
+		 * Returns the proxy crawler, with or without the new provided key
+		 *
+		 * @example // return a function to be called that replaces current key, with other key
+		 * return function fn(str: string) { return crawl(str) }
+		*/
+		crawl: (key: PropertyKey | PropertyKey[]) => ReturnType<typeof proxyCrawl>
 	}): any
 }
 
@@ -28,7 +35,7 @@ interface CrawlHandler {
  * @example
  * 
  * const crawl = proxyCrawl({ 
- *     apply: (keys, key, args) => [...keys, key, ...args] 
+ *     apply: (state) => [...state.keys, ...args] 
  * })
  * 
  * const result = crawl.here.we.go(123)
@@ -45,10 +52,28 @@ export function proxyCrawl(handler: CrawlHandler) {
 				else
 					proxy[p] ??= createCrawler([...keys, p])
 
+				if (handler.get) {
+					return handler.get({ 
+						keys, 
+						key: p, 
+						crawl: (key) => createCrawler([
+							...keys,
+							...(Array.isArray(key) ? key : [key])
+						]) 
+					})
+				}
+
 				return proxy[p]
 			},
 			apply(_, thisArg, args) {
-				return handler.apply?.({ keys, args }) ?? thisArg(...args)
+				return handler.apply?.({ 
+					keys, 
+					args, 
+					crawl: (key) => createCrawler([
+						...keys, 
+						...(Array.isArray(key) ? key : [key])
+					])
+				}) ?? thisArg(...args)
 			}
 		}) as Record<PropertyKey, any> & ((...args: any[]) => any)
 	}

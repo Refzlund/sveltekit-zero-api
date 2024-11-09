@@ -79,7 +79,7 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 		return parent
 	}
 
-	function setValue(node: HTMLInputElement, v: any) {
+	function updateNode(node: HTMLInputElement, v: any) {
 		if (node.type === 'checkbox') {
 			node.checked = v ?? null
 		} else {
@@ -94,7 +94,7 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 			for (const node of inputMap.get(keys)!) {
 				getParent(keys, 'nearest') // updates the below $effect, when structure changes
 				$effect(() => {
-					setValue(node, getParent(keys, null)?.[keys[keys.length - 1]])
+					updateNode(node, getParent(keys, null)?.[keys[keys.length - 1]])
 				})
 			}
 		}

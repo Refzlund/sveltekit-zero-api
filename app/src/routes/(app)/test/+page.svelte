@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Code from '$lib/Code/Code.svelte'
-import { writable } from 'svelte/store'
+	import { writable } from 'svelte/store'
 	import { formAPI } from 'sveltekit-zero-api/formapi.svelte'
 
 	interface Person {
@@ -59,7 +59,7 @@ import { writable } from 'svelte/store'
 		>
 			Add child
 		</button>
-		{#each $userForm.children ?? [] as _, i}	
+		{#each $userForm.children ?? [] as _, i}
 			{@const child = userForm.$.children[i]}
 			<input aria-label='Child' use:child.name />
 			<input name='children[{i}].name' />

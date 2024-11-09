@@ -1,6 +1,6 @@
 {
 	"tasks": {
-		"app": "cd app && bun dev"
+		"app": "cd app && vite dev"
 	},
 	"compilerOptions": {
 		"lib": ["deno.window", "ESNext", "DOM", "DOM.Iterable", "DOM.AsyncIterable"],
@@ -9,7 +9,7 @@
 	"lint": {
 		"rules": {
 			"include": [],
-			"exclude": ["no-explicit-any", "no-unused-vars", "prefer-const"]
+			"exclude": ["no-explicit-any", "no-unused-vars", "prefer-const", "ban-types"]
 		}
 	},
 	"fmt": {

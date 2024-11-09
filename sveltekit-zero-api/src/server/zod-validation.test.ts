@@ -1,6 +1,6 @@
 import z from 'zod'
-import { BadRequest } from './http.ts'
-import { KitEvent, ParseKitEvent } from './kitevent.ts'
+import { BadRequest, OK } from './http.ts'
+import { KitEvent, ParseKitEvent, fakeKitEvent } from './kitevent.ts'
 import { endpoint } from "./endpoint.ts";
 
 function zod<
@@ -10,20 +10,50 @@ function zod<
 	return async (event: KitEvent) => {
 		let json: Record<PropertyKey, any> | Array<any>
 
-		try {
-			json = await event.request.json()
-		} catch (error) {
+		let contentTypes = ['application/json', 'multipart/form-data'] as const
+		let contentType = event.request.headers.get('content-type')?.toLowerCase() as typeof contentTypes[number]
+
+		if(!contentType || !contentTypes.includes(contentType)) {
 			return new BadRequest({
-				code: 'invalid_json',
-				error: 'Invalid JSON'
+				code: 'bad_content_type',
+				error: 'Bad Content-Type header',
+				details: {
+					expected: contentTypes,
+					received: contentType
+				}
 			})
+		}
+
+		if (contentType == 'multipart/form-data') {
+			try {
+				const formData = await event.request.formData()
+				json = Object.fromEntries(formData)
+			} catch (error) {
+				return new BadRequest({
+					code: 'invalid_formdata',
+					error: 'Could not parse FormData',
+					details: error
+				})
+			}
+		}
+		else {
+			try {
+				json = await event.request.json()
+			} catch (error) {
+				return new BadRequest({
+					code: 'invalid_json',
+					error: 'Could not parse JSON',
+					details: error
+				})
+			}
 		}
 
 		const bodyResult = body?.safeParse(json)
 		if (bodyResult !== undefined && !bodyResult.success) {
 			return new BadRequest({
 				code: 'invalid_body_schema',
-				error: bodyResult.error
+				error: "Invalid body schema",
+				details: bodyResult.error
 			})
 		}
 
@@ -31,7 +61,8 @@ function zod<
 		if (queryResult !== undefined && !queryResult.success) {
 			return new BadRequest({
 				code: 'invalid_query_schema',
-				error: queryResult.error
+				error: "Invalid query schema",
+				details: queryResult.error
 			})
 		}
 
@@ -44,13 +75,21 @@ function zod<
 
 Deno.test('kitevent', async () => {
 
-	const body = z.object({ name: z.string() })
+	const body = z.object({
+		name: z.string().optional()
+	})
 
-	const result = await endpoint(
+	let v = zod({ body })
+	type T = Extract<Awaited<ReturnType<typeof v>>, ParseKitEvent<any, any>>
+
+	const fn = endpoint(
 		zod({ body }),
 		event => {
-
+			event.body
+			return new OK()
 		}
 	)
+
+	const result = await fn(fakeKitEvent(), { body: {} })
 
 })

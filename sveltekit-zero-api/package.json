@@ -3,7 +3,7 @@
 	"version": "2.0.0",
 	"exports": {
 		".": "./src/index.ts",
-		"./formapi.svelte": "./src/formapi.svelte.ts"
+		"./formapi.svelte": "./src/client/formapi.svelte.ts"
 	},
 	"peerDependencies": {
 		"svelte": "^5.1.12",
