@@ -1,6 +1,7 @@
 import { Handle, RequestEvent } from "@sveltejs/kit"
 import { KitResponse } from "./http.ts";
 import { CbResultType } from "./endpoint.ts";
+import { Simplify } from "../utils/types.ts";
 
 export interface KitEvent<
 	Input extends {
@@ -23,10 +24,17 @@ export interface KitEvent<
  * of endpoint functions.
 */
 export type KitEventFn<
-	Results extends CbResultType
+	R1 extends CbResultType,
+	R2 extends CbResultType = never,
+	R3 extends CbResultType = never,
+	R4 extends CbResultType = never,
+	R5 extends CbResultType = never,
+	R6 extends CbResultType = never,
+	R7 extends CbResultType = never
 > = KitEvent<
-	Pick<Extract<Results, ParseKitEvent<any, any>>, 'body' | 'query'>,
-	Exclude<Results, KitResponse<any, any, any> | ParseKitEvent<any, any>>
+	Simplify<Pick<Extract<R1 | R2 | R3 | R4 | R5 | R6 | R7, ParseKitEvent<any, any>>, 'body' | 'query'>>,
+	// Remove KitResponse nad ParseKitEvent to only receive returned records
+	Exclude<R1 | R2 | R3 | R4 | R5 | R6 | R7, KitResponse<any, any, any> | ParseKitEvent<any, any>>
 > extends KitEvent<infer A, infer B>
 	? KitEvent<A, B>
 	: never

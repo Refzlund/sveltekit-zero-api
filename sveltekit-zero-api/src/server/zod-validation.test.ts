@@ -85,11 +85,14 @@ Deno.test('kitevent', async () => {
 	const fn = endpoint(
 		zod({ body }),
 		event => {
-			event.body
-			return new OK()
+			return { previousFn: event.body }
+		},
+		event => {
+			return new OK(event.results.previousFn)
 		}
 	)
 
-	const result = await fn(fakeKitEvent(), { body: {} })
+	const result = await fn(fakeKitEvent(), { body: { name: 'Some name' } })
 
+	throw result
 })

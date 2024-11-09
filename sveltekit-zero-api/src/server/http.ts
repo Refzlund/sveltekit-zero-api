@@ -10,6 +10,11 @@ interface Options {
 	cause?: unknown
 }
 
+/**
+ * The reason `KitResponse` extends `Error` is so that we can `throw` it.
+ * 
+ * Vite does not allow other things that Error to be thrown. So it must be an error.
+*/
 export class KitResponse<Status extends number = number, StatusText extends string = string, Body = any> extends Error {
 	headers: Headers
 	status: Status
@@ -18,6 +23,7 @@ export class KitResponse<Status extends number = number, StatusText extends stri
 
 	constructor(body?: Body, options: ResponseOptions<Status, StatusText> = {}) {
 		super()
+		
 		this.body = body
 		this.headers = new Headers(options.headers)
 		this.status = (options.status || 200) as Status
