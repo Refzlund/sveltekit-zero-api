@@ -1,25 +1,28 @@
 import z from 'zod'
 import { BadRequest, OK } from './http.ts'
 import { KitEvent, ParseKitEvent, FakeKitEvent } from './kitevent.ts'
-import { endpoint } from "./endpoint.ts";
+import { endpoint } from './endpoint.ts'
 
-function zod<
-	Body extends z.ZodTypeAny = never,
-	Query extends z.ZodTypeAny = never
->({ body, query }: { body?: Body, query?: Query }) {
+function zod<Body extends z.ZodTypeAny = never, Query extends z.ZodTypeAny = never>({
+	body,
+	query
+}: {
+	body?: Body
+	query?: Query
+}) {
 	return async (event: KitEvent<any, any>) => {
 		let json: Record<PropertyKey, any> | Array<any>
 
 		let contentTypes = ['application/json', 'multipart/form-data'] as const
-		let contentType = event.request.headers.get('content-type')?.toLowerCase() as typeof contentTypes[number]
+		let contentType = event.request.headers.get('content-type')?.toLowerCase() as (typeof contentTypes)[number]
 
-		if(!contentType || !contentTypes.includes(contentType)) {
+		if (!contentType || !contentTypes.includes(contentType)) {
 			return new BadRequest({
 				code: 'bad_content_type',
 				error: 'Bad Content-Type header',
 				details: {
 					expected: contentTypes,
-					received: contentType as string || 'undefined'
+					received: (contentType as string) || 'undefined'
 				}
 			})
 		}
@@ -35,8 +38,7 @@ function zod<
 					details: error
 				})
 			}
-		}
-		else {
+		} else {
 			try {
 				json = await event.request.json()
 			} catch (error) {
@@ -52,7 +54,7 @@ function zod<
 		if (bodyResult !== undefined && !bodyResult.success) {
 			return new BadRequest({
 				code: 'invalid_body_schema',
-				error: "Invalid body schema",
+				error: 'Invalid body schema',
 				details: bodyResult.error
 			})
 		}
@@ -61,20 +63,19 @@ function zod<
 		if (queryResult !== undefined && !queryResult.success) {
 			return new BadRequest({
 				code: 'invalid_query_schema',
-				error: "Invalid query schema",
+				error: 'Invalid query schema',
 				details: queryResult.error
 			})
 		}
 
-		return new ParseKitEvent<z.output<Body>, z.output<Query>>({ 
-			body: bodyResult?.data, 
+		return new ParseKitEvent<z.output<Body>, z.output<Query>>({
+			body: bodyResult?.data,
 			query: queryResult?.data
 		})
 	}
 }
 
 Deno.test('kitevent', async () => {
-
 	const body = z.object({
 		name: z.string().optional()
 	})
@@ -93,10 +94,18 @@ Deno.test('kitevent', async () => {
 	)
 
 	const result = fn(new FakeKitEvent(), { body: { name: 'bobbb' } })
-	result
-		.success(r => {
-			
-		})
+	result.success((r) => {
+		console.log('success!🎉')
+	}).$.OK(r => {
+		return 123
+	}).OK(r => {
+		if(Math.random() > 0.5) throw new Error('test')
+		return 'yay'
+	})
+	
+	let [ok1, ok2] = result
+	ok1.then(r => console.log('ok1 says: ' + r))
+	ok2.then(r => console.log('ok2 says: ' + r)).catch(e => console.log('ok2 has Failed:('))
 
-	console.log(await result)
+	console.log('result', await result)
 })

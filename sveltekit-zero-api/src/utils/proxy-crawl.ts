@@ -141,9 +141,9 @@ export function proxyCrawl<NoKeys extends boolean = false>(handler: CrawlHandler
 						args,
 						crawl: (key) => {
 							if (next !== undefined) {
-								return createCrawler([...keys, ...(Array.isArray(key) ? key : [key])], [...nested])[next]
+								return createCrawler([...keysCopy, ...(Array.isArray(key) ? key : [key])], [...nested])[next]
 							} else {
-								return createCrawler([...keys, ...(Array.isArray(key) ? key : [key])], [...nested])
+								return createCrawler([...keysCopy, ...(Array.isArray(key) ? key : [key])], [...nested])
 							}
 						}
 					})
