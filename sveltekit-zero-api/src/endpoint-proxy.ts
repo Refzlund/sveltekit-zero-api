@@ -1,7 +1,9 @@
 import { KitResponse } from "./server/http.ts";
 import { proxyCrawl } from "./utils/proxy-crawl.ts";
+import type { EndpointProxy as EndpointProxyType } from "./server/endpoint.ts"
 
 type Res = KitResponse | Response
+
 
 async function callCallback(result: Res, statusText: string, cb: (response: Res) => any) {
 	if (statusText === result.statusText) {
@@ -26,6 +28,15 @@ async function callCallback(result: Res, statusText: string, cb: (response: Res)
 		return await cb(result)
 	}
 }
+
+export class EndpointProxy {
+	constructor() {
+		throw new Error('Cannot construct EndpointProxy. Please use `createEndpointProxy` instead.')
+	}
+}
+
+type AnyEndpointProxy = EndpointProxyType<any>
+export interface EndpointProxy extends AnyEndpointProxy {}
 
 export function createEndpointProxy(response: Promise<KitResponse | Response>) {
 	// Proxy
@@ -93,6 +104,9 @@ export function createEndpointProxy(response: Promise<KitResponse | Response>) {
 	response.then(handleResponsePromise).catch(handleResponsePromise)
 
 	return proxyCrawl({
+		getPrototypeOf() {
+			return EndpointProxy.prototype
+		},
 		get(state) {
 			if (state.key === Symbol.iterator) {
 				return $results[Symbol.iterator].bind($results)

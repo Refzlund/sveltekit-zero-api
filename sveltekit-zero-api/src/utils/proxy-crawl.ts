@@ -5,7 +5,7 @@ interface CrawlHandler<NoKeys extends boolean = false> {
 	 *
 	 * Ex. `some.nested['key[0]["name"]']` is the same as `some.nested.key[0].name`
 	 * @default false
-	*/
+	 */
 	matchStringedKeys?: boolean
 
 	/**
@@ -14,7 +14,7 @@ interface CrawlHandler<NoKeys extends boolean = false> {
 	 * This option converts anything that tests as ONLY a number `/^[0-9]+$/`, to a number.
 	 *
 	 * 	@default false
-	*/
+	 */
 	numberedKeys?: boolean
 
 	/** Allow `return state.crawl([])` resulting in no keys */
@@ -30,7 +30,7 @@ interface CrawlHandler<NoKeys extends boolean = false> {
 		 *
 		 * @example // return a function to be called that replaces current key, with other key
 		 * return function fn(str: string) { return crawl(str) }
-		*/
+		 */
 		crawl: (key: PropertyKey | PropertyKey[]) => ReturnType<typeof proxyCrawl>
 	}): any
 	apply?(state: {
@@ -48,6 +48,8 @@ interface CrawlHandler<NoKeys extends boolean = false> {
 		 */
 		crawl: (key: PropertyKey | PropertyKey[]) => ReturnType<typeof proxyCrawl>
 	}): any
+	/** Fake `instanceof` by providing a different class prototype at `getPrototypeOf` */
+	getPrototypeOf?(target: any): any
 }
 
 const lastBracketRegEx = /(.+)\[([^[\]]+)\]$/
@@ -70,6 +72,12 @@ export function proxyCrawl<NoKeys extends boolean = false>(handler: CrawlHandler
 	const createCrawler = (keys: PropertyKey[], nested: string[] = []) => {
 		let proxy = {} as Record<PropertyKey, ReturnType<typeof createCrawler>>
 		return new Proxy(function () {}, {
+			getPrototypeOf(target) {
+				if(handler.getPrototypeOf) {
+					return handler.getPrototypeOf(target)
+				}
+				return target.prototype
+			},
 			get(_, key: PropertyKey) {
 				key = handler.numberedKeys === true && isNumber.test(key as string) ? +(key as string) : key as string
 

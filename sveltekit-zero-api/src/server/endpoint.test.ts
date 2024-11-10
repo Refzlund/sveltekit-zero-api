@@ -3,6 +3,7 @@ import { BadRequest, OK } from './http.ts'
 import { KitEvent, ParseKitEvent, FakeKitEvent } from './kitevent.ts'
 import { endpoint } from './endpoint.ts'
 import { Simplify } from "../utils/types.ts";
+import { EndpointProxy } from "../endpoint-proxy.ts";
 
 function zod<Body extends z.ZodTypeAny = never, Query extends z.ZodTypeAny = never>({
 	body,
@@ -112,14 +113,22 @@ Deno.test('kitevent', async () => {
 			if (Math.random() > 0.5) throw new Error('test')
 			return 'yay' as const
 		})
+		.error((r) => r.body?.error)
 
-	type R = Simplify<typeof result>
+	let test: unknown = result
+	if (test instanceof EndpointProxy) {
+		console.log('test: ', test)
+		console.log()
+	}
 
-	console.log(result)
-	console.log('')
 	let first = result[0]
 
-	let [ok1, ok2, ok3] = result
+	let [
+		ok1,
+		ok2, 
+		errorMsg
+	] = result
+	
 	let ok1promise = ok1.then((r) => {
 		console.log('ok1 says: ' + r)
 		return 'from then 1' as const
@@ -131,6 +140,14 @@ Deno.test('kitevent', async () => {
 
 	let awaited = await result
 	console.log('\nresult', awaited)
+
+	let [
+		awaited1,
+		awaited2,
+		awaited3,
+		/** @ts-expect-error Expect awited to contain 3 items */
+		awaited4
+	] = awaited
 
 	let awaitedok1 = await ok1promise
 	console.log('ok1promise:', awaitedok1)

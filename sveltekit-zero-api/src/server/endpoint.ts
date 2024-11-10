@@ -1,7 +1,5 @@
-import { AwaitAll, Promisify, UnionToIntersection } from './../utils/types.ts';
-import { callCallback } from "../callbacks.ts";
+import { AwaitAll, Promisify } from './../utils/types.ts';
 import { createEndpointProxy } from "../endpoint-proxy.ts";
-import { proxyCrawl } from '../utils/proxy-crawl.ts'
 import { FixKeys, Simplify } from '../utils/types.ts'
 import { KitResponse, OK, StatusCode } from './http.ts'
 import { KitEvent, KitEventFn, ParseKitEvent } from './kitevent.ts'
@@ -37,7 +35,7 @@ type ProxyCallback<
  *
  * This should work the same on frontend and backend.
  */
-type EndpointProxy<Results extends KitResponse, Returned extends readonly [...Promisify<any>[]] = never> = 
+export type EndpointProxy<Results extends KitResponse, Returned extends readonly [...Promisify<any>[]] = never> = 
 	& Promise<[Returned] extends [never] ? Results : AwaitAll<Returned>>
 	& ([Returned] extends [never] ? {} : Returned)
 	& ([Results] extends [KitResponse<infer A, infer StatusText, infer C>]
