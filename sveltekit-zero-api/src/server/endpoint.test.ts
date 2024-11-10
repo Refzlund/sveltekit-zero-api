@@ -3,7 +3,8 @@ import { BadRequest, OK } from './http.ts'
 import { KitEvent, ParseKitEvent, FakeKitEvent } from './kitevent.ts'
 import { endpoint } from './endpoint.ts'
 import { Simplify } from '../utils/types.ts'
-import { EndpointProxy } from '../endpoint-proxy.ts'
+import { EndpointProxy, ReturnedEndpointProxy } from '../endpoint-proxy.ts'
+import { expect } from '@std/expect'
 
 function zod<Body extends z.ZodTypeAny = never, Query extends z.ZodTypeAny = never>({
 	body,
@@ -85,7 +86,7 @@ Deno.test('kitevent', async () => {
 	let v = zod({ body })
 	type T = Extract<Awaited<ReturnType<typeof v>>, ParseKitEvent<any, any>>
 
-	const fn = endpoint(
+	const POST = endpoint(
 		zod({ body }),
 		(event) => {
 			return { previousFn: event.body }
@@ -94,9 +95,9 @@ Deno.test('kitevent', async () => {
 			return new OK(event.results.previousFn)
 		}
 	)
-
+	
 	let bodyContent = Math.random() > 0.5 ? { name: 123 as any } : { name: 'Shiba💘' }
-	const result = fn(new FakeKitEvent(), { body: bodyContent })
+	let result = POST(new FakeKitEvent(), { body: bodyContent })
 		.OK((r) => {})
 		.BadRequest((r) => {})
 		.success((r) => {
@@ -105,7 +106,33 @@ Deno.test('kitevent', async () => {
 			console.log('')
 		})
 		.error((r) => console.log(r))
-		.$.OK((r) => {
+
+	function functionParamProxy(e: EndpointProxy) {
+		if(e instanceof EndpointProxy) return
+		throw new Error()
+	}
+	function functionParamReturnedProxy(e: ReturnedEndpointProxy) {
+		if (e instanceof ReturnedEndpointProxy) return
+		throw new Error()
+	}
+
+	// Is an Endpoint Proxy
+	functionParamProxy(result)
+	// @ts-expect-error Is not returned
+	expect(() => functionParamReturnedProxy(result)).toThrow()
+	
+	// @ts-expect-error Is not a EndpointProxy
+	expect(() => functionParamProxy({})).toThrow()
+
+	let test: unknown = result
+
+	console.log(`test/result (test instanceof EndpointProxy): `, test instanceof EndpointProxy)
+	console.log(`test/result (test instanceof ReturnedEndpointProxy): `, test instanceof ReturnedEndpointProxy)
+	console.log(`test: `, test)
+	console.log()
+
+	let continued = result.$
+		.OK((r) => {
 			return 123
 		})
 		.OK((r) => {
@@ -114,18 +141,27 @@ Deno.test('kitevent', async () => {
 		})
 		.error((r) => r.body?.error)
 
-	function functionParam(e: EndpointProxy) {}
-	functionParam(result)
+	// @ts-expect-error cannot use $ twice
+	expect(() => continued.$.error).toThrow()
 
-	let test: unknown = result
-	if (test instanceof EndpointProxy) {
-		console.log('test: ', test)
-		console.log()
-	}
+	// @ts-expect-error Is indeed returned
+	expect(() => functionParamProxy(continued)).toThrow()
+	// Is an  Returned Endpoint Proxy
+	functionParamReturnedProxy(continued)
 
-	let first = result[0]
+	console.log(`continued (continued instanceof EndpointProxy): `, continued instanceof EndpointProxy)
+	console.log(
+		`continued (continued instanceof ReturnedEndpointProxy): `,
+		continued instanceof ReturnedEndpointProxy
+	)
+	console.log(`continued: `, continued)
+	console.log()
+	console.log(`test/result (test instanceof ReturnedEndpointProxy): `, test instanceof ReturnedEndpointProxy)
+	console.log()
 
-	let [ok1, ok2, errorMsg] = result
+	let first = continued[0]
+
+	let [ok1, ok2, errorMsg] = continued
 
 	let ok1promise = ok1.then((r) => {
 		console.log('ok1 says: ' + r)
@@ -138,7 +174,7 @@ Deno.test('kitevent', async () => {
 			return 'from catch 2' as const
 		})
 
-	let awaited = await result
+	let awaited = await continued
 	console.log('\nresult', awaited)
 
 	let [

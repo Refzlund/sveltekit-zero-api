@@ -49,7 +49,10 @@ interface CrawlHandler<NoKeys extends boolean = false> {
 		crawl: (key: PropertyKey | PropertyKey[]) => ReturnType<typeof proxyCrawl>
 	}): any
 	/** Fake `instanceof` by providing a different class prototype at `getPrototypeOf` */
-	getPrototypeOf?(target: any): any
+	getPrototypeOf?(state: {
+		/** All keys crawled */
+		keys: PropertyKey[]
+	}): any
 }
 
 const lastBracketRegEx = /(.+)\[([^[\]]+)\]$/
@@ -74,7 +77,7 @@ export function proxyCrawl<NoKeys extends boolean = false>(handler: CrawlHandler
 		return new Proxy(function () {}, {
 			getPrototypeOf(target) {
 				if(handler.getPrototypeOf) {
-					return handler.getPrototypeOf(target)
+					return handler.getPrototypeOf({ keys })
 				}
 				return target.prototype
 			},

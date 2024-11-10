@@ -1,7 +1,7 @@
 import { AwaitAll, Promisify } from './../utils/types.ts';
 import { createEndpointProxy } from "../endpoint-proxy.ts";
 import { FixKeys, Simplify } from '../utils/types.ts'
-import { KitResponse, OK, StatusCode } from './http.ts'
+import { InternalServerError, KitResponse, OK, StatusCode, StatusTextType } from './http.ts'
 import { KitEvent, KitEventFn, ParseKitEvent } from './kitevent.ts'
 
 /**
@@ -19,15 +19,15 @@ interface Callback<Event extends KitEvent<any, any>, Result extends CbResultType
 
 type ProxyCallback<
 	Results extends KitResponse,
-	StatusText extends string,
-	Returned extends readonly [...Promisify<any>[]] = never
+	StatusText extends StatusTextType,
+	Returned extends Promisify<any>[] = never
 > = {
 	[K in StatusText]: <A extends [Returned] extends [never] ? void : any>(
 		cb: (response: Results extends KitResponse<infer A, K, infer C> ? Results : never) => A
 	) => EndpointProxy<Results, [Returned] extends [never] ? never : [...Returned, Promisify<A | undefined>]>
-} & {
+} & ([Returned] extends [never] ? {
 	$: EndpointProxy<Results, []>
-}
+} : {})
 
 /**
  * An `EndpointResponse` return type, that can be proxy-crawled
@@ -35,11 +35,11 @@ type ProxyCallback<
  *
  * This should work the same on frontend and backend.
  */
-export type EndpointProxy<Results extends KitResponse, Returned extends readonly [...Promisify<any>[]] = never> = 
+export type EndpointProxy<Results extends KitResponse, Returned extends Promisify<any>[] = never> = 
 	& Promise<[Returned] extends [never] ? Results : AwaitAll<Returned>>
 	& ([Returned] extends [never] ? {} : Returned)
 	& ([Results] extends [KitResponse<infer A, infer StatusText, infer C>]
-		? ProxyCallback<Results, StatusText, Returned>
+		? ProxyCallback<Results, StatusText extends StatusTextType ? StatusText : never, Returned>
 		: {})
 	& {
 		informational: <A extends [Returned] extends [never] ? void : any>(

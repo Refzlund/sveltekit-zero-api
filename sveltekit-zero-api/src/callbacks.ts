@@ -5,6 +5,7 @@ export async function callCallback(
 	statusText: string, 
 	cb: (response: KitResponse) => any
 ) {
+	console.log(cb)
 	if (statusText === result.statusText) {
 		return await cb(result)
 	}

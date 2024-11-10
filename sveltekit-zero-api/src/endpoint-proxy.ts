@@ -29,13 +29,23 @@ async function callCallback(result: Res, statusText: string, cb: (response: Res)
 	}
 }
 
+/**
+ * e.g. Responses from endpoints
+ */
 export class EndpointProxy {
 	constructor() {
 		throw new Error('Cannot construct EndpointProxy. Please use `createEndpointProxy` instead.')
 	}
 }
+export interface EndpointProxy extends EndpointProxyType<any, never> {}
 
-export interface EndpointProxy extends EndpointProxyType<any> {}
+/**
+ * An EndpointProxy that has marked a `.$.` to return an array of promised callbacks.
+*/
+export class ReturnedEndpointProxy {}
+export interface ReturnedEndpointProxy extends EndpointProxyType<any, any[]> {}
+
+
 
 export function createEndpointProxy(response: Promise<KitResponse | Response>) {
 	// Proxy
@@ -104,11 +114,22 @@ export function createEndpointProxy(response: Promise<KitResponse | Response>) {
 
 	return proxyCrawl({
 		getPrototypeOf() {
+			if ($cbs.length) return ReturnedEndpointProxy.prototype
 			return EndpointProxy.prototype
 		},
 		get(state) {
 			if (state.key === Symbol.iterator) {
 				return $results[Symbol.iterator].bind($results)
+			}
+
+			if(state.key === '$' && state.keys.includes(state.key)) {
+				throw new Error('.$. cannot be used multiple times.', {
+					cause: {
+						state,
+						cbs: cbs.map(v => v[0]),
+						$cbs: $cbs.map(v => v[0])
+					}
+				})
 			}
 
 			if (typeof state.key !== 'symbol') {
@@ -135,6 +156,10 @@ export function createEndpointProxy(response: Promise<KitResponse | Response>) {
 			}
 
 			let crawler = state.crawl([])
+
+			if(typeof state.args[0] !== 'function') {
+				throw new Error('Callback must be a function', { cause: state })
+			}
 
 			if (state.keys[0] === '$') {
 				$cbs.push([state.key as string, state.args[0]])
