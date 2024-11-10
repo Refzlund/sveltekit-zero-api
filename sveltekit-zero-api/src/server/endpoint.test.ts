@@ -95,15 +95,16 @@ Deno.test('kitevent', async () => {
 		}
 	)
 
-	const result = fn(new FakeKitEvent(), { body: { name: '123' } })
-		// .OK(r => {})
-		// .BadRequest(r => {})
-		// .success((r) => {
-		// 	console.log('success!🎉')
-		// 	console.log('body: ', r.body)
-		// 	console.log('')
-		// })
-		// .error((r) => console.log(r))
+	let bodyContent = Math.random() > 0.5 ? { name: 123 as any } : { name: 'Shiba💘' }
+	const result = fn(new FakeKitEvent(), { body: bodyContent })
+		.OK((r) => {})
+		.BadRequest((r) => {})
+		.success((r) => {
+			console.log('success!🎉')
+			console.log('body: ', r.body)
+			console.log('')
+		})
+		.error((r) => console.log(r))
 		.$.OK((r) => {
 			return 123
 		})
