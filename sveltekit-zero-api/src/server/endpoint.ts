@@ -171,7 +171,6 @@ function endpoint<
 // #endregion
 
 function endpoint<const Callbacks extends [...Callback<KitEvent, CbResultType>[]]>(...callbacks: Callbacks) {
-	// * Return Proxy instead (ergo my belowed proxyCrawler)? Allowing ex. GET(event, { body, query }).OK(...)
 	return (event: KitEvent, input?: { body?: unknown; query?: unknown }) => {
 		async function endpointHandler() {
 			event.results ??= {}

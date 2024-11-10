@@ -1,5 +1,12 @@
-import type { Handle } from '@sveltejs/kit'
+import type { Handle, ResolveOptions } from '@sveltejs/kit'
 import { KitResponse } from './http.ts'
+import { KitEvent } from "./kitevent.ts";
+import { sequence as sveltekitSequence } from "@sveltejs/kit/hooks";
+
+type KitHandle = (
+	event: KitEvent,
+	resolve: (event: KitEvent, opts?: ResolveOptions) => Promise<KitResponse | Response>
+) => Promise<KitResponse | Response> | KitResponse | Response
 
 interface Options {
 	client?: {
@@ -9,10 +16,20 @@ interface Options {
 		 *
 		 * This is done by providing the reasponse header:
 		 * `'sveltekit-zero-api-json': 'true'`
-		 * 
+		 *
 		 * @default false
 		 */
 		awaitJSON?: boolean
+	}
+	sever?: {
+		/** 
+		 * Whether to stringify objects to JSON when no 'content-type' is provided.
+		 * 
+		 * If you do `setHeader('content-type', ...)` then it won't stringify.
+		 * 
+		 * @default true
+		*/
+		stringify?: boolean
 	}
 }
 
@@ -27,14 +44,29 @@ interface Options {
  * import { zeroapi } from 'sveltekit-zero-api/server'
  *
  * export const handle = sequence(
- *     zeroAPI(),
+ *     zeroAPI({...}),
  *     (...) => {
  *
  *     }
  * )
+ * 
+ * /// Optionally, if you want use KitEvent-type and return KitResponse 
+ * /// without type-errors, you can do
+ * 
+ * export const handle = zeroAPI({...}).sequence(
+ *     (...) => {
  *
+ *     }
+ })
  */
-export function zeroAPI(options: Options) {
+export function zeroAPI({
+	client: {
+		awaitJSON = true
+	} = {},
+	sever: {
+		stringify = true
+	} = {}
+}: Options) {
 
 	const handle: Handle = async ({ event, resolve }) => {
 		// @ts-expect-error RequestEvent should not have `results` inside of it.
@@ -48,19 +80,34 @@ export function zeroAPI(options: Options) {
 			response = error
 		}
 
-		if(options.client?.awaitJSON) {
+		if (!(response instanceof KitResponse)) return response
+
+		if(awaitJSON) {
 			event.setHeaders({
 				'sveltekit-zero-api-json': 'true'
 			})
 		}
 
-		if (!(response instanceof KitResponse)) return response
+		let body = response.body
+		if (stringify && !response.headers.has('content-type') && typeof body === 'object') {
+			event.setHeaders({
+				'content-type': 'application/json'
+			})
+			body = JSON.stringify(body)
+		}
 
-		return new Response(response.body, {
+		return new Response(body, {
 			status: response.status,
 			headers: response.headers
 		}) as any
 	}
 
-	return handle
+	function sequence(...handlers: KitHandle[]) {
+		return sveltekitSequence(handle, ...(handlers as unknown as Handle[]))
+	}
+
+	Object.assign(handle, { sequence })
+
+	return handle as typeof handle & { sequence: typeof sequence }
 }
+

@@ -133,6 +133,7 @@ Deno.test('kitevent', async () => {
 
 	let continued = result.$
 		.OK((r) => {
+			
 			return 123
 		})
 		.OK((r) => {
