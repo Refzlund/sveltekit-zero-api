@@ -76,6 +76,7 @@ function zod<Body extends z.ZodTypeAny = never, Query extends z.ZodTypeAny = nev
 }
 
 Deno.test('kitevent', async () => {
+
 	const body = z.object({
 		name: z.string().optional()
 	})
@@ -93,19 +94,31 @@ Deno.test('kitevent', async () => {
 		}
 	)
 
-	const result = fn(new FakeKitEvent(), { body: { name: 'bobbb' } })
-	result.success((r) => {
-		console.log('success!🎉')
-	}).$.OK(r => {
-		return 123
-	}).OK(r => {
-		if(Math.random() > 0.5) throw new Error('test')
-		return 'yay'
-	})
+	const result = fn(new FakeKitEvent(), { body: { name: '123' } })
 	
-	let [ok1, ok2] = result
-	ok1.then(r => console.log('ok1 says: ' + r))
-	ok2.then(r => console.log('ok2 says: ' + r)).catch(e => console.log('ok2 has Failed:('))
+	result
+		.OK(r => {})
+		.BadRequest(r => {})
+		.success((r) => {
+			console.log('success!🎉')
+			console.log('body: ', r.body)
+			console.log('')
+		})
+		.error((r) => console.log(r))
+		.$.OK((r) => {
+			return 123
+		})
+		.OK((r) => {
+			if (Math.random() > 0.5) throw new Error('test')
+			return 'yay'
+		})
 
-	console.log('result', await result)
+	console.log(result)
+	console.log('')
+
+	let [ok1, ok2] = result
+	ok1.then((r) => console.log('ok1 says: ' + r))
+	ok2.then((r) => console.log('ok2 says: ' + r)).catch((e) => console.log('ok2 has Failed:('))
+
+	console.log('\nresult', await result)
 })
