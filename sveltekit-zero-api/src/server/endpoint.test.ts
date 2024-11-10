@@ -2,8 +2,8 @@ import z from 'zod'
 import { BadRequest, OK } from './http.ts'
 import { KitEvent, ParseKitEvent, FakeKitEvent } from './kitevent.ts'
 import { endpoint } from './endpoint.ts'
-import { Simplify } from "../utils/types.ts";
-import { EndpointProxy } from "../endpoint-proxy.ts";
+import { Simplify } from '../utils/types.ts'
+import { EndpointProxy } from '../endpoint-proxy.ts'
 
 function zod<Body extends z.ZodTypeAny = never, Query extends z.ZodTypeAny = never>({
 	body,
@@ -78,7 +78,6 @@ function zod<Body extends z.ZodTypeAny = never, Query extends z.ZodTypeAny = nev
 }
 
 Deno.test('kitevent', async () => {
-
 	const body = z.object({
 		name: z.string().optional()
 	})
@@ -115,6 +114,9 @@ Deno.test('kitevent', async () => {
 		})
 		.error((r) => r.body?.error)
 
+	function functionParam(e: EndpointProxy) {}
+	functionParam(result)
+
 	let test: unknown = result
 	if (test instanceof EndpointProxy) {
 		console.log('test: ', test)
@@ -123,20 +125,18 @@ Deno.test('kitevent', async () => {
 
 	let first = result[0]
 
-	let [
-		ok1,
-		ok2, 
-		errorMsg
-	] = result
-	
+	let [ok1, ok2, errorMsg] = result
+
 	let ok1promise = ok1.then((r) => {
 		console.log('ok1 says: ' + r)
 		return 'from then 1' as const
 	})
-	let ok2promise = ok2.then(r => (r + '-2') as `${typeof r}-2`).catch((e) => {
-		console.log('ok2 has Failed:(')
-		return 'from catch 2' as const
-	})
+	let ok2promise = ok2
+		.then((r) => (r + '-2') as `${typeof r}-2`)
+		.catch((e) => {
+			console.log('ok2 has Failed:(')
+			return 'from catch 2' as const
+		})
 
 	let awaited = await result
 	console.log('\nresult', awaited)

@@ -35,8 +35,7 @@ export class EndpointProxy {
 	}
 }
 
-type AnyEndpointProxy = EndpointProxyType<any>
-export interface EndpointProxy extends AnyEndpointProxy {}
+export interface EndpointProxy extends EndpointProxyType<any> {}
 
 export function createEndpointProxy(response: Promise<KitResponse | Response>) {
 	// Proxy

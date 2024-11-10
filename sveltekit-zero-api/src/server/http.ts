@@ -17,11 +17,18 @@ const customInspectSymbol = Symbol.for('nodejs.util.inspect.custom')
  * 
  * Vite does not allow other things that Error to be thrown. So it must be an error.
 */
+// @ts-expect-error We declare some Error-properties to be hidden - we do this so we use one type of KitResponse for frontend and backend TYPE. (Frontend is Response, while backend is an Error that partially extends the structure of a Response).
 export class KitResponse<Status extends number = number, StatusText extends string = string, Body = any> extends Error {
 	headers: Headers
 	status: Status
 	statusText: StatusText
 	body?: Body
+
+	// Declaring them `private` so that this "Error" looks like (aka Emulates) a Response-type structure
+	private declare cause?: unknown
+	private declare message: string
+	private declare name: string
+	private declare stack?: string
 
 	constructor(body?: Body, options: ResponseOptions<Status, StatusText> = {}) {
 		super()
@@ -43,7 +50,13 @@ ${JSON.stringify(body, null, 4)}
 	}
 
 	[customInspectSymbol]() {
-		return '\n' + this.stack!.split('\n').slice(2, -2).join('\n').replace(/\n.*at endpointHandler .*\n/, '\n')
+		return (
+			'\n' +
+			this.stack!.split('\n')
+				.slice(2, -2)
+				.join('\n')
+				.replace(/\n.*at endpointHandler .*\n/, '\n')
+		)
 	}
 }
 
