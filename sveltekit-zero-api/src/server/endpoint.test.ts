@@ -2,6 +2,7 @@ import z from 'zod'
 import { BadRequest, OK } from './http.ts'
 import { KitEvent, ParseKitEvent, FakeKitEvent } from './kitevent.ts'
 import { endpoint } from './endpoint.ts'
+import { Simplify } from "../utils/types.ts";
 
 function zod<Body extends z.ZodTypeAny = never, Query extends z.ZodTypeAny = never>({
 	body,
@@ -95,30 +96,44 @@ Deno.test('kitevent', async () => {
 	)
 
 	const result = fn(new FakeKitEvent(), { body: { name: '123' } })
-	
-	result
-		.OK(r => {})
-		.BadRequest(r => {})
-		.success((r) => {
-			console.log('success!🎉')
-			console.log('body: ', r.body)
-			console.log('')
-		})
-		.error((r) => console.log(r))
+		// .OK(r => {})
+		// .BadRequest(r => {})
+		// .success((r) => {
+		// 	console.log('success!🎉')
+		// 	console.log('body: ', r.body)
+		// 	console.log('')
+		// })
+		// .error((r) => console.log(r))
 		.$.OK((r) => {
 			return 123
 		})
 		.OK((r) => {
 			if (Math.random() > 0.5) throw new Error('test')
-			return 'yay'
+			return 'yay' as const
 		})
+
+	type R = Simplify<typeof result>
 
 	console.log(result)
 	console.log('')
+	let first = result[0]
 
-	let [ok1, ok2] = result
-	ok1.then((r) => console.log('ok1 says: ' + r))
-	ok2.then((r) => console.log('ok2 says: ' + r)).catch((e) => console.log('ok2 has Failed:('))
+	let [ok1, ok2, ok3] = result
+	let ok1promise = ok1.then((r) => {
+		console.log('ok1 says: ' + r)
+		return 'from then 1' as const
+	})
+	let ok2promise = ok2.then(r => (r + '-2') as `${typeof r}-2`).catch((e) => {
+		console.log('ok2 has Failed:(')
+		return 'from catch 2' as const
+	})
 
-	console.log('\nresult', await result)
+	let awaited = await result
+	console.log('\nresult', awaited)
+
+	let awaitedok1 = await ok1promise
+	console.log('ok1promise:', awaitedok1)
+
+	let awaitedok2 = await ok2promise
+	console.log('ok2promise:', awaitedok2)
 })

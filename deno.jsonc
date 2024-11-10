@@ -4,7 +4,8 @@
 	},
 	"compilerOptions": {
 		"lib": ["deno.window", "ESNext", "DOM", "DOM.Iterable", "DOM.AsyncIterable"],
-		"noImplicitAny": false
+		"noImplicitAny": false,
+		"strict": true
 	},
 	"lint": {
 		"rules": {

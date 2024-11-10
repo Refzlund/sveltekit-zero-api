@@ -1,4 +1,4 @@
-import { UnionToIntersection } from './../utils/types.ts';
+import { AwaitAll, Promisify, UnionToIntersection } from './../utils/types.ts';
 import { callCallback } from "../callbacks.ts";
 import { createEndpointProxy } from "../endpoint-proxy.ts";
 import { proxyCrawl } from '../utils/proxy-crawl.ts'
@@ -19,10 +19,16 @@ interface Callback<Event extends KitEvent<any, any>, Result extends CbResultType
 }
 
 
-type ProxyCallback<Results extends KitResponse, StatusText extends string> = {
-	[K in StatusText]: (
-		cb: (response: Results extends KitResponse<infer A, K, infer C> ? Results : never) => void
-	) => EndpointProxy<Results>
+type ProxyCallback<
+	Results extends KitResponse,
+	StatusText extends string,
+	Returned extends readonly [...Promisify<any>[]] = never
+> = {
+	[K in StatusText]: <A extends [Returned] extends [never] ? void : any>(
+		cb: (response: Results extends KitResponse<infer A, K, infer C> ? Results : never) => A
+	) => EndpointProxy<Results, [Returned] extends [never] ? never : [...Returned, Promisify<A | undefined>]>
+} & {
+	$: EndpointProxy<Results, []>
 }
 
 /**
@@ -31,42 +37,43 @@ type ProxyCallback<Results extends KitResponse, StatusText extends string> = {
  *
  * This should work the same on frontend and backend.
  */
-type EndpointProxy<Results extends KitResponse> = 
-	& Promise<Results> 
+type EndpointProxy<Results extends KitResponse, Returned extends readonly [...Promisify<any>[]] = never> = 
+	& Promise<[Returned] extends [never] ? Results : AwaitAll<Returned>>
+	& ([Returned] extends [never] ? {} : Returned)
 	& ([Results] extends [KitResponse<infer A, infer StatusText, infer C>]
-		? ProxyCallback<Results, StatusText>
+		? ProxyCallback<Results, StatusText, Returned>
 		: {})
 	& {
-		informational: (
+		informational: <A extends [Returned] extends [never] ? void : any>(
 			cb: (
 				response: Results extends KitResponse<StatusCode['Informational'], infer B, infer C> ? Results : never
-			) => void
-		) => EndpointProxy<Results>
-		success: (
+			) => A
+		) => EndpointProxy<Results, [Returned] extends [never] ? never : [...Returned, Promisify<A | undefined>]>
+		success: <A extends [Returned] extends [never] ? void : any>(
 			cb: (
 				response: Results extends KitResponse<StatusCode['Success'], infer B, infer C> ? Results : never
-			) => void
-		) => EndpointProxy<Results>
-		redirect: (
+			) => A
+		) => EndpointProxy<Results, [Returned] extends [never] ? never : [...Returned, Promisify<A | undefined>]>
+		redirect: <A extends [Returned] extends [never] ? void : any>(
 			cb: (
 				response: Results extends KitResponse<StatusCode['Redirect'], infer B, infer C> ? Results : never
-			) => void
-		) => EndpointProxy<Results>
-		clientError: (
+			) => A
+		) => EndpointProxy<Results, [Returned] extends [never] ? never : [...Returned, Promisify<A | undefined>]>
+		clientError: <A extends [Returned] extends [never] ? void : any>(
 			cb: (
 				response: Results extends KitResponse<StatusCode['ClientError'], infer B, infer C> ? Results : never
-			) => void
-		) => EndpointProxy<Results>
-		serverError: (
+			) => A
+		) => EndpointProxy<Results, [Returned] extends [never] ? never : [...Returned, Promisify<A | undefined>]>
+		serverError: <A extends [Returned] extends [never] ? void : any>(
 			cb: (
 				response: Results extends KitResponse<StatusCode['ServerError'], infer B, infer C> ? Results : never
-			) => void
-		) => EndpointProxy<Results>
-		error: (
+			) => A
+		) => EndpointProxy<Results, [Returned] extends [never] ? never : [...Returned, Promisify<A | undefined>]>
+		error: <A extends [Returned] extends [never] ? void : any>(
 			cb: (
 				response: Results extends KitResponse<StatusCode['Error'], infer B, infer C> ? Results : never
-			) => void
-		) => EndpointProxy<Results>
+			) => A
+		) => EndpointProxy<Results, [Returned] extends [never] ? never : [...Returned, Promisify<A | undefined>]>
 	}
 
 /**
