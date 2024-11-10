@@ -3,6 +3,8 @@ interface ResponseOptions<Status extends number, StatusText extends string> {
 	status?: Status
 	statusText?: StatusText
 	cause?: unknown
+	/** Will be added to headers for you */
+	contentType?: string
 }
 interface Options {
 	headers?: HeadersInit
@@ -34,7 +36,9 @@ export class KitResponse<Status extends number = number, StatusText extends stri
 		super()
 
 		this.body = body
-		this.headers = new Headers(options.headers)
+		this.headers = new Headers(options.headers || {})
+		if(options.contentType)
+			this.headers.set('content-type', options.contentType)
 		this.status = (options.status || 200) as Status
 		this.statusText = (options.statusText || 'OK') as StatusText
 		this.cause = options.cause
