@@ -109,7 +109,7 @@ async function functionProxyResolve({
 	if (!(response instanceof KitResponse)) {
 		throw new Error('Function did not return a KitResponse', { cause: { function: fn, arguments: args } })
 	}
-	if(response.status >= 200 && response.status < 300) {
+	if(response.ok) {
 		return resolve(response)
 	}
 	return reject(response)

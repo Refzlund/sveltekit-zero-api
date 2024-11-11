@@ -1,33 +1,7 @@
 import { KitResponse } from "./server/http.ts";
 import { proxyCrawl } from "./utils/proxy-crawl.ts";
-import type { EndpointProxy as EndpointProxyType } from "./server/endpoint.ts"
+import type { EndpointProxy as EndpointProxyType } from "./endpoint-proxy.type.ts"
 
-type Res = KitResponse | Response
-
-
-async function callCallback(result: Res, statusText: string, cb: (response: Res) => any) {
-	if (statusText === result.statusText) {
-		return await cb(result)
-	}
-	if (result.status >= 100 && result.status < 200 && statusText === 'informational') {
-		return await cb(result)
-	}
-	if (result.status >= 200 && result.status < 300 && statusText === 'success') {
-		return await cb(result)
-	}
-	if (result.status >= 300 && result.status < 400 && statusText === 'redirect') {
-		return await cb(result)
-	}
-	if (result.status >= 400 && result.status < 500 && statusText === 'clientError') {
-		return await cb(result)
-	}
-	if (result.status >= 500 && result.status < 600 && statusText === 'serverError') {
-		return await cb(result)
-	}
-	if (result.status >= 400 && result.status < 600 && statusText === 'error') {
-		return await cb(result)
-	}
-}
 
 /**
  * e.g. Responses from endpoints
@@ -37,23 +11,29 @@ export class EndpointProxy {
 		throw new Error('Cannot construct EndpointProxy. Please use `createEndpointProxy` instead.')
 	}
 }
-export interface EndpointProxy extends EndpointProxyType<any, never> {}
+export interface EndpointProxy extends EndpointProxyType<KitResponse<any, any, any, boolean>, never> {}
 
 /**
  * An EndpointProxy that has marked a `.$.` to return an array of promised callbacks.
 */
-export class ReturnedEndpointProxy {}
-export interface ReturnedEndpointProxy extends EndpointProxyType<any, any[]> {}
+export class ReturnedEndpointProxy {
+	constructor() {
+		throw new Error('Cannot construct ReturnedEndpointProxy. Please use `createEndpointProxy` and use `.$` instead.')
+	}
+}
+export interface ReturnedEndpointProxy extends EndpointProxyType<KitResponse<any, any, any, boolean>, any[]> {}
 
 
+type ResponseType = KitResponse | Response
 
-export function createEndpointProxy(response: Promise<KitResponse | Response>) {
+/** @note In order to get correct types, the response should be `Promise<KitResponse>` */
+export function createEndpointProxy<T extends KitResponse>(response: Promise<T | Response>): EndpointProxyType<T, never> {
 	// Proxy
 	// ex. `let [result] = GET(event, { body: { ... }}).error(...).$.OK(...)`
 
 	/** Callbacks */
-	let cbs: [string, (response: Res) => any][] = []
-	let $cbs: [string, (response: Res) => any][] = []
+	let cbs: [string, (response: ResponseType) => any][] = []
+	let $cbs: [string, (response: ResponseType) => any][] = []
 
 	let $results: Promise<unknown | undefined>[] = []
 	/** `resolve(...)` function associated with $results promise */
@@ -67,7 +47,7 @@ export function createEndpointProxy(response: Promise<KitResponse | Response>) {
 		resolve = res
 	})
 
-	function handleResponsePromise(response: Res) {
+	function handleResponsePromise(response: ResponseType) {
 		setTimeout(async () => {
 			for (const cb of cbs) {
 				await callCallback(response, cb[0], cb[1])
@@ -112,9 +92,23 @@ export function createEndpointProxy(response: Promise<KitResponse | Response>) {
 
 	response.then(handleResponsePromise).catch(handleResponsePromise)
 
+	/*
+		TODO
+			Add a "props" to the state, defined by <T> in proxyCrawl<T>
+			which is an accessor for each separate "crawl"
+
+			All non .$. (returned) will resolve with KitResponse
+
+			All .$. will resolve with [...Promise<any>[]] which is a prop.
+			When a callback is made to a .$.'ed chain, it will take the previous' (parent) prop
+			with promises, and create a new one with it self appended, e.g.
+
+			state.props.$ = [...state.parentProps.$, new Promise(...)]
+	*/
+
 	return proxyCrawl({
-		getPrototypeOf() {
-			if ($cbs.length) return ReturnedEndpointProxy.prototype
+		getPrototypeOf(state) {
+			if (state.keys[0] === '$') return ReturnedEndpointProxy.prototype
 			return EndpointProxy.prototype
 		},
 		get(state) {
@@ -149,7 +143,7 @@ export function createEndpointProxy(response: Promise<KitResponse | Response>) {
 			if (state.key === Symbol.toPrimitive) {
 				let str = 'EndpointProxy' + (cbs.length || $cbs.length ? ':' : '')
 				if (cbs.length) str += ` [${cbs.map((v) => v[0]).join(', ')}]`
-				if ($cbs.length) {
+				if (state.keys[0] === '$') {
 					str += `  $: [${$cbs.map((v) => v[0]).join(', ')}]`
 				}
 				return str
@@ -182,5 +176,30 @@ export function createEndpointProxy(response: Promise<KitResponse | Response>) {
 
 			return crawler
 		}
-	})
+	}) as any
+}
+
+
+async function callCallback(result: ResponseType, statusText: string, cb: (response: ResponseType) => any) {
+	if (statusText === result.statusText) {
+		return await cb(result)
+	}
+	if (result.status >= 100 && result.status < 200 && statusText === 'informational') {
+		return await cb(result)
+	}
+	if (result.status >= 200 && result.status < 300 && statusText === 'success') {
+		return await cb(result)
+	}
+	if (result.status >= 300 && result.status < 400 && statusText === 'redirect') {
+		return await cb(result)
+	}
+	if (result.status >= 400 && result.status < 500 && statusText === 'clientError') {
+		return await cb(result)
+	}
+	if (result.status >= 500 && result.status < 600 && statusText === 'serverError') {
+		return await cb(result)
+	}
+	if (result.status >= 400 && result.status < 600 && statusText === 'error') {
+		return await cb(result)
+	}
 }

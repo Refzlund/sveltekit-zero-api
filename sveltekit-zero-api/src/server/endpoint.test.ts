@@ -158,6 +158,7 @@ Deno.test('kitevent', async () => {
 	console.log(`continued: `, continued)
 	console.log()
 	console.log(`test/result (test instanceof ReturnedEndpointProxy): `, test instanceof ReturnedEndpointProxy)
+	console.log(test.clientError(() => {}))
 	console.log()
 
 	let first = continued[0]

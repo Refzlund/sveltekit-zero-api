@@ -12,7 +12,7 @@ export type FixKeys<T> = {
 
 export type UnionToIntersection<U> = (U extends any ? (x: U) => void : never) extends (x: infer I) => void ? I : never
 
-type IfAny<T, Y, N> = 0 extends 1 & T ? Y : N
+export type IfAny<T, Y, N> = 0 extends 1 & T ? Y : N
 export type IsAny<T> = IfAny<T, true, never>
 
 export type IsUnknown<T> = IsAny<T> extends never ? (unknown extends T ? true : never) : never
