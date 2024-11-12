@@ -22,14 +22,21 @@ interface Options {
 		awaitJSON?: boolean
 	}
 	sever?: {
-		/** 
+		/**
 		 * Whether to stringify objects to JSON when no 'content-type' is provided.
-		 * 
+		 *
 		 * If you do `setHeader('content-type', ...)` then it won't stringify.
-		 * 
+		 *
 		 * @default true
-		*/
+		 */
 		stringify?: boolean
+
+		/**
+		 * Log KitResponses that has `{ cause: ... }`?
+		 *
+		 * @default true
+		 */
+		logWithCause?: boolean
 	}
 }
 
@@ -64,7 +71,8 @@ export function zeroAPI({
 		awaitJSON = true
 	} = {},
 	sever: {
-		stringify = true
+		stringify = true,
+		logWithCause = true
 	} = {}
 }: Options) {
 
@@ -81,6 +89,20 @@ export function zeroAPI({
 		}
 
 		if (!(response instanceof KitResponse)) return response
+
+		// @ts-expect-error Hidden property
+		let cause = response.cause as unknown
+		if (cause && logWithCause) {
+			let stringed = cause.toString()
+			if (stringed.startsWith('[object ') && stringed.endsWith(']')) {
+				try {
+					stringed = JSON.stringify(cause)
+				} catch (error) {
+					stringed = 'Could not parse KitResponse[cause] into string: ' + error
+				}
+			}
+			console.log('- KitResponse with cause: ', KitResponse)
+		}
 
 		if(awaitJSON) {
 			event.setHeaders({

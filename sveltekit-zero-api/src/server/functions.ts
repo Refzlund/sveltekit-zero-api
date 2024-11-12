@@ -1,11 +1,60 @@
-import { BadRequest, InternalServerError, KitResponse } from "./http.ts";
-import { KitEvent } from './kitevent.ts';
+import { Promisify } from '../utils/types.ts'
+import { Functions, FnsRecord } from './functions.type.ts'
+import { BadRequest, InternalServerError, KitResponse, StatusCode } from './http.ts'
+import { KitEvent } from './kitevent.ts'
 
-type FnsRecord = Record<string, (event: KitEvent, ...args: any[]) => KitResponse | Promise<KitResponse>>
+/**
+ * We use the `GenericFn` class to tell `sveltekit-zero-api` that it
+ * needs to call the returned function instead of returning it immediately — expecting a KitResponse.
+ * 
+ * @example
+ * interface Input {
+ *     name: string
+ *     age: number
+ * }
+ * 
+ * function someFn<T extends Simplify<Input>>(event: KitEvent, input: T) {
+ *     if (Math.random() > 0.5) {
+ *         return new BadRequest({ code: 'invalid', error: 'You are quite the unlucky fellow.' })
+ *     }
+ * 
+ *     return new OK({
+ *         providedData: input
+ *     })
+ * }
+ * 
+ * const PATCH = functions({
+ *     someFn,
+ *     specificFn: (event) =>
+ *         /// We provide GenericFn to tell the endpoint to call an additional functioon
+ *         new GenericFn(<const T extends Input>(input: T) => {
+ *             /// We use GenericFn.return to return correct type
+ *             return GenericFn.return(someFn(event, input))
+ *         })
+ *     }
+ * )
+ */
+export class GenericFn<T extends Function> {
+	function: T
+	constructor(fn: T) {
+		this.function = fn
+	}
+
+	static return<T extends KitResponse>(response: T) {
+		return response as unknown as Promisify<
+			Extract<T, KitResponse<StatusCode['Success']>>['body'],
+			| Exclude<Extract<T, KitResponse>, KitResponse<StatusCode['Success']>>['body']
+			| InternalServerError<{
+					code: 'function_failed'
+					error: 'An unexpected error occurred when running the function.'
+			  }>['body']
+		>
+	}
+}
 
 /**
  * Creates an endpoint with the functions format.
- * 
+ *
  * The endpoint is called with a JSON-body like so:
  * ```jsonc
  * {
@@ -14,10 +63,10 @@ type FnsRecord = Record<string, (event: KitEvent, ...args: any[]) => KitResponse
  * }
  * ```
  * It's of course limited to JSON applicable content.
+ *
+ * @note Do not end function names in `$` as those are reserved for route slugged params.
  */
-export function functions<Fns extends FnsRecord>(
-	fns: Fns
-) {
+export function functions<const Fns extends FnsRecord>(fns: Fns) {
 	async function functionsHandler(event: KitEvent<{ body: { function: string; arguments: unknown[] } }>) {
 		let json
 		try {
@@ -54,63 +103,81 @@ export function functions<Fns extends FnsRecord>(
 		try {
 			return fns[fn](event, ...args)
 		} catch (error) {
-			throw new InternalServerError({
-				code: 'function_failed',
-				error: 'An unexpected error occurred when running the function.'
-			}, { cause: error })
+			throw new InternalServerError(
+				{
+					code: 'function_failed',
+					error: 'An unexpected error occurred when running the function.'
+				},
+				{ cause: error }
+			)
 		}
-		
 	}
 
-	let $ = {...fns}
-
-	let proxy = new Proxy($, {
-		get(target, key) {
-			if(!(key in target)) {
-				return target[key as any]
-			}
-			return (...args: [any]) => new Promise((resolve, reject) => {
-				try {
-					functionProxyResolve({
-						resolve,
-						reject,
-						response: target[key as any](...args),
-						fn: key as string,
-						args
-					})
-				} catch (error) {
-					reject(
-						new InternalServerError({
-							code: 'function_failed',
-							error: 'An unexpected error occurred when running the function.'
-						}, { cause: error })
-					)
+	let $ = function $(event: KitEvent) {
+		$['__proxy'] ??= new Proxy(fns, {
+			get(target, key) {
+				if (!(key in target)) {
+					return target[key as any]
 				}
-			})
-		}
-	})
+				return (...args: [any]) => {
+					new Promise((resolve, reject) => {
+						try {
+							functionProxyResolve({
+								resolve,
+								reject,
+								fn: target[key as any],
+								fnKey: key as string,
+								event,
+								args
+							})
+						} catch (error) {
+							reject(
+								new InternalServerError(
+									{
+										code: 'function_failed',
+										error: 'An unexpected error occurred when running the function.'
+									},
+									{ cause: { function: key, arguments: args, error } }
+								)
+							)
+						}
+					})
+				}
+			}
+		})
 
-	Object.assign(functionsHandler, { $: proxy })
+		return $['__proxy']
+	}
 
-	return functionsHandler as typeof functionsHandler & { $: Fns }
+	Object.assign(functionsHandler, { $ })
+	return functionsHandler as typeof functionsHandler & { $: (event: KitEvent) => Functions<Fns> }
 }
 
 // Doing this as Deno don't like awaiting a Promise callback
 async function functionProxyResolve({
-	resolve, reject, response, fn, args
+	resolve,
+	reject,
+	fn,
+	fnKey,
+	args,
+	event
 }: {
+	event: KitEvent
 	resolve: (value: unknown) => void
 	reject: (reason?: any) => void
-	response: KitResponse | Promise<KitResponse>
-	fn: string
+	fn: FnsRecord[string]
+	fnKey: string
 	args: any
 }) {
-	await response
-	if (!(response instanceof KitResponse)) {
-		throw new Error('Function did not return a KitResponse', { cause: { function: fn, arguments: args } })
+	let result: KitResponse | GenericFn<any> = await fn(event, ...args)
+	if (result instanceof GenericFn) {
+		result = result.function(...args)
 	}
-	if(response.ok) {
-		return resolve(response)
+	if (!(result instanceof KitResponse)) {
+		throw new Error('Function did not return a KitResponse')
 	}
-	return reject(response)
+	if (result.ok) {
+		return resolve(result)
+	}
+	return reject(result)
 }

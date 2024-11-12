@@ -1,25 +1,45 @@
-import { functions } from './functions.ts'
+import { Simplify } from './../utils/types.ts'
+import { functions, GenericFn } from './functions.ts'
 import { BadRequest, OK } from './http.ts'
 import { FakeKitEvent, KitEvent } from './kitevent.ts'
 
+// TODO   Make sure to test various response types on frontend: strings, numbers, readable streams, etc.
+// TODO   If attempting to access `response.body.` and it wasn't JSON, warn the user in the console that only JSON gets parsed to body.
+// TODO   For KitResponse — maybe have Body be ReadableStream if not JSONified, and then show properties .json(), .text(), .blob(), etc.
 
 Deno.test('functions', async () => {
-	function someFn(event: KitEvent, input: { name: string; age: string }, n: number) {
+	interface Input {
+		name: string
+		age: number
+	}
+
+	function someFn<T extends Simplify<Input>>(event: KitEvent, input: T) {
 		if (Math.random() > 0.5) {
 			return new BadRequest({ code: 'invalid', error: 'You are quite the unlucky fellow.' })
 		}
 
-		return new OK('Success')
+		if (Math.random() > 0.5) {
+			return new OK(null)
+		}
+
+		return new OK({
+			providedData: input
+		})
 	}
 
 	const PATCH = functions({
-		someFn
+		someFn,
+		specificFn: (event) =>
+			new GenericFn(<const T extends Input>(input: T) => {
+				return GenericFn.return(someFn(event, input))
+			})
 	})
 
-	// * Consider how to do generics.
-	// $(new FakeKitEvent()).someFn({ ... }, 42)   instead?
-	// That way it looks more similar to frontend
-	// + attempt to make the fn generic whilst allowing this?🤔
-	let result = await PATCH.$.someFn(new FakeKitEvent(), { name: 'Shiba', age: '21' }, 42)
+	let fns = PATCH.$(new FakeKitEvent())
+
+	let result = await fns.someFn({ name: 'Shiba', age: 21 }).catch((r) => r)
+
+	let result2 = await fns.specificFn({ name: 'a', age: 69.69 })
+
 	console.log(result)
 })

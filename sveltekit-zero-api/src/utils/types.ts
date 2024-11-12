@@ -18,9 +18,9 @@ export type IsAny<T> = IfAny<T, true, never>
 export type IsUnknown<T> = IsAny<T> extends never ? (unknown extends T ? true : never) : never
 
 /** Turn any type into a promise, if not already */
-export type Promisify<T> = Omit<(T extends Promise<infer U> ? T : Promise<T>), 'then' | 'catch'> & {
+export type Promisify<T, Catch = never> = Omit<T extends Promise<infer U> ? T : Promise<T>, 'then' | 'catch'> & {
 	then: <R>(onfulfilled: (value: T) => R) => Promisify<R>
-	catch: <R>(onrejected: (reason: unknown) => R) => Promisify<Awaited<T> | R>
+	catch: <R>(onrejected: (error: [Catch] extends [never] ? unknown : Catch) => R) => Promisify<Awaited<T> | R>
 }
 
 export type AwaitAll<T extends 
