@@ -26,10 +26,10 @@ export type Functions<T extends FnsRecord> = {
 		? Fn
 		: (...args: FnArgs<T[K]>) => Promisify<
 				Extract<FnResult<T[K]>, KitResponse<StatusCode['Success']>>['body'],
-				| Exclude<Extract<FnResult<T[K]>, KitResponse>, KitResponse<StatusCode['Success']>>['body']
+				| Exclude<Extract<FnResult<T[K]>, KitResponse>, KitResponse<StatusCode['Success']>>
 				| InternalServerError<{
 						code: 'function_failed'
 						error: 'An unexpected error occurred when running the function.'
-				  }>['body']
+				  }>
 		  >
 }

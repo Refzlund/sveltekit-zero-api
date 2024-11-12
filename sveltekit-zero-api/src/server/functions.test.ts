@@ -15,7 +15,7 @@ Deno.test('functions', async () => {
 
 	function someFn<T extends Simplify<Input>>(event: KitEvent, input: T) {
 		if (Math.random() > 0.5) {
-			return new BadRequest({ code: 'invalid', error: 'You are quite the unlucky fellow.' })
+			// return new BadRequest({ code: 'invalid', error: 'You are quite the unlucky fellow.' })
 		}
 
 		if (Math.random() > 0.5) {
@@ -30,16 +30,14 @@ Deno.test('functions', async () => {
 	const PATCH = functions({
 		someFn,
 		specificFn: (event) =>
-			new GenericFn(<const T extends Input>(input: T) => {
-				return GenericFn.return(someFn(event, input))
-			})
+			new GenericFn(<const T extends Input>(input: T) => GenericFn.return(someFn(event, input)))
 	})
 
 	let fns = PATCH.$(new FakeKitEvent())
 
-	let result = await fns.someFn({ name: 'Shiba', age: 21 }).catch((r) => r)
+	let result = await fns.someFn({ name: 'Shiba', age: 21 }).then(v => v).catch(err => err)
 
 	let result2 = await fns.specificFn({ name: 'a', age: 69.69 })
 
-	console.log(result)
+	console.log({result, result2})
 })

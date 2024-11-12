@@ -43,11 +43,11 @@ export class GenericFn<T extends Function> {
 	static return<T extends KitResponse>(response: T) {
 		return response as unknown as Promisify<
 			Extract<T, KitResponse<StatusCode['Success']>>['body'],
-			| Exclude<Extract<T, KitResponse>, KitResponse<StatusCode['Success']>>['body']
+			| Exclude<Extract<T, KitResponse>, KitResponse<StatusCode['Success']>>
 			| InternalServerError<{
 					code: 'function_failed'
 					error: 'An unexpected error occurred when running the function.'
-			  }>['body']
+			  }>
 		>
 	}
 }
@@ -101,7 +101,11 @@ export function functions<const Fns extends FnsRecord>(fns: Fns) {
 			})
 		}
 		try {
-			return fns[fn](event, ...args)
+			let result = await fns[fn](event, ...args)
+			if(result instanceof GenericFn) {
+				return result.function(...args)
+			}
+			return result
 		} catch (error) {
 			throw new InternalServerError(
 				{
@@ -120,13 +124,12 @@ export function functions<const Fns extends FnsRecord>(fns: Fns) {
 					return target[key as any]
 				}
 				return (...args: [any]) => {
-					new Promise((resolve, reject) => {
+					return new Promise((resolve, reject) => {
 						try {
 							functionProxyResolve({
 								resolve,
 								reject,
 								fn: target[key as any],
-								fnKey: key as string,
 								event,
 								args
 							})
@@ -158,7 +161,6 @@ async function functionProxyResolve({
 	resolve,
 	reject,
 	fn,
-	fnKey,
 	args,
 	event
 }: {
@@ -166,7 +168,6 @@ async function functionProxyResolve({
 	resolve: (value: unknown) => void
 	reject: (reason?: any) => void
 	fn: FnsRecord[string]
-	fnKey: string
 	args: any
 }) {
 	let result: KitResponse | GenericFn<any> = await fn(event, ...args)
@@ -174,10 +175,10 @@ async function functionProxyResolve({
 		result = result.function(...args)
 	}
 	if (!(result instanceof KitResponse)) {
-		throw new Error('Function did not return a KitResponse')
+		throw new Error('Function did not return a KitResponse', { cause: result })
 	}
 	if (result.ok) {
-		return resolve(result)
+		return resolve(result.body)
 	}
 	return reject(result)
 }
