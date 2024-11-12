@@ -34,18 +34,25 @@ export function createEndpointProxy<T extends KitResponse>(pureResponse: Promise
 	/** Callbacks */
 	let cbs: [string, (response: ResponseType) => any][] = []
 
-	const response = new Promise<T | Response>((resolve) => {
+	const response = new Promise<T | Response>((resolve, reject) => {
 		pureResponse.then(res => res).catch(res => res).then(res => {
 			// By setting the timeout to 0, we wait a "JS tick" and
 			// allow potential chained callbacks to take place.
-			setTimeout(() => {
+			setTimeout(async () => {
 				if (!('statusText' in res)) {
 					throw res
 				}
+
 				let response = res as T | Response
 
 				if (response instanceof Response) {
 					// * Do some magic? (e.g. if frontend, do .json())
+				}
+
+				for(const cb of cbs) {
+					await endpointProxyCallback(
+						response, cb[0], cb[1]
+					).catch(reject)
 				}
 
 				resolve(response)
@@ -75,9 +82,7 @@ export function createEndpointProxy<T extends KitResponse>(pureResponse: Promise
 				if (key === Symbol.iterator) {
 					// -> const [promiseOK, promiseError] = GET(...).$...
 					const closest = closest$promisesParent(state)
-					let array = closest.is$root ? [] : closest.$promises!.map(v => new Promise((resolve, reject) => {
-						v[1].then(resolve).catch(reject)
-					}))
+					let array = closest.is$root ? [] : closest.$promises!.map(v => v[1])
 					return array[Symbol.iterator].bind(array)
 				}
 
@@ -94,7 +99,7 @@ export function createEndpointProxy<T extends KitResponse>(pureResponse: Promise
 						if (closest.is$root)
 							// * Since any index of an empty array is just undefined.
 							return undefined
-						return closest.$promises![index][1] // -> GET(...).$...()[2]
+						return closest.$promises![index]?.[1] // -> GET(...).$...()[2]
 					}
 				}
 			}
@@ -119,20 +124,28 @@ export function createEndpointProxy<T extends KitResponse>(pureResponse: Promise
 					return promise[key].apply(promise, args as [])
 				}
 
-				const promise = (closest.parent!.props.$cache ??= new Promise((resolve) => {
+				const promise = (closest.parent!.props.$cache ??= new Promise((resolve, reject) => {
 					let $promises = closest.$promises!
 
 					let results = Array($promises.length).fill(undefined)
+					let error: unknown = false
 					let resolved = 0
 					for(let i = 0; i < $promises.length; i++) {
-						$promises[i][1].then(v => {
-							results[i] = v
-						}).catch(() => {}).finally(() => {
-							resolved++
-							if (resolved === $promises.length) {
-								resolve(results)
-							}
-						})
+						const promise = $promises[i][1]
+						promise
+							.then(v => {
+								results[i] = v
+							})
+							.catch((e) => {
+								error = e
+							})
+							.finally(() => {
+								resolved++
+								if (resolved === $promises.length) {
+									if (error) reject(error)
+									resolve(results)
+								}
+							})
 					}
 				}))
 				
@@ -171,10 +184,8 @@ export function createEndpointProxy<T extends KitResponse>(pureResponse: Promise
 				response.then((response) => {
 					let fn = args[0]
 					endpointProxyCallback(response, key as string, fn, resolve, reject)
-				})
+				}).catch(reject)
 			})
-
-			promise.catch(() => {})
 
 			let closest = closest$promisesParent(state.parent)
 			props.$promises = [...(closest.$promises || []), [key as string, promise]]
@@ -223,34 +234,43 @@ async function endpointProxyCallback(
 	result: ResponseType, 
 	statusText: string, 
 	cb: (response: ResponseType) => any,
-	resolve: (value: any) => void,
-	reject: (value: any) => void
+	resolve?: (value: any) => void,
+	reject?: (value: any) => void
 ) {
 	try {
-		if (statusText === result.statusText) {
-			return resolve(await cb(result))
+		let v
+		if (statusText === 'any') {
+			v = await cb(result)
+		} else if (statusText === result.statusText) {
+			v = await cb(result)
 		}
-		if (result.status >= 100 && result.status < 200 && statusText === 'informational') {
-			return resolve(await cb(result))
+		else if (result.status >= 100 && result.status < 200 && statusText === 'informational') {
+			v = await cb(result)
 		}
-		if (result.status >= 200 && result.status < 300 && statusText === 'success') {
-			return resolve(await cb(result))
+		else if (result.status >= 200 && result.status < 300 && statusText === 'success') {
+			v = await cb(result)
 		}
-		if (result.status >= 300 && result.status < 400 && statusText === 'redirect') {
-			return resolve(await cb(result))
+		else if (result.status >= 300 && result.status < 400 && statusText === 'redirect') {
+			v = await cb(result)
 		}
-		if (result.status >= 400 && result.status < 500 && statusText === 'clientError') {
-			return resolve(await cb(result))
+		else if (result.status >= 400 && result.status < 500 && statusText === 'clientError') {
+			v = await cb(result)
 		}
-		if (result.status >= 500 && result.status < 600 && statusText === 'serverError') {
-			return resolve(await cb(result))
+		else if (result.status >= 500 && result.status < 600 && statusText === 'serverError') {
+			v = await cb(result)
 		}
-		if (result.status >= 400 && result.status < 600 && statusText === 'error') {
-			return resolve(await cb(result))
+		else if (result.status >= 400 && result.status < 600 && statusText === 'error') {
+			v = await cb(result)
 		}
-		resolve(undefined)
+		if(resolve)
+			resolve(v)
+		return v
 	} catch (error) {
-		reject(error)
+		if(reject) {
+			reject(error)
+		} else {
+			throw error
+		}
 	}
 	
 }

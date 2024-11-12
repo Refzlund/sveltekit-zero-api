@@ -90,21 +90,14 @@ function zod({ body, query }) {
 
 ```
 */
-export class ParseKitEvent<Body = never, Query = never> {
-	body: Body
-	query: Query
-	constructor({ body, query }: { body?: Body, query?: Query }) {
-		this.body = body!
-		this.query = query!
+export class ParseKitEvent<Body = never, Query = never>{
+	body: [Body] extends [never] ? undefined : Body
+	query: [Query] extends [never] ? undefined : Query
+	constructor({ body, query }: { body?: Body; query?: Query }) {
+		this.body = body! as any
+		this.query = query! as any
 	}
-
-	/** Parses query into a Record */
-	// TODO automatically do queryParse in hooks
-	// static queryParse(event: KitEvent): Record<string | number, any> {
-	// 	return {}
-	// }
 }
-
 
 interface FakeOptions {
 	/**

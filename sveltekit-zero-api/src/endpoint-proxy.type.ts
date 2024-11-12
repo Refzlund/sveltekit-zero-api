@@ -1,4 +1,5 @@
 import type { KitResponse, StatusCode, Statuses, StatusTextType } from "./server/http.ts"
+import { StatusCodeType } from "./server/http.ts";
 import type { AwaitAll, IfAny, IsAny, Promisify } from "./utils/types.ts"
 
 /**
@@ -41,9 +42,11 @@ export type EndpointProxy<Results extends KitResponse, Returned extends Promisif
 		: {}) 
 	// Callback chain of Response statuses (.success, .clientError ...)
 	& {
-		[K in keyof Statuses]: <A extends [Returned] extends [never] ? void : any>(
+		[K in 'any' | keyof Statuses]: <A extends [Returned] extends [never] ? void : any>(
 			cb: (
-				response: Results extends KitResponse<StatusCode[Statuses[K]]> ? Results : never
+				response: Results extends KitResponse<
+					K extends 'any' ? StatusCodeType : StatusCode[Statuses[Exclude<K, 'any'>]] 
+				> ? Results : never
 			) => A
 		) => EndpointProxy<Results, [Returned] extends [never] ? never : [...Returned, Promisify<A | undefined>]>
 	}
