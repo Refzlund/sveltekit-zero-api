@@ -1,5 +1,49 @@
+export interface StateGet<Props extends Record<PropertyKey, any>> {
+	/** All keys crawled */
+	keys: PropertyKey[]
+	/** Current key */
+	key: PropertyKey
 
-interface CrawlHandler<NoKeys extends boolean = false> {
+	/** Prop */
+	props: Props
+	/** Parent; previous state that called `crawl(key)` if any */
+	parent?: StateGet<Props> | StateApply<Props>
+
+	/**
+	 * Returns the proxy crawler, with or without the new provided key
+	 *
+	 * @example // return a function to be called that replaces current key, with other key
+	 * return function fn(str: string) { return crawl(str) }
+	 */
+	crawl: (key: PropertyKey | PropertyKey[]) => Record<PropertyKey, any> & ((...args: any[]) => any)
+}
+
+export interface StateApply<Props extends Record<PropertyKey, any>> {
+	/** Arguments provided to the function */
+	args: any[]
+	/** All keys crawled, including the key being called upon */
+	keys: PropertyKey[]
+	/** Current key */
+	key: PropertyKey
+
+	/** Prop */
+	props: Props
+	/** @note the immediate parent is the `StateGet`, don't let that take you off-guard.
+	 * 
+	 * Parent; previous state that called `crawl(key)` if any
+	*/
+	parent?: StateGet<Props> | StateApply<Props>
+
+	/**
+	 * Returns the proxy crawler, with or without the new provided key
+	 *
+	 * @example // return a function to be called that replaces current key, with other key
+	 * return function fn(str: string) { return crawl(str) }
+	 */
+	crawl: (key: PropertyKey | PropertyKey[]) => Record<PropertyKey, any> & ((...args: any[]) => any)
+}
+
+export interface CrawlHandler<Props extends Record<PropertyKey, any> = {}> {
 	/**
 	 * Match keys in brackets inside key-strings?
 	 *
@@ -17,37 +61,17 @@ interface CrawlHandler<NoKeys extends boolean = false> {
 	 */
 	numberedKeys?: boolean
 
-	/** Allow `return state.crawl([])` resulting in no keys */
-	allowNoKeys?: NoKeys
+	/**
+	 * Allow `return state.crawl([])` resulting in no keys
+	 *
+	 * Note: `key` is `Propertykey`, but this makes it `PropertyKey | undefined` - just not typed.
+	 */
+	allowNoKeys?: boolean
+
 	/** Do `return crawl(key)` to resume normal behaviour */
-	get?(state: {
-		/** All keys crawled */
-		keys: PropertyKey[]
-		/** Current key */
-		key: NoKeys extends true ? PropertyKey | undefined : PropertyKey
-		/**
-		 * Returns the proxy crawler, with or without the new provided key
-		 *
-		 * @example // return a function to be called that replaces current key, with other key
-		 * return function fn(str: string) { return crawl(str) }
-		 */
-		crawl: (key: PropertyKey | PropertyKey[]) => ReturnType<typeof proxyCrawl>
-	}): any
-	apply?(state: {
-		/** All keys crawled, including the key being called upon */
-		keys: PropertyKey[]
-		/** Current key */
-		key: NoKeys extends true ? PropertyKey | undefined : PropertyKey
-		/** Arguments provided to the function */
-		args: any[]
-		/**
-		 * Returns the proxy crawler, with or without the new provided key
-		 *
-		 * @example // return a function to be called that replaces current key, with other key
-		 * return function fn(str: string) { return crawl(str) }
-		 */
-		crawl: (key: PropertyKey | PropertyKey[]) => ReturnType<typeof proxyCrawl>
-	}): any
+	get?(state: StateGet<Props>): any
+	apply?(state: StateApply<Props>): any
+
 	/** Fake `instanceof` by providing a different class prototype at `getPrototypeOf` */
 	getPrototypeOf?(state: {
 		/** All keys crawled */
@@ -70,10 +94,11 @@ const isNumber = /^[0-9]+$/
  * const result = crawl.here.we.go(123)
  * console.log(result) // ['here', 'we', 'go', 123]
 */
-export function proxyCrawl<NoKeys extends boolean = false>(handler: CrawlHandler<NoKeys>) {
-	
-	const createCrawler = (keys: PropertyKey[], nested: string[] = []) => {
+export function proxyCrawl<Props extends Record<PropertyKey, any> = {}>(handler: CrawlHandler<Props>) {
+	const createCrawler = (keys: PropertyKey[], parent?: StateGet<Props> | StateApply<Props>, nested: string[] = []) => {
 		let proxy = {} as Record<PropertyKey, ReturnType<typeof createCrawler>>
+		let props = {} as Props
+
 		return new Proxy(function () {}, {
 			getPrototypeOf(target) {
 				if(handler.getPrototypeOf) {
@@ -107,23 +132,38 @@ export function proxyCrawl<NoKeys extends boolean = false>(handler: CrawlHandler
 					}
 				}
 
-				if (handler.get) {
-					let next = nested.pop()
-					return handler.get({ 
-						keys, 
-						key: key,
-						crawl: (key) => {
-							if(next !== undefined) {
-								return createCrawler([...keys, ...(Array.isArray(key) ? key : [key])], [...nested])[next]
-							} else {
-								return createCrawler([...keys, ...(Array.isArray(key) ? key : [key])], [...nested])
-							}
+				let next = nested.pop()
+				
+				// Couldn't use `this` inside `crawl` so we do this
+				function getState() { return state }
+				
+				const state = {
+					keys,
+					key: key,
+					parent,
+					props,
+					crawl(key) {
+						if (next !== undefined) {
+							return createCrawler(
+								[...keys, ...(Array.isArray(key) ? key : [key])], 
+								getState(), 
+								[...nested]
+							)[next]
+						} else {
+							return createCrawler(
+								[...keys, ...(Array.isArray(key) ? key : [key])],
+								getState(), 
+								[...nested]
+							)
 						}
-					})
+					}
+				} satisfies StateGet<Props>
+
+				if (handler.get) {
+					return handler.get(state)
 				}
 
-				let next = nested.pop()
-				proxy[key] ??= createCrawler([...keys, key], [...nested])
+				proxy[key] ??= createCrawler([...keys, key], state, [...nested])
 
 				if(next) {
 					return proxy[key][next]
@@ -146,18 +186,35 @@ export function proxyCrawl<NoKeys extends boolean = false>(handler: CrawlHandler
 
 				if (handler.apply) {
 					let next = nested.pop()
-					return handler.apply({
+
+					// Couldn't use `this` inside `crawl` so we do this
+					// deno-lint-ignore no-inner-declarations
+					function getState() { return state }
+
+					const state = {
 						keys: keysCopy,
 						key,
+						parent,
+						props,
 						args,
-						crawl: (key) => {
+						crawl(key) {
 							if (next !== undefined) {
-								return createCrawler([...keysCopy, ...(Array.isArray(key) ? key : [key])], [...nested])[next]
+								return createCrawler(
+									[...keysCopy, ...(Array.isArray(key) ? key : [key])], 
+									getState(),
+									[...nested]
+								)[next]
 							} else {
-								return createCrawler([...keysCopy, ...(Array.isArray(key) ? key : [key])], [...nested])
+								return createCrawler(
+									[...keysCopy, ...(Array.isArray(key) ? key : [key])], 
+									getState(), 
+									[...nested]
+								)
 							}
 						}
-					})
+					} satisfies StateApply<Props>
+
+					return handler.apply(state)
 				}
 			}
 		}) as Record<PropertyKey, any> & ((...args: any[]) => any)

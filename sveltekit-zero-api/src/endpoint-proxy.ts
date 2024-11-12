@@ -1,5 +1,5 @@
 import { KitResponse } from "./server/http.ts";
-import { proxyCrawl } from "./utils/proxy-crawl.ts";
+import { proxyCrawl, StateApply, StateGet } from "./utils/proxy-crawl.ts";
 import type { EndpointProxy as EndpointProxyType } from "./endpoint-proxy.type.ts"
 
 
@@ -27,179 +27,230 @@ export interface ReturnedEndpointProxy extends EndpointProxyType<KitResponse<any
 type ResponseType = KitResponse | Response
 
 /** @note In order to get correct types, the response should be `Promise<KitResponse>` */
-export function createEndpointProxy<T extends KitResponse>(response: Promise<T | Response>): EndpointProxyType<T, never> {
+export function createEndpointProxy<T extends KitResponse>(pureResponse: Promise<T | Response>): EndpointProxyType<T, never> {
 	// Proxy
 	// ex. `let [result] = GET(event, { body: { ... }}).error(...).$.OK(...)`
 
 	/** Callbacks */
 	let cbs: [string, (response: ResponseType) => any][] = []
-	let $cbs: [string, (response: ResponseType) => any][] = []
 
-	let $results: Promise<unknown | undefined>[] = []
-	/** `resolve(...)` function associated with $results promise */
-	let $resolvers: {
-		resolve: (value: unknown) => void
-		reject: (reason?: any) => void
-	}[] = []
+	const response = new Promise<T | Response>((resolve) => {
+		pureResponse.then(res => res).catch(res => res).then(res => {
+			// By setting the timeout to 0, we wait a "JS tick" and
+			// allow potential chained callbacks to take place.
+			setTimeout(() => {
+				if (!('statusText' in res)) {
+					throw res
+				}
+				let response = res as T | Response
 
-	let resolve: (value: unknown) => void
-	const responsePromise = new Promise((res) => {
-		resolve = res
+				if (response instanceof Response) {
+					// * Do some magic? (e.g. if frontend, do .json())
+				}
+
+				resolve(response)
+			}, 0)
+		})
 	})
 
-	function handleResponsePromise(response: ResponseType) {
-		setTimeout(async () => {
-			for (const cb of cbs) {
-				await callCallback(response, cb[0], cb[1])
-			}
-
-			if (!$cbs.length) {
-				return resolve(response)
-			}
-
-			let allResolved: (value: unknown) => void
-			let allResults = Array($cbs.length)
-			let allPromise = new Promise((resolve) => {
-				allResolved = resolve
-			})
-			let resolved = 0
-
-			for (let i = 0; i < $cbs.length; i++) {
-				let $cb = $cbs[i]
-				callCallback(response, $cb[0], $cb[1])
-					.then((result) => {
-						allResults[i] = result
-						$resolvers[i].resolve(result)
-						resolved++
-						if (resolved === $cbs.length) {
-							allResolved(allResults)
-						}
-					})
-					.catch((err) => {
-						allResults[i] = undefined
-						$resolvers[i].reject(err)
-						resolved++
-						if (resolved === $cbs.length) {
-							allResolved(allResults)
-						}
-					})
-			}
-
-			await allPromise
-			resolve(allResults) // -> const [fulfilledOK, fulfilledError] = await GET(...).$...
-		}, 0)
-	}
-
-	response.then(handleResponsePromise).catch(handleResponsePromise)
-
-	/*
-		TODO
-			Add a "props" to the state, defined by <T> in proxyCrawl<T>
-			which is an accessor for each separate "crawl"
-
-			All non .$. (returned) will resolve with KitResponse
-
-			All .$. will resolve with [...Promise<any>[]] which is a prop.
-			When a callback is made to a .$.'ed chain, it will take the previous' (parent) prop
-			with promises, and create a new one with it self appended, e.g.
-
-			state.props.$ = [...state.parentProps.$, new Promise(...)]
-	*/
-
-	return proxyCrawl({
+	return proxyCrawl<CrawlerProps>({
 		getPrototypeOf(state) {
 			if (state.keys[0] === '$') return ReturnedEndpointProxy.prototype
 			return EndpointProxy.prototype
 		},
 		get(state) {
-			if (state.key === Symbol.iterator) {
-				return $results[Symbol.iterator].bind($results)
-			}
+			let { keys, key, props, crawl, parent } = state
 
-			if(state.key === '$' && state.keys.includes(state.key)) {
+			if (key === '$' && keys.includes(key)) {
 				throw new Error('.$. cannot be used multiple times.', {
 					cause: {
-						state,
-						cbs: cbs.map(v => v[0]),
-						$cbs: $cbs.map(v => v[0])
+						state: { keys, key, $promises: props.$promises?.map((v) => v[0]) },
+						cbs: cbs.map((v) => v[0])
 					}
 				})
 			}
 
-			if (typeof state.key !== 'symbol') {
-				let index = Number(state.key)
-				if (!isNaN(index)) {
-					return $results[index] // -> const [promiseOK, promiseError] = GET(...).$...
+			if (keys[0] === '$') {
+				// * `[promiseA, promiseB] = ...$.success(...).error(...)` for instance
+				if (key === Symbol.iterator) {
+					// -> const [promiseOK, promiseError] = GET(...).$...
+					const closest = closest$promisesParent(state)
+					let array = closest.is$root ? [] : closest.$promises!.map(v => new Promise((resolve, reject) => {
+						v[1].then(resolve).catch(reject)
+					}))
+					return array[Symbol.iterator].bind(array)
+				}
+
+				// * `...$.success(...).error(...).length`
+				if (props.$promises?.[key]) {
+					return props.$promises[key]
+				}
+
+				// * `...$.success(...).error(...)[0]`
+				if (typeof key !== 'symbol') {
+					let index = Number(key)
+					if (!isNaN(index)) {
+						const closest = closest$promisesParent(state)
+						if (closest.is$root)
+							// * Since any index of an empty array is just undefined.
+							return undefined
+						return closest.$promises![index][1] // -> GET(...).$...()[2]
+					}
 				}
 			}
 
-			return state.crawl(state.key)
+			return crawl(key)
 		},
 		apply(state) {
-			if (state.key === 'then') return responsePromise.then.apply(responsePromise, state.args as [])
-			if (state.key === 'catch') return responsePromise.catch.apply(responsePromise, state.args as [])
-			if (state.key === 'finally') return responsePromise.finally.apply(responsePromise, state.args as [])
+			let { keys, key, args, props, crawl, parent } = state
 
-			if (state.key === Symbol.toPrimitive) {
-				let str = 'EndpointProxy' + (cbs.length || $cbs.length ? ':' : '')
+			if (key === 'then' || key === 'catch' || key === 'finally') {
+				if (keys[0] !== '$') {
+					// * Without $ we just return the response.
+					return response[key].apply(response, args as [])
+				}
+
+				// * $.success(...).error(...).then(v) return Promise<[...unknown[]]>
+				const closest = closest$promisesParent(state)
+
+				if (closest.is$root) {
+					// * Means we're at the root of $ — e.g. `...$.then(...)`, which is just an empty array
+					const promise = (closest.parent!.props.$cache ??= new Promise((resolve) => resolve([])))
+					return promise[key].apply(promise, args as [])
+				}
+
+				const promise = (closest.parent!.props.$cache ??= new Promise((resolve) => {
+					let $promises = closest.$promises!
+
+					let results = Array($promises.length).fill(undefined)
+					let resolved = 0
+					for(let i = 0; i < $promises.length; i++) {
+						$promises[i][1].then(v => {
+							results[i] = v
+						}).catch(() => {}).finally(() => {
+							resolved++
+							if (resolved === $promises.length) {
+								resolve(results)
+							}
+						})
+					}
+				}))
+				
+				return promise[key].apply(promise, args as [])
+			}
+
+			if (key === Symbol.toPrimitive) {
+				let $promises = keys[0] === '$' ? closest$promisesParent(state).$promises : undefined
+
+				let str = 'EndpointProxy' + (cbs.length || $promises ? ':' : '')
 				if (cbs.length) str += ` [${cbs.map((v) => v[0]).join(', ')}]`
-				if (state.keys[0] === '$') {
-					str += `  $: [${$cbs.map((v) => v[0]).join(', ')}]`
+				if ($promises) {
+					str += `  $: [${$promises.map((v) => v[0]).join(', ')}]`
 				}
 				return str
 			}
 
-			let crawler = state.crawl([])
+			let crawler = crawl([])
 
-			if(typeof state.args[0] !== 'function') {
-				throw new Error('Callback must be a function', { cause: state })
+			if (typeof args[0] !== 'function') {
+				throw new Error('Callback must be a function', { cause: { keys, key, args } })
 			}
 
-			if (state.keys[0] === '$') {
-				$cbs.push([state.key as string, state.args[0]])
-
-				let $resolve: (value: unknown) => void
-				let $reject: (value: unknown) => void
-				let $promise = new Promise((resolve, reject) => {
-					$resolve = resolve
-					$reject = reject
-				})
-
-				$results.push($promise)
-				$resolvers.push({
-					resolve: $resolve!,
-					reject: $reject!
-				})
-			} else {
-				cbs.push([state.key as string, state.args[0]])
+			if (keys[0] !== '$') {
+				cbs.push([key as string, args[0]])
+				return crawler
 			}
+
+			// * If `...$.success().error().map(v => ...)` for instance.
+			let fn = props.$promises?.[key as string]
+			if (typeof fn === 'function') {
+				return fn.apply(fn, args)
+			}
+
+			let promise = new Promise((resolve, reject) => {
+				response.then((response) => {
+					let fn = args[0]
+					endpointProxyCallback(response, key as string, fn, resolve, reject)
+				})
+			})
+
+			promise.catch(() => {})
+
+			let closest = closest$promisesParent(state.parent)
+			props.$promises = [...(closest.$promises || []), [key as string, promise]]
 
 			return crawler
 		}
 	}) as any
 }
 
+/**
+ * We're managing the "state" for each crawl individually. If you
+ * did `$.success(...).error(...)` you would get [Promise, Promise]
+ * 
+ * Without the state, if you from that same root did `$.OK(...)` it would
+ * be appended to the others, but you would get the wrong type.
+ * 
+ * With the state, each callback has an array (`$promises`) of the promises
+ * within the same chain. So `OK` would not append the Promise to the others. 
+*/
+interface CrawlerProps {
+	$promises?: [string, Promise<unknown>][]
+	/**
+	 * Is a "Promise-cache", so when you do `v.then(); v.then()` you
+	 * would relate to the same promise, rather than creating a new one
+	 * every time.
+	 */
+	$cache?: Promise<unknown>
+}
 
-async function callCallback(result: ResponseType, statusText: string, cb: (response: ResponseType) => any) {
-	if (statusText === result.statusText) {
-		return await cb(result)
+/** Find the closest parent where `props.$promises !== undefined` */
+function closest$promisesParent(state?: StateGet<CrawlerProps> | StateApply<CrawlerProps>) {
+	let parentIsRoot = state!.key === '$'
+	while (!parentIsRoot && state && !state.props.$promises) {
+		state = state.parent
+		parentIsRoot = state?.key === '$'
 	}
-	if (result.status >= 100 && result.status < 200 && statusText === 'informational') {
-		return await cb(result)
+	return {
+		parent: state,
+		/** Is parent the .$. root? E.g. `key === '$'` */
+		is$root: parentIsRoot,
+		$promises: state?.props.$promises
 	}
-	if (result.status >= 200 && result.status < 300 && statusText === 'success') {
-		return await cb(result)
+}
+
+async function endpointProxyCallback(
+	result: ResponseType, 
+	statusText: string, 
+	cb: (response: ResponseType) => any,
+	resolve: (value: any) => void,
+	reject: (value: any) => void
+) {
+	try {
+		if (statusText === result.statusText) {
+			return resolve(await cb(result))
+		}
+		if (result.status >= 100 && result.status < 200 && statusText === 'informational') {
+			return resolve(await cb(result))
+		}
+		if (result.status >= 200 && result.status < 300 && statusText === 'success') {
+			return resolve(await cb(result))
+		}
+		if (result.status >= 300 && result.status < 400 && statusText === 'redirect') {
+			return resolve(await cb(result))
+		}
+		if (result.status >= 400 && result.status < 500 && statusText === 'clientError') {
+			return resolve(await cb(result))
+		}
+		if (result.status >= 500 && result.status < 600 && statusText === 'serverError') {
+			return resolve(await cb(result))
+		}
+		if (result.status >= 400 && result.status < 600 && statusText === 'error') {
+			return resolve(await cb(result))
+		}
+		resolve(undefined)
+	} catch (error) {
+		reject(error)
 	}
-	if (result.status >= 300 && result.status < 400 && statusText === 'redirect') {
-		return await cb(result)
-	}
-	if (result.status >= 400 && result.status < 500 && statusText === 'clientError') {
-		return await cb(result)
-	}
-	if (result.status >= 500 && result.status < 600 && statusText === 'serverError') {
-		return await cb(result)
-	}
-	if (result.status >= 400 && result.status < 600 && statusText === 'error') {
-		return await cb(result)
-	}
+	
 }

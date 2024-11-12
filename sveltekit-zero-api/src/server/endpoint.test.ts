@@ -133,11 +133,13 @@ Deno.test('kitevent', async () => {
 
 	let continued = result.$
 		.OK((r) => {
-			
 			return 123
 		})
 		.OK((r) => {
-			if (Math.random() > 0.5) throw new Error('test')
+			if (Math.random() > 0.5) {
+				console.error('---throwing----')
+				throw new Error('test')
+			}
 			return 'yay' as const
 		})
 		.error((r) => r.body?.error)
@@ -165,10 +167,22 @@ Deno.test('kitevent', async () => {
 
 	let [ok1, ok2, errorMsg] = continued
 
+	console.log({continued})
+
 	let ok1promise = ok1.then((r) => {
 		console.log('ok1 says: ' + r)
 		return 'from then 1' as const
 	})
+
+	// TODO   Currently .catch (l185) prevents that one Promise from failing.
+	// TODO   When removed, the promise throws even though we catch on l180 too.
+	// TODO   promises needs to be connected, so when ONE promise fails, you can either
+	// TODO   catch that one, or the whole "group" ergo `cotinued.catch` 
+
+	continued.catch((err) => {
+		console.log('error has been caught in continued: ' + err)
+	})
+
 	let ok2promise = ok2
 		.then((r) => (r + '-2') as `${typeof r}-2`)
 		.catch((e) => {
@@ -177,7 +191,7 @@ Deno.test('kitevent', async () => {
 		})
 
 	let awaited = await continued
-	console.log('\nresult', awaited)
+	console.log('\nawaited result', awaited)
 
 	let [
 		awaited1,
