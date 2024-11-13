@@ -3,12 +3,14 @@ import { KitResponse } from './http.ts'
 import { KitEvent } from "./kitevent.ts";
 import { sequence as sveltekitSequence } from "@sveltejs/kit/hooks";
 
-type KitHandle = (
-	event: KitEvent,
-	resolve: (event: KitEvent, opts?: ResolveOptions) => Promise<KitResponse | Response>
+export type KitHandle = (
+	input: {
+		event: KitEvent,
+		resolve: (event: KitEvent, opts?: ResolveOptions) => Promise<KitResponse | Response>
+	}
 ) => Promise<KitResponse | Response> | KitResponse | Response
 
-interface Options {
+export interface ZeroAPIServerOptions {
 	client?: {
 		/**
 		 * If `true`, access body directly on client via `response.json`
@@ -74,7 +76,7 @@ export function zeroAPI({
 		stringify = true,
 		logWithCause = true
 	} = {}
-}: Options) {
+}: ZeroAPIServerOptions) {
 
 	const handle: Handle = async ({ event, resolve }) => {
 		// @ts-expect-error RequestEvent should not have `results` inside of it.

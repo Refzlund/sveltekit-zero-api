@@ -4,6 +4,7 @@ node_modules
 .output
 .vercel
 .svelte-kit
+.vite
 build
 
 # OS

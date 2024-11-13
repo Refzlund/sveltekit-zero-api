@@ -1,10 +1,12 @@
-import type { Handle } from '@sveltejs/kit'
 import { UAParser } from 'ua-parser-js'
+import { zeroAPI } from 'sveltekit-zero-api/server'
 
-export async function handle({ event, resolve }: Parameters<Handle>[0]): Promise<Response>  {
-	const userAgent = new UAParser(event.request.headers.get('user-agent') || '')
-	event.locals.mobile = ['mobile', 'wearable'].includes(userAgent.getDevice().type || '')
+export const handle = zeroAPI({}).sequence(
+	async ({ event, resolve }) => {
+		const userAgent = new UAParser(event.request.headers.get('user-agent') || '')
+		event.locals.mobile = ['mobile', 'wearable'].includes(userAgent.getDevice().type || '')
 
-	const response = await resolve(event)
-	return response
-}
+		const response = await resolve(event)
+		return response
+	}
+)

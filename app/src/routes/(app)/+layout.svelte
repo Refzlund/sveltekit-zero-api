@@ -10,6 +10,18 @@
 
 <script lang="ts">
 
+	/*
+		homepage: Snippet
+		sections: {
+			name: string
+			pages: {
+				href: string
+				title: string
+				page: Snippet
+			}[]
+		}[]
+	*/
+
 	import type { Snippet } from 'svelte'
 	import Header from './Header.svelte'
 	import Sidebar from './Sidebar.svelte'

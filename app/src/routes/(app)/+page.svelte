@@ -1,6 +1,10 @@
 <script>
 	import Code from '$lib/Code/Code.svelte'
 	import LogoText from '$lib/LogoText.svelte'
+	import { onMount } from 'svelte'
+	import { tweened } from 'svelte/motion'
+
+	import { SvelteDate } from 'svelte/reactivity'
 
 	const code = {
 		'functions.ts': `
@@ -36,9 +40,22 @@
 		`
 	}
 
+	let tween = tweened(0, { duration: 30000 })
+	
+	onMount(() => {
+		tween.set(100)
+	})
+
 </script>
+
 <article>
-	<h1>Seamless development</h1>
+	<h1 class='!mb-0'>Less code, more types</h1>
+	<button 
+		id=next
+		style='--tw-gradient-from-position: {$tween}%; --tw-gradient-to-position: {$tween}%;'
+	>
+		<span>Next up</span><span>Endpoint middlewares</span>
+	</button>
 	<p>
 		<LogoText/> aims to provide a seamless experience,
 		developing between frontend and backend.
@@ -56,6 +73,14 @@
 
 	article {
 		@apply prose prose-invert prose-blue prose-h1:font-medium;
+	}
+
+	#next {
+		@apply 
+			text-transparent bg-clip-text flex gap-2 
+			opacity-60 bg-gradient-to-r from-primary to-white
+			hover:opacity-80 duration-100	
+		;
 	}
 
 </style>

@@ -1,35 +1,33 @@
-import { AwaitAll, Promisify } from './../utils/types.ts';
-import { createEndpointProxy } from "../endpoint-proxy.ts";
+import { AwaitAll, Promisify } from './../utils/types.ts'
+import { createEndpointProxy } from '../endpoint-proxy.ts'
 import { FixKeys, Simplify } from '../utils/types.ts'
 import { KitResponse, StatusCode, Statuses, StatusTextType } from './http.ts'
 import { KitEvent, KitEventFn, ParseKitEvent } from './kitevent.ts'
-import { EndpointProxy } from "../endpoint-proxy.type.ts";
+import { EndpointProxy } from '../endpoint-proxy.type.ts'
 
 /**
  * The "result" of an `endpoint` paramters `callback`
  */
-export type CbResultType = Record<PropertyKey, any> | KitResponse | ParseKitEvent
+export type EndpointCallbackResult = Record<PropertyKey, any> | KitResponse | ParseKitEvent
 
 /**
  * A callback function for an `endpoint` parameter.
  */
-interface Callback<Event extends KitEvent<any, any>, Result extends CbResultType> {
+interface Callback<Event extends KitEvent<any, any>, Result extends EndpointCallbackResult> {
 	(event: Event): Promise<Result> | Result
 }
-
-
 
 /**
  * The input for an endpoint.
  */
-type EndpointInput<Results extends CbResultType> = Simplify<
+type EndpointInput<Results extends EndpointCallbackResult> = Simplify<
 	FixKeys<Pick<Extract<Results, ParseKitEvent<any, any>>, 'body' | 'query'>>
 >
 
 /**
  * The return-type for an `endpoint`.
  */
-interface EndpointResponse<Results extends CbResultType> {
+interface EndpointResponse<Results extends EndpointCallbackResult> {
 	(event: KitEvent): Promise<Extract<Results, KitResponse>>
 
 	// on frontend we grab the second parameter Input-type, for zeroapi
@@ -42,21 +40,21 @@ interface EndpointResponse<Results extends CbResultType> {
 
 function endpoint<B1 extends KitResponse>(callback1: Callback<KitEvent, B1>): EndpointResponse<B1>
 
-function endpoint<B1 extends CbResultType, B2 extends KitResponse>(
+function endpoint<B1 extends EndpointCallbackResult, B2 extends KitResponse>(
 	callback1: Callback<KitEvent, B1>,
 	callback2: Callback<KitEventFn<B1>, B2>
 ): EndpointResponse<B1 | B2>
 
-function endpoint<B1 extends CbResultType, B2 extends CbResultType, B3 extends KitResponse>(
+function endpoint<B1 extends EndpointCallbackResult, B2 extends EndpointCallbackResult, B3 extends KitResponse>(
 	callback1: Callback<KitEvent, B1>,
 	callback2: Callback<KitEventFn<B1>, B2>,
 	callback3: Callback<KitEventFn<B1, B2>, B3>
 ): EndpointResponse<B1 | B2 | B3>
 
 function endpoint<
-	B1 extends CbResultType,
-	B2 extends CbResultType,
-	B3 extends CbResultType,
+	B1 extends EndpointCallbackResult,
+	B2 extends EndpointCallbackResult,
+	B3 extends EndpointCallbackResult,
 	B4 extends KitResponse
 >(
 	callback1: Callback<KitEvent, B1>,
@@ -66,10 +64,10 @@ function endpoint<
 ): EndpointResponse<B1 | B2 | B3 | B4>
 
 function endpoint<
-	B1 extends CbResultType,
-	B2 extends CbResultType,
-	B3 extends CbResultType,
-	B4 extends CbResultType,
+	B1 extends EndpointCallbackResult,
+	B2 extends EndpointCallbackResult,
+	B3 extends EndpointCallbackResult,
+	B4 extends EndpointCallbackResult,
 	B5 extends KitResponse
 >(
 	callback1: Callback<KitEvent, B1>,
@@ -80,11 +78,11 @@ function endpoint<
 ): EndpointResponse<B1 | B2 | B3 | B4 | B5>
 
 function endpoint<
-	B1 extends CbResultType,
-	B2 extends CbResultType,
-	B3 extends CbResultType,
-	B4 extends CbResultType,
-	B5 extends CbResultType,
+	B1 extends EndpointCallbackResult,
+	B2 extends EndpointCallbackResult,
+	B3 extends EndpointCallbackResult,
+	B4 extends EndpointCallbackResult,
+	B5 extends EndpointCallbackResult,
 	B6 extends KitResponse
 >(
 	callback1: Callback<KitEvent, B1>,
@@ -96,12 +94,12 @@ function endpoint<
 ): EndpointResponse<B1 | B2 | B3 | B4 | B5 | B6>
 
 function endpoint<
-	B1 extends CbResultType,
-	B2 extends CbResultType,
-	B3 extends CbResultType,
-	B4 extends CbResultType,
-	B5 extends CbResultType,
-	B6 extends CbResultType,
+	B1 extends EndpointCallbackResult,
+	B2 extends EndpointCallbackResult,
+	B3 extends EndpointCallbackResult,
+	B4 extends EndpointCallbackResult,
+	B5 extends EndpointCallbackResult,
+	B6 extends EndpointCallbackResult,
 	B7 extends KitResponse
 >(
 	callback1: Callback<KitEvent, B1>,
@@ -115,7 +113,9 @@ function endpoint<
 
 // #endregion
 
-function endpoint<const Callbacks extends [...Callback<KitEvent, CbResultType>[]]>(...callbacks: Callbacks) {
+function endpoint<const Callbacks extends [...Callback<KitEvent, EndpointCallbackResult>[]]>(
+	...callbacks: Callbacks
+) {
 	return (event: KitEvent, input?: { body?: unknown; query?: unknown }) => {
 		async function endpointHandler() {
 			event.results ??= {}
@@ -133,11 +133,11 @@ function endpoint<const Callbacks extends [...Callback<KitEvent, CbResultType>[]
 
 			let prev: unknown
 			for (const callback of callbacks) {
-				let result: CbResultType
+				let result: EndpointCallbackResult
 				try {
 					result = await callback(event)
 				} catch (error) {
-					if(error instanceof KitResponse) {
+					if (error instanceof KitResponse) {
 						result = error
 					} else {
 						throw error

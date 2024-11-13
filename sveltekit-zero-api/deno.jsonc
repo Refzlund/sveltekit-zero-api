@@ -1,0 +1,14 @@
+{
+	"name": "@scope/sveltekit-zero-api",
+	"version": "2.0.0-next.0",
+	"exports": {
+		".": "./src/index.ts",
+		"./server": "./src/server/index.ts",
+		"./formapi.svelte": "./src/client/formapi.svelte.ts"
+	},
+	"imports": {
+		"svelte": "npm:svelte@^5.1.12",
+		"@sveltejs/kit": "npm:@sveltejs/kit@^2.8.0",
+		"zod": "npm:zod@^3.23.8"
+  }
+}

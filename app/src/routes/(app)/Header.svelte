@@ -8,7 +8,6 @@
 -->
 
 <script lang="ts">
-	
 	import Logo from '$lib/Logo.svelte'
 	import Pill from '$lib/Pill.svelte'
 	import Select from '$lib/Select'
@@ -16,27 +15,21 @@
 	interface Props {
 		height: number
 	}
-	
-	let {
-		height
-	}: Props = $props()
-	
-	let documentationVersion = $state('2.0.0')
 
+	let { height }: Props = $props()
+
+	let documentationVersion = $state('2.0.0')
 </script>
 <!---------------------------------------------------->
 
 
-<header style='height: {height}px'>
-
+<header style="height: {height}px">
 	<Logo />
 
-	<div>
-		Seamless TypeSafety === Better DX
-	</div>
-	
+	<div>Seamless TypeSafety === Better DX</div>
+
 	<Select bind:value={documentationVersion}>
-		<Select.Option value='2.0.0'>
+		<Select.Option value="2.0.0">
 			{#snippet children(selected)}
 				<span class:selected>
 					Docs v2.0.0
@@ -44,37 +37,25 @@
 				</span>
 			{/snippet}
 		</Select.Option>
-		<Select.Option value='0.15.8'>
-			{#snippet children(selected)}
-				<span class:selected>
-					Docs v0.15.8
-					<Pill>Svelte 4</Pill>
-				</span>
-			{/snippet}
-		</Select.Option>
 	</Select>
 
-	<circle id=a />
-	<circle id=b />
-
+	<circle id=a></circle>
+	<circle id=b></circle>
 </header>
 
 
 <!---------------------------------------------------->
-<style lang='postcss'>
-	
+<style lang="postcss">
 	header {
-		@apply 
-			fixed top-0 left-0 right-0 grid bg-gray-950 items-center z-[9999]
-			grid-cols-[14rem,1fr,14rem] px-24 overflow-hidden bg-opacity-80 backdrop-blur-lg
-		;
+		@apply fixed top-0 left-0 right-0 grid bg-gray-950 items-center z-[9999]
+			grid-cols-[14rem,1fr,14rem] px-24 overflow-hidden bg-opacity-80 backdrop-blur-lg;
 
 		&::after {
 			content: '';
 			background: radial-gradient(
 				50% 50% at 50% 50%,
 				theme('colors.gray.500') 0%,
-				rgba(255,255,255,0) 110%
+				rgba(255, 255, 255, 0) 110%
 			);
 			@apply absolute bottom-0 left-0 right-0 h-[2px] opacity-60;
 		}
@@ -94,9 +75,12 @@
 
 	circle {
 		@apply absolute rounded-full w-[22rem] h-24 blur-[10rem];
-		
-		&#a { @apply bg-primary w-[42rem] -bottom-[13rem] left-[200px]; }
-		&#b { @apply bg-secondary -bottom-[8rem] right-[250px]; }
-	}
 
+		&#a {
+			@apply bg-primary w-[42rem] -bottom-[13rem] left-[200px];
+		}
+		&#b {
+			@apply bg-secondary -bottom-[8rem] right-[250px];
+		}
+	}
 </style>

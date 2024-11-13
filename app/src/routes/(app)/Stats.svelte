@@ -2,7 +2,8 @@
 	import { npmjs, github } from '$lib/fetch'
 	import { browser } from '$app/environment'
 
-	let npmjsData: Promise<any> | undefined, githubData: Promise<any> | undefined
+	let npmjsData: Promise<any> | undefined = $state()
+	let githubData: Promise<any> | undefined = $state()
 
 	if(browser) {
 		npmjsData = npmjs()

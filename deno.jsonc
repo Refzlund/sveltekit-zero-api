@@ -1,11 +1,13 @@
 {
 	"tasks": {
-		"app": "cd app && vite dev"
+		"app": "cd app && vite dev --host"
 	},
 	"compilerOptions": {
-		"lib": ["deno.window", "ESNext", "DOM", "DOM.Iterable", "DOM.AsyncIterable"],
+		"lib": ["deno.window", "ESNext", "DOM", "DOM.Iterable"],
 		"noImplicitAny": false,
-		"strict": true
+		"strict": true,
+		// "allowJs": true,
+		"checkJs": true
 	},
 	"lint": {
 		"rules": {
@@ -13,6 +15,7 @@
 			"exclude": ["no-explicit-any", "no-unused-vars", "prefer-const", "ban-types"]
 		}
 	},
+	"nodeModulesDir": "auto",
 	"fmt": {
 		"lineLength": 100,
 		"tabWidth": 4,

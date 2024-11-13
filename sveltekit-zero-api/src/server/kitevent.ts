@@ -1,7 +1,7 @@
-import { Cookies, Handle, RequestEvent } from "@sveltejs/kit"
-import { KitResponse } from "./http.ts";
-import { CbResultType } from "./endpoint.ts";
-import { Simplify, UnionToIntersection } from "../utils/types.ts";
+import { Cookies, Handle, RequestEvent } from '@sveltejs/kit'
+import { KitResponse } from './http.ts'
+import { EndpointCallbackResult } from './endpoint.ts'
+import { Simplify, UnionToIntersection } from '../utils/types.ts'
 
 export interface KitEvent<
 	Input extends {
@@ -13,30 +13,32 @@ export interface KitEvent<
 	body: [Input['body']] extends [never] ? unknown : Input['body']
 	query: [Input['query']] extends [never] ? Record<string | number, unknown> : Input['query']
 	/**
-	 * Returned content from previous callbacks in an endpoint;  
+	 * Returned content from previous callbacks in an endpoint;
 	 * `App.Locals` little brother.
-	*/
+	 */
 	results: [Results] extends [never] ? Record<PropertyKey, unknown> : Results
 }
 
 /**
  * A helper function to create a KitEvent from the results
  * of endpoint functions.
-*/
+ */
 export type KitEventFn<
 	// note:  I wanted to omit keys from returned records
 	//        that overlapped with previous ones. However,
 	//        that may come at a later time as it seems "overcomplicative".
-	R1 extends CbResultType,
-	R2 extends CbResultType = never,
-	R3 extends CbResultType = never,
-	R4 extends CbResultType = never,
-	R5 extends CbResultType = never,
-	R6 extends CbResultType = never,
-	R7 extends CbResultType = never
+	R1 extends EndpointCallbackResult,
+	R2 extends EndpointCallbackResult = never,
+	R3 extends EndpointCallbackResult = never,
+	R4 extends EndpointCallbackResult = never,
+	R5 extends EndpointCallbackResult = never,
+	R6 extends EndpointCallbackResult = never,
+	R7 extends EndpointCallbackResult = never
 > = KitEvent<
 	Simplify<Pick<Extract<R1 | R2 | R3 | R4 | R5 | R6 | R7, ParseKitEvent<any, any>>, 'body' | 'query'>>,
-	UnionToIntersection<Exclude<R1 | R2 | R3 | R4 | R5 | R6 | R7, KitResponse<any, any, any> | ParseKitEvent<any, any>>>
+	UnionToIntersection<
+		Exclude<R1 | R2 | R3 | R4 | R5 | R6 | R7, KitResponse<any, any, any> | ParseKitEvent<any, any>>
+	>
 > extends KitEvent<infer A, infer B>
 	? KitEvent<A, B>
 	: never
@@ -90,7 +92,7 @@ function zod({ body, query }) {
 
 ```
 */
-export class ParseKitEvent<Body = never, Query = never>{
+export class ParseKitEvent<Body = never, Query = never> {
 	body: [Body] extends [never] ? undefined : Body
 	query: [Query] extends [never] ? undefined : Query
 	constructor({ body, query }: { body?: Body; query?: Query }) {
@@ -105,7 +107,7 @@ interface FakeOptions {
 	 *
 	 * Remember to [Sanitize](https://docs.deno.com/runtime/fundamentals/testing/#resource-sanitizer)
 	 * after your tests, like closing database-connections.
-	*/
+	 */
 	hooks?: Handle
 	/** Pre-fill locals, e.g. `isTest: true` */
 	locals?: Record<PropertyKey, any>
@@ -117,14 +119,14 @@ interface FakeOptions {
 
 /**
  * Emulate a SvelteKit RequestEvent (ergo KitEvent) for testing.
- * 
+ *
  * To check if currnetly processing a test event, you can do
- * 
+ *
  * @example
  * if(event instanceof FakeKitEvent) {
  *     /// running a test
  * }
-*/
+ */
 export class FakeKitEvent implements KitEvent {
 	body = {} as any
 	query = {} as any

@@ -74,6 +74,8 @@
 		context.selected = options.find(o => o.value === value)
 	})
 
+	let open = $derived(context.open && (options.length > 1 || !value))
+
 	function selectValue(_value: T) {
 		value = _value
 		context.open = false
@@ -83,7 +85,7 @@
 <!---------------------------------------------------->
 
 <button
-	class:open={context.open}
+	class:open
 	class='group'
 	onclick={() => context.open = !context.open}
 	bind:clientWidth={width}
@@ -98,8 +100,9 @@
 			<span>{context.selected.value}</span>
 		{/if}
 	{/if}
-	
-	<icon class='iconify fluent--chevron-right-20-regular'></icon>
+	{#if options.length > 1 || !value}
+		<icon class='iconify fluent--chevron-right-20-regular'></icon>
+	{/if}
 </button>
 
 <!--
@@ -110,7 +113,7 @@
 -->
 
 <dialog
-	open={context.open}
+	{open}
 	style:width='{width}px'
 	use:float
 	use:portal

@@ -1,6 +1,5 @@
 <script lang="ts">
 	import Code from '$lib/Code/Code.svelte'
-	import { writable } from 'svelte/store'
 	import { formAPI } from 'sveltekit-zero-api/formapi.svelte'
 
 	interface Person {

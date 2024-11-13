@@ -11,15 +11,13 @@
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin='anonymous'>
 </svelte:head>
 
-<site style='display: contents'>
-	{@render children()}
-</site>
+{@render children()}
 
 <style lang='postcss'>
 	
 	@import 'https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap';
 
-	site {
+	:global(body > site) {
 		@apply block w-screen h-screen overflow-auto;
 	}
 
