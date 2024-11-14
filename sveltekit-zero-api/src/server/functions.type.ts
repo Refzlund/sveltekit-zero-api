@@ -1,14 +1,11 @@
 import { Promisify } from '../utils/types.ts'
-import { GenericFn } from './functions.ts'
+import { Generic } from './functions.ts'
 import { InternalServerError, KitResponse, StatusCode } from './http.ts'
 import { KitEvent } from './kitevent.ts'
 
 export type Fn = (event: KitEvent, ...args: any[]) => KitResponse | Promise<KitResponse>
 
-export type FnsRecord = Record<
-	string,
-	Fn | ((event: KitEvent) => GenericFn<(...args: any[]) => Promisify<any>>)
->
+export type FnsRecord = Record<string, Fn | ((event: KitEvent) => Generic<(...args: any[]) => Promisify<any>>)>
 
 export type FnArgs<T extends FnsRecord[string]> = T extends (
 	...args: [infer TKitEvent, ...infer Args]
@@ -22,7 +19,7 @@ export type FnResult<T extends FnsRecord[string]> = T extends (
 	: never
 
 export type Functions<T extends FnsRecord> = {
-	[K in keyof T]: ReturnType<T[K]> extends GenericFn<infer Fn>
+	[K in keyof T]: ReturnType<T[K]> extends Generic<infer Fn>
 		? Fn
 		: (...args: FnArgs<T[K]>) => Promisify<
 				Extract<FnResult<T[K]>, KitResponse<StatusCode['Success']>>['body'],

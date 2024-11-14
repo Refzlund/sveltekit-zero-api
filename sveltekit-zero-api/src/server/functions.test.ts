@@ -1,7 +1,7 @@
-import { isResponse } from "../is-response.ts";
+import { isResponse } from '../is-response.ts'
 import type { Simplify } from './../utils/types.ts'
-import { functions, GenericFn } from './functions.ts'
-import { OK } from './http.ts'
+import { functions, Generic } from './functions.ts'
+import { BadRequest, OK } from './http.ts'
 import { FakeKitEvent, type KitEvent } from './kitevent.ts'
 
 // TODO   Make sure to test various response types on frontend: strings, numbers, readable streams, etc.
@@ -18,6 +18,9 @@ Deno.test('functions', async () => {
 		if (Math.random() > 0.5) {
 			return new OK(null)
 		}
+		if (Math.random() > 0.9) {
+			return new BadRequest(null)
+		}
 
 		return new OK({
 			providedData: input
@@ -26,8 +29,7 @@ Deno.test('functions', async () => {
 
 	const PATCH = functions({
 		someFn,
-		specificFn: (event) =>
-			new GenericFn(<const T extends Input>(input: T) => GenericFn.return(someFn(event, input)))
+		specificFn: (event) => new Generic(<const T extends Input>(input: T) => Generic.fn(someFn(event, input)))
 	})
 
 	let fns = PATCH(new FakeKitEvent()).use
@@ -37,7 +39,7 @@ Deno.test('functions', async () => {
 		.then((v) => v)
 		.catch((err) => err)
 
-	if(isResponse(result)) {
+	if (isResponse(result)) {
 		result
 	}
 

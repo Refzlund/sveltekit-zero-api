@@ -1,8 +1,9 @@
-import { expect } from "@std/expect";
-import { endpoint } from "../server/endpoint.ts";
-import { BadRequest, KitResponse, OK } from "../server/http.ts";
-import { FakeKitEvent, KitEvent, ParseKitEvent } from "../server/kitevent.ts";
-import { parseJSON } from "../server/parse-json.ts";
+import { Generic } from './../server/functions'
+import { expect } from '@std/expect'
+import { endpoint } from '../server/endpoint.ts'
+import { BadRequest, KitResponse, OK } from '../server/http.ts'
+import { FakeKitEvent, KitEvent, ParseKitEvent } from '../server/kitevent.ts'
+import { parseJSON } from '../server/parse-json.ts'
 import z from 'zod'
 
 function zod<Body extends z.ZodTypeAny = never, Query extends z.ZodTypeAny = never>({
@@ -42,6 +43,30 @@ function zod<Body extends z.ZodTypeAny = never, Query extends z.ZodTypeAny = nev
 	}
 }
 
+Deno.test('Generic endpoint', async () => {
+	const POST = endpoint(
+		parseJSON, // -> event.body
+		(event) =>
+			new Generic(<Body, Query>(body: Body, options: { query: Query }) => {
+				return {
+					body
+				}
+			}),
+		(event) => {
+			return new OK(event.results.body)
+		}
+	)
+
+	/*
+		endpont(
+			event => generic(<T>(input: T) => {
+				return someFn(event, input)
+			})
+		)
+	
+	*/
+})
+
 Deno.test('endpoint ParseKitEvent', async () => {
 	const body = z.object({
 		name: z.string().optional()
@@ -60,25 +85,28 @@ Deno.test('endpoint ParseKitEvent', async () => {
 	let ran = 0
 
 	// @ts-expect-error name must be string
-	let r1 = POST(new FakeKitEvent(), { body: { name: 123 } })
+	let r1 = POST(new FakeKitEvent())
+		.use({ body: { name: 123 } })
 		.any(() => ran++)
-		.$
-		.BadRequest(r => { throw new Error('Failed validation', { cause: r }) })
+		.$.BadRequest((r) => {
+			throw new Error('Failed validation', { cause: r })
+		})
 		.success(() => '')
 
 	let [badRequest] = r1
 
 	await expect(badRequest).resolves.rejects.toThrow('Failed validation')
 
-	let r2 = POST(new FakeKitEvent(), { body: { name: 'John' } })
+	let r2 = POST(new FakeKitEvent())
+		.use({ body: { name: 'John' } })
 		.any(() => ran++)
-		.$
-		.BadRequest(r => {  throw new Error('Failed validation', { cause: r }) })
-		.success(r => r.body)
-		[1]
+		.$.BadRequest((r) => {
+			throw new Error('Failed validation', { cause: r })
+		})
+		.success((r) => r.body)[1]
 
 	let success = await r2
 	expect(success).toEqual({ name: 'John' })
-	
+
 	expect(ran).toBe(2)
 })

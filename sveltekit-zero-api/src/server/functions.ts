@@ -6,23 +6,23 @@ import type { KitEvent } from './kitevent.ts'
 /**
  * We use the `GenericFn` class to tell `sveltekit-zero-api` that it
  * needs to call the returned function instead of returning it immediately — expecting a KitResponse.
- * 
+ *
  * @example
  * interface Input {
  *     name: string
  *     age: number
  * }
- * 
+ *
  * function someFn<T extends Simplify<Input>>(event: KitEvent, input: T) {
  *     if (Math.random() > 0.5) {
  *         return new BadRequest({ code: 'invalid', error: 'You are quite the unlucky fellow.' })
  *     }
- * 
+ *
  *     return new OK({
  *         providedData: input
  *     })
  * }
- * 
+ *
  * const PATCH = functions({
  *     someFn,
  *     specificFn: (event) =>
@@ -34,16 +34,16 @@ import type { KitEvent } from './kitevent.ts'
  *     }
  * )
  */
-export class GenericFn<T extends Function> {
+export class Generic<T extends Function> {
 	function: T
 	constructor(fn: T) {
 		this.function = fn
 	}
 
 	/**
-	 * We use this function to essentially "type" the response correctly.
-	 */
-	static return<T extends KitResponse>(response: T) {
+	 * We use this function to "type" the response of a `functions({ ... })`-fn correctly.
+	*/
+	static fn<T extends KitResponse>(response: T) {
 		return response as unknown as Promisify<
 			Extract<T, KitResponse<StatusCode['Success']>>['body'],
 			| Exclude<Extract<T, KitResponse>, KitResponse<StatusCode['Success']>>
@@ -76,7 +76,7 @@ export function functions<const Fns extends FnsRecord>(fns: Fns) {
 
 		let promise = functionRequest(event, fns, () => !!useProxy)
 
-		Object.assign(promise, { 
+		Object.assign(promise, {
 			get use() {
 				useProxy ??= new Proxy(fns, {
 					get(target, key) {
@@ -111,7 +111,7 @@ export function functions<const Fns extends FnsRecord>(fns: Fns) {
 				return useProxy
 			}
 		})
-		
+
 		return promise as typeof promise & {
 			use: Functions<Fns>
 		}
@@ -128,7 +128,7 @@ async function functionRequest(event: KitEvent, fns: FnsRecord, useProxy: () => 
 	let json: Record<PropertyKey, any>
 	try {
 		json = await event.request.json()
-		if(useProxy()) return
+		if (useProxy()) return
 	} catch (error) {
 		if (useProxy()) return
 		return new BadRequest({ code: 'invalid_json', error: 'Invalid JSON', details: error })
@@ -161,7 +161,7 @@ async function functionRequest(event: KitEvent, fns: FnsRecord, useProxy: () => 
 	}
 	try {
 		let result = await fns[fn](event, ...args)
-		if (result instanceof GenericFn) {
+		if (result instanceof Generic) {
 			return result.function(...args)
 		}
 		return result
@@ -190,8 +190,8 @@ async function functionProxyResolve({
 	fn: FnsRecord[string]
 	args: any
 }) {
-	let result: KitResponse | GenericFn<any> = await fn(event, ...args)
-	if (result instanceof GenericFn) {
+	let result: KitResponse | Generic<any> = await fn(event, ...args)
+	if (result instanceof Generic) {
 		result = result.function(...args)
 	}
 	if (!(result instanceof KitResponse)) {
