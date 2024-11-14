@@ -1,6 +1,10 @@
 {
 	"name": "@scope/app",
-	"imports": { 
+	"imports": {
+		// no relative import (for now) https://github.com/denoland/deno/issues/17248#issuecomment-2461116167
+		"#types/": "./.svelte-kit/types/src/routes/",
+
+		// imports
 		"@deno/vite-plugin": "npm:@deno/vite-plugin@^1.0.0",
 		"@floating-ui/dom": "npm:@floating-ui/dom@^1.6.12",
 		"@iconify-json/devicon": "npm:@iconify-json/devicon@^1.2.4",

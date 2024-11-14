@@ -3,6 +3,8 @@
 	"exports": {
 		".": "./src/index.ts",
 		"./server": "./src/server/index.ts",
+		"./http": "./src/server/http.ts",
+		"./vite": "./src/server/vite.ts",
 		"./formapi.svelte": "./src/client/formapi.svelte.ts"
 	}
 }

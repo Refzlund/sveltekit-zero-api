@@ -1,7 +1,7 @@
-import { Promisify } from '../utils/types.ts'
-import { Functions, FnsRecord } from './functions.type.ts'
-import { BadRequest, InternalServerError, KitResponse, StatusCode } from './http.ts'
-import { KitEvent } from './kitevent.ts'
+import type { Promisify } from '../utils/types.ts'
+import type { Functions, FnsRecord } from './functions.type.ts'
+import { BadRequest, InternalServerError, KitResponse, type StatusCode } from './http.ts'
+import type { KitEvent } from './kitevent.ts'
 
 /**
  * We use the `GenericFn` class to tell `sveltekit-zero-api` that it
@@ -40,6 +40,9 @@ export class GenericFn<T extends Function> {
 		this.function = fn
 	}
 
+	/**
+	 * We use this function to essentially "type" the response correctly.
+	 */
 	static return<T extends KitResponse>(response: T) {
 		return response as unknown as Promisify<
 			Extract<T, KitResponse<StatusCode['Success']>>['body'],
@@ -67,93 +70,110 @@ export class GenericFn<T extends Function> {
  * @note Do not end function names in `$` as those are reserved for route slugged params.
  */
 export function functions<const Fns extends FnsRecord>(fns: Fns) {
-	async function functionsHandler(event: KitEvent<{ body: { function: string; arguments: unknown[] } }>) {
-		let json
-		try {
-			json = await event.request.json()
-		} catch (error) {
-			return new BadRequest({ code: 'invalid_json', error: 'Invalid JSON' })
-		}
+	function functionsHandler(event: KitEvent<{ body: { function: string; arguments: unknown[] } }>) {
+		/** Use on backend */
+		let useProxy = null as null | Fns
 
-		const { function: fn, arguments: args } = json
-		if (!fn || typeof fn !== 'string') {
-			return new BadRequest({
-				code: 'missing_function',
-				error: 'Please provide a function, by providing a `function` property in the body'
-			})
-		}
+		let promise = functionRequest(event, fns, () => !!useProxy)
 
-		if (!fns[fn]) {
-			return new BadRequest({
-				code: 'invalid_function',
-				error: 'Invalid function name'
-			})
-		}
-
-		if (args && !Array.isArray(args)) {
-			return new BadRequest({
-				code: 'invalid_arguments',
-				error: 'The `arguments` property must be undefind or an array of arguments for the provided function.',
-				details: {
-					received: args,
-					expected: 'Array | undefined'
-				}
-			})
-		}
-		try {
-			let result = await fns[fn](event, ...args)
-			if(result instanceof GenericFn) {
-				return result.function(...args)
-			}
-			return result
-		} catch (error) {
-			throw new InternalServerError(
-				{
-					code: 'function_failed',
-					error: 'An unexpected error occurred when running the function.'
-				},
-				{ cause: error }
-			)
-		}
-	}
-
-	let $ = function $(event: KitEvent) {
-		$['__proxy'] ??= new Proxy(fns, {
-			get(target, key) {
-				if (!(key in target)) {
-					return target[key as any]
-				}
-				return (...args: [any]) => {
-					return new Promise((resolve, reject) => {
-						try {
-							functionProxyResolve({
-								resolve,
-								reject,
-								fn: target[key as any],
-								event,
-								args
-							})
-						} catch (error) {
-							reject(
-								new InternalServerError(
-									{
-										code: 'function_failed',
-										error: 'An unexpected error occurred when running the function.'
-									},
-									{ cause: { function: key, arguments: args, error } }
-								)
-							)
+		Object.assign(promise, { 
+			get use() {
+				useProxy ??= new Proxy(fns, {
+					get(target, key) {
+						if (!(key in target)) {
+							return target[key as any]
 						}
-					})
-				}
+						return (...args: [any]) => {
+							return new Promise((resolve, reject) => {
+								try {
+									functionProxyResolve({
+										resolve,
+										reject,
+										fn: target[key as any],
+										event,
+										args
+									})
+								} catch (error) {
+									reject(
+										new InternalServerError(
+											{
+												code: 'function_failed',
+												error: 'An unexpected error occurred when running the function.'
+											},
+											{ cause: { function: key, arguments: args, error } }
+										)
+									)
+								}
+							})
+						}
+					}
+				})
+				return useProxy
 			}
 		})
-
-		return $['__proxy']
+		
+		return promise as typeof promise & {
+			use: Functions<Fns>
+		}
 	}
 
-	Object.assign(functionsHandler, { $ })
-	return functionsHandler as typeof functionsHandler & { $: (event: KitEvent) => Functions<Fns> }
+	return functionsHandler as typeof functionsHandler & {
+		(event: KitEvent): {
+			use: Functions<Fns>
+		}
+	}
+}
+
+async function functionRequest(event: KitEvent, fns: FnsRecord, useProxy: () => boolean) {
+	let json: Record<PropertyKey, any>
+	try {
+		json = await event.request.json()
+		if(useProxy()) return
+	} catch (error) {
+		if (useProxy()) return
+		return new BadRequest({ code: 'invalid_json', error: 'Invalid JSON', details: error })
+	}
+
+	const { function: fn, arguments: args } = json
+	if (!fn || typeof fn !== 'string') {
+		return new BadRequest({
+			code: 'missing_function',
+			error: 'Please provide a function, by providing a `function` property in the body'
+		})
+	}
+
+	if (!fns[fn]) {
+		return new BadRequest({
+			code: 'invalid_function',
+			error: 'Invalid function name'
+		})
+	}
+
+	if (args && !Array.isArray(args)) {
+		return new BadRequest({
+			code: 'invalid_arguments',
+			error: 'The `arguments` property must be undefind or an array of arguments for the provided function.',
+			details: {
+				received: args,
+				expected: 'Array | undefined'
+			}
+		})
+	}
+	try {
+		let result = await fns[fn](event, ...args)
+		if (result instanceof GenericFn) {
+			return result.function(...args)
+		}
+		return result
+	} catch (error) {
+		throw new InternalServerError(
+			{
+				code: 'function_failed',
+				error: 'An unexpected error occurred when running the function.'
+			},
+			{ cause: error }
+		)
+	}
 }
 
 // Doing this as Deno don't like awaiting a Promise callback

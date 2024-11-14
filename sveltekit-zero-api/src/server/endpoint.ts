@@ -4,6 +4,7 @@ import { FixKeys, Simplify } from '../utils/types.ts'
 import { KitResponse, StatusCode, Statuses, StatusTextType } from './http.ts'
 import { KitEvent, KitEventFn, ParseKitEvent } from './kitevent.ts'
 import { EndpointProxy } from '../endpoint-proxy.type.ts'
+import { FakeKitEvent } from "./kitevent.ts";
 
 /**
  * The "result" of an `endpoint` paramters `callback`
@@ -28,10 +29,9 @@ type EndpointInput<Results extends EndpointCallbackResult> = Simplify<
  * The return-type for an `endpoint`.
  */
 interface EndpointResponse<Results extends EndpointCallbackResult> {
-	(event: KitEvent): Promise<Extract<Results, KitResponse>>
-
-	// on frontend we grab the second parameter Input-type, for zeroapi
-	(event: KitEvent, input: EndpointInput<Results>): EndpointProxy<Extract<Results, KitResponse>>
+	(event: KitEvent): Promise<Extract<Results, KitResponse>> & {
+		use: (input?: EndpointInput<Results>) => EndpointProxy<Extract<Results, KitResponse>>
+	}
 }
 
 // * Note:  I believe there's a limit to the amount of parameters
@@ -116,20 +116,16 @@ function endpoint<
 function endpoint<const Callbacks extends [...Callback<KitEvent, EndpointCallbackResult>[]]>(
 	...callbacks: Callbacks
 ) {
-	return (event: KitEvent, input?: { body?: unknown; query?: unknown }) => {
+	return (event: KitEvent) => {
+		
+		let useProxy: ReturnType<typeof createEndpointProxy> | null = null
+		
 		async function endpointHandler() {
+			// TODO Don't await an additional 2ms because of `.use` functionality.
+			// TODO Consider a different approach.
+			await new Promise((res) => setTimeout(res, 0))
+
 			event.results ??= {}
-
-			if (input) {
-				event.request ??= {} as typeof event.request
-				event.request.json = () => new Promise((r) => r(input.body))
-				event.query ??= {}
-				Object.assign(event.query, input.query ?? {})
-
-				// @ts-expect-error Assign to readable
-				event.request.headers ??= new Headers()
-				event.request.headers.set('content-type', 'application/json')
-			}
 
 			let prev: unknown
 			for (const callback of callbacks) {
@@ -159,12 +155,24 @@ function endpoint<const Callbacks extends [...Callback<KitEvent, EndpointCallbac
 		}
 
 		const promise = endpointHandler() as Promise<KitResponse>
-		if (!input) {
-			// End early to avoid adding additional logic for every request.
-			return promise
-		}
+		
+		Object.assign(promise, {
+			use(input?: { body?: unknown; query?: unknown }) {
+				event.request ??= {} as typeof event.request
+				event.request.json = () => new Promise((r) => r(input?.body))
+				event.query ??= {}
+				Object.assign(event.query, input?.query ?? {})
 
-		return createEndpointProxy(promise)
+				// @ts-expect-error Assign to readable
+				event.request.headers ??= new Headers()
+				event.request.headers.set('content-type', 'application/json')
+
+				useProxy ??= createEndpointProxy(promise)
+				return useProxy
+			}
+		})
+		
+		return promise
 	}
 }
 
