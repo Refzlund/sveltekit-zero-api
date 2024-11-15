@@ -1,10 +1,10 @@
-import { Generic } from './../server/functions'
 import { expect } from '@std/expect'
 import { endpoint } from '../server/endpoint.ts'
 import { BadRequest, KitResponse, OK } from '../server/http.ts'
-import { FakeKitEvent, KitEvent, ParseKitEvent } from '../server/kitevent.ts'
+import { FakeKitEvent, type KitEvent, ParseKitEvent } from '../server/kitevent.ts'
 import { parseJSON } from '../server/parse-json.ts'
 import z from 'zod'
+import { Generic } from "../server/generic.ts";
 
 function zod<Body extends z.ZodTypeAny = never, Query extends z.ZodTypeAny = never>({
 	body,
@@ -44,27 +44,31 @@ function zod<Body extends z.ZodTypeAny = never, Query extends z.ZodTypeAny = nev
 }
 
 Deno.test('Generic endpoint', async () => {
+
+	function someEndpoint<Body, Query extends {}>(event: KitEvent<{ body: Body, query: Query }>) {
+		return new OK({ body: event.body, query: event.query })
+	}
+
 	const POST = endpoint(
-		parseJSON, // -> event.body
-		(event) =>
-			new Generic(<Body, Query>(body: Body, options: { query: Query }) => {
-				return {
-					body
-				}
-			}),
-		(event) => {
-			return new OK(event.results.body)
-		}
+		(event) => new Generic(<const Body, const Opts extends { query: {} }>(body: Body, options?: Opts) => 
+			Generic.endpoint(someEndpoint<Body, Opts['query']>(event)))
 	)
 
-	/*
-		endpont(
-			event => generic(<T>(input: T) => {
-				return someFn(event, input)
-			})
-		)
+	let [r1] = POST(new FakeKitEvent()).use({ name: 'bob' }, { query: { test: 123 } })
+		.$.OK(r => r.body)
 	
-	*/
+	await expect(r1).resolves.toEqual({ body: { name: 'bob' }, query: { test: 123 } })
+})
+
+Deno.test('Simple endpoint', async () => {
+	const GET = endpoint(
+		(event) => new OK({ value: '123' })
+	)
+
+	let [r1] = GET(new FakeKitEvent()).use()
+		.$.OK(r => r.body)
+
+	await expect(r1).resolves.toEqual({ value: '123' })
 })
 
 Deno.test('endpoint ParseKitEvent', async () => {
@@ -85,8 +89,7 @@ Deno.test('endpoint ParseKitEvent', async () => {
 	let ran = 0
 
 	// @ts-expect-error name must be string
-	let r1 = POST(new FakeKitEvent())
-		.use({ body: { name: 123 } })
+	let r1 = POST(new FakeKitEvent()).use({ name: 123 })
 		.any(() => ran++)
 		.$.BadRequest((r) => {
 			throw new Error('Failed validation', { cause: r })
@@ -98,7 +101,7 @@ Deno.test('endpoint ParseKitEvent', async () => {
 	await expect(badRequest).resolves.rejects.toThrow('Failed validation')
 
 	let r2 = POST(new FakeKitEvent())
-		.use({ body: { name: 'John' } })
+		.use({ name: 'John' } )
 		.any(() => ran++)
 		.$.BadRequest((r) => {
 			throw new Error('Failed validation', { cause: r })

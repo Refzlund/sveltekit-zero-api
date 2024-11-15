@@ -1,6 +1,7 @@
 import { isResponse } from '../is-response.ts'
 import type { Simplify } from './../utils/types.ts'
-import { functions, Generic } from './functions.ts'
+import { functions } from './functions.ts'
+import { Generic } from "./generic.ts";
 import { BadRequest, OK } from './http.ts'
 import { FakeKitEvent, type KitEvent } from './kitevent.ts'
 

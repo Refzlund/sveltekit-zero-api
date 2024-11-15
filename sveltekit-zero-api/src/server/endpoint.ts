@@ -1,9 +1,9 @@
-import type { Generic } from './functions'
 import { createEndpointProxy } from '../endpoint-proxy.ts'
 import type { FixKeys, Simplify } from '../utils/types.ts'
-import { KitResponse } from './http.ts'
+import { BadRequest, KitResponse } from './http.ts'
 import { ParseKitEvent, type KitEvent, type KitEventFn } from './kitevent.ts'
 import type { EndpointProxy } from '../endpoint-proxy.type.ts'
+import { Generic } from "./generic.ts";
 
 /**
  * The "result" of an `endpoint` paramters `callback`
@@ -24,12 +24,33 @@ type EndpointInput<Results extends EndpointCallbackResult> = Simplify<
 	FixKeys<Pick<Extract<Results, ParseKitEvent<any, any>>, 'body' | 'query'>>
 >
 
+type GenericCallback =
+	Generic<
+		| ((body: any) => EndpointProxy<KitResponse<any,any,any>>)
+		/** When `body` is not available. E.g. `GET`, `HEAD`, `TRACE` */
+		| ((options: { query: any }) => EndpointProxy<KitResponse<any,any,any>>)
+		| ((body: any, options: { query: any }) => EndpointProxy<KitResponse<any,any,any>>)
+	>
+
+type Fn<
+	Input extends {
+		body?: any
+		query?: any
+	}, 
+	Result extends KitResponse
+> = (
+	body?: Input['body'], 
+	options?: { query?: Input['query'] }
+) => EndpointProxy<Result>
+
 /**
  * The return-type for an `endpoint`.
  */
-interface EndpointResponse<Results extends EndpointCallbackResult> {
+interface EndpointResponse<Results extends EndpointCallbackResult, G extends null | GenericCallback = null> {
 	(event: KitEvent): Promise<Extract<Results, KitResponse>> & {
-		use: (input?: EndpointInput<Results>) => EndpointProxy<Extract<Results, KitResponse>>
+		use: null extends G 
+			? Fn<EndpointInput<Results>, Extract<Results, KitResponse>>
+			: G extends Generic<infer Input> ? Input : never
 	}
 }
 
@@ -37,32 +58,25 @@ interface EndpointResponse<Results extends EndpointCallbackResult> {
 // *        so I'm limiting it to 7. Might be decreased in the future.
 // #region endpoint overloads
 
-type GenericCallback<T> =
-	| Generic<(body: unknown) => T>
-	/** When `body` is not available. E.g. `GET`, `HEAD`, `TRACE` */
-	| Generic<(options: { query: Record<string, unknown> }) => T>
-	| Generic<(body: unknown, options: { query: Record<string, unknown> }) => T>
 
-type GenericLastReturn = GenericCallback<KitResponse>
-type GenericOthers = GenericCallback<EndpointCallbackResult>
 
-type LastReturn = KitResponse | GenericLastReturn
-type OtherReturn = EndpointCallbackResult | GenericOthers
+function endpoint<B1 extends KitResponse, TGenericResult extends null | GenericCallback = null>(
+	/** When creating a `Generic` endpoint, the body WILL be parsed as JSON. */
+	callback1: Callback<KitEvent, B1> | ((event: KitEvent) => Promise<TGenericResult> | TGenericResult)
+): EndpointResponse<B1, TGenericResult>
 
-function endpoint<B1 extends LastReturn>(callback1: Callback<KitEvent, B1>): EndpointResponse<B1>
-
-function endpoint<B1 extends OtherReturn, B2 extends LastReturn>(
+function endpoint<B1 extends EndpointCallbackResult, B2 extends KitResponse>(
 	callback1: Callback<KitEvent, B1>,
 	callback2: Callback<KitEventFn<B1>, B2>
 ): EndpointResponse<B1 | B2>
 
-function endpoint<B1 extends OtherReturn, B2 extends OtherReturn, B3 extends LastReturn>(
+function endpoint<B1 extends EndpointCallbackResult, B2 extends EndpointCallbackResult, B3 extends KitResponse>(
 	callback1: Callback<KitEvent, B1>,
 	callback2: Callback<KitEventFn<B1>, B2>,
 	callback3: Callback<KitEventFn<B1, B2>, B3>
 ): EndpointResponse<B1 | B2 | B3>
 
-function endpoint<B1 extends OtherReturn, B2 extends OtherReturn, B3 extends OtherReturn, B4 extends LastReturn>(
+function endpoint<B1 extends EndpointCallbackResult, B2 extends EndpointCallbackResult, B3 extends EndpointCallbackResult, B4 extends KitResponse>(
 	callback1: Callback<KitEvent, B1>,
 	callback2: Callback<KitEventFn<B1>, B2>,
 	callback3: Callback<KitEventFn<B1, B2>, B3>,
@@ -70,11 +84,11 @@ function endpoint<B1 extends OtherReturn, B2 extends OtherReturn, B3 extends Oth
 ): EndpointResponse<B1 | B2 | B3 | B4>
 
 function endpoint<
-	B1 extends OtherReturn,
-	B2 extends OtherReturn,
-	B3 extends OtherReturn,
-	B4 extends OtherReturn,
-	B5 extends LastReturn
+	B1 extends EndpointCallbackResult,
+	B2 extends EndpointCallbackResult,
+	B3 extends EndpointCallbackResult,
+	B4 extends EndpointCallbackResult,
+	B5 extends KitResponse
 >(
 	callback1: Callback<KitEvent, B1>,
 	callback2: Callback<KitEventFn<B1>, B2>,
@@ -84,12 +98,12 @@ function endpoint<
 ): EndpointResponse<B1 | B2 | B3 | B4 | B5>
 
 function endpoint<
-	B1 extends OtherReturn,
-	B2 extends OtherReturn,
-	B3 extends OtherReturn,
-	B4 extends OtherReturn,
-	B5 extends OtherReturn,
-	B6 extends LastReturn
+	B1 extends EndpointCallbackResult,
+	B2 extends EndpointCallbackResult,
+	B3 extends EndpointCallbackResult,
+	B4 extends EndpointCallbackResult,
+	B5 extends EndpointCallbackResult,
+	B6 extends KitResponse
 >(
 	callback1: Callback<KitEvent, B1>,
 	callback2: Callback<KitEventFn<B1>, B2>,
@@ -100,13 +114,13 @@ function endpoint<
 ): EndpointResponse<B1 | B2 | B3 | B4 | B5 | B6>
 
 function endpoint<
-	B1 extends OtherReturn,
-	B2 extends OtherReturn,
-	B3 extends OtherReturn,
-	B4 extends OtherReturn,
-	B5 extends OtherReturn,
-	B6 extends OtherReturn,
-	B7 extends LastReturn
+	B1 extends EndpointCallbackResult,
+	B2 extends EndpointCallbackResult,
+	B3 extends EndpointCallbackResult,
+	B4 extends EndpointCallbackResult,
+	B5 extends EndpointCallbackResult,
+	B6 extends EndpointCallbackResult,
+	B7 extends KitResponse
 >(
 	callback1: Callback<KitEvent, B1>,
 	callback2: Callback<KitEventFn<B1>, B2>,
@@ -119,7 +133,7 @@ function endpoint<
 
 // #endregion
 
-function endpoint<const Callbacks extends [...Callback<KitEvent, OtherReturn>[]]>(...callbacks: Callbacks) {
+function endpoint<const Callbacks extends [...Callback<KitEvent, EndpointCallbackResult>[]]>(...callbacks: Callbacks) {
 	return (event: KitEvent) => {
 		let useProxy: ReturnType<typeof createEndpointProxy> | null = null
 
@@ -135,6 +149,14 @@ function endpoint<const Callbacks extends [...Callback<KitEvent, OtherReturn>[]]
 				let result: EndpointCallbackResult
 				try {
 					result = await callback(event)
+					if(result instanceof Generic) {
+						try {
+							event.body = await event.request.json()
+						} catch (error) {
+							throw new BadRequest({ code: 'invalid_json', error: 'Invalid JSON', details: error })
+						}
+						result = await result.function()
+					}
 				} catch (error) {
 					if (error instanceof KitResponse) {
 						result = error
@@ -160,11 +182,13 @@ function endpoint<const Callbacks extends [...Callback<KitEvent, OtherReturn>[]]
 		const promise = endpointHandler() as Promise<KitResponse>
 
 		Object.assign(promise, {
-			use(input?: { body?: unknown; query?: unknown }) {
+			use(input?: { body?: unknown }, options?: { query?: unknown }) {
 				event.request ??= {} as typeof event.request
-				event.request.json = () => new Promise((r) => r(input?.body))
+				event.request.json = () => new Promise((r) => r(input))
 				event.query ??= {}
-				Object.assign(event.query, input?.query ?? {})
+				Object.assign(event.query, options?.query ?? {})
+
+				console.log(input, options)
 
 				// @ts-expect-error Assign to readable
 				event.request.headers ??= new Headers()
