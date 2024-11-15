@@ -51,9 +51,10 @@ Deno.test('functions: middleware', async () => {
 	const PATCH = functions(
 		(event) => {
 			if(i == 0) {
+				i++
 				return new BadRequest('error')
 			}
-			i++
+			
 			return {
 				value: 123 as const
 			}
