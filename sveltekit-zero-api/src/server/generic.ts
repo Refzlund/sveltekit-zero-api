@@ -1,6 +1,6 @@
-import type { EndpointProxy } from "../endpoint-proxy.type.ts";
-import type { Promisify } from "../utils/types.ts";
-import type { InternalServerError, KitResponse, StatusCode } from './http';
+import type { EndpointProxy } from '../endpoint-proxy.type.ts'
+import type { Promisify } from '../utils/types.ts'
+import type { InternalServerError, KitResponse, StatusCode } from './http'
 /**
  * We use the `GenericFn` class to tell `sveltekit-zero-api` that it
  * needs to call the returned function instead of returning it immediately — expecting a KitResponse.

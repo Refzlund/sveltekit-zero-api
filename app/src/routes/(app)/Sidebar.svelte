@@ -78,8 +78,9 @@
 			<section>
 				<h4>Concepts</h4>
 				{@render navitem('Endpoints', '/endpoints')}
-				{@render navitem('Functions', '/functions')}
-				{@render navitem('Stremaing', '/streaming')}
+				{@render navitem('Endpoint Functions', '/functions')}
+				{@render navitem('Middleware', '/middleware')}
+				{@render navitem('Streaming', '/streaming')}
 				{@render navitem('Error handling', '/errors')}
 			</section>
 			<section>

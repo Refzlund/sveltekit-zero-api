@@ -14,7 +14,7 @@ export type EndpointCallbackResult = Record<PropertyKey, any> | KitResponse | Pa
  * A callback function for an `endpoint` parameter.
  */
 interface Callback<Event extends KitEvent<any, any>, Result extends EndpointCallbackResult> {
-	(event: Event): Promise<Result> | Result
+	(event: Event): Promise<Result> | Result | void
 }
 
 /**
@@ -53,6 +53,8 @@ interface EndpointResponse<Results extends EndpointCallbackResult, G extends nul
 			: G extends Generic<infer Input> ? Input : never
 	}
 }
+
+
 
 // * Note:  I believe there's a limit to the amount of parameters
 // *        so I'm limiting it to 7. Might be decreased in the future.
@@ -133,6 +135,8 @@ function endpoint<
 
 // #endregion
 
+
+
 function endpoint<const Callbacks extends [...Callback<KitEvent, EndpointCallbackResult>[]]>(...callbacks: Callbacks) {
 	return (event: KitEvent) => {
 		let useProxy: ReturnType<typeof createEndpointProxy> | null = null
@@ -142,9 +146,8 @@ function endpoint<const Callbacks extends [...Callback<KitEvent, EndpointCallbac
 
 			event.results ??= {}
 
-			let prev: unknown
+			let result: EndpointCallbackResult | void
 			for (const callback of callbacks) {
-				let result: EndpointCallbackResult
 				try {
 					result = await callback(event)
 					if(result instanceof Generic) {
@@ -170,11 +173,12 @@ function endpoint<const Callbacks extends [...Callback<KitEvent, EndpointCallbac
 					continue
 				}
 
-				Object.assign(event.results!, result)
-				prev = result
+				if(result) {
+					Object.assign(event.results!, result)
+				}
 			}
 
-			return prev
+			return result!
 		}
 
 		const promise = endpointHandler() as Promise<KitResponse>

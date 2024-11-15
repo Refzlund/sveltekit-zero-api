@@ -1,7 +1,7 @@
 import type { Handle, ResolveOptions } from '@sveltejs/kit'
 import { KitResponse } from './http.ts'
-import { KitEvent } from "./kitevent.ts";
-import { sequence as sveltekitSequence } from "@sveltejs/kit/hooks";
+import type { KitEvent } from './kitevent.ts'
+import { sequence as sveltekitSequence } from '@sveltejs/kit/hooks'
 
 export type KitHandle = (
 	input: {

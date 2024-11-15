@@ -1,9 +1,11 @@
-import { expect } from '@std/expect';
+import { Created } from './../src/server/http'
+import { expect } from '@std/expect'
 import type { Simplify } from '../src/utils/types.ts'
 import { functions } from '../src/server/functions.ts'
-import { Generic } from "../src/server/generic.ts";
+import { Generic } from '../src/server/generic.ts'
 import { BadRequest, OK } from '../src/server/http.ts'
 import { FakeKitEvent, type KitEvent } from '../src/server/kitevent.ts'
+import { isResponse } from "../src/is-response.ts";
 
 Deno.test('functions: readable stream', async () => {
 
@@ -34,6 +36,54 @@ Deno.test('functions: readable stream', async () => {
 	}
 
 	expect(i).toBe('10987654321')
+})
+
+Deno.test('functions: middleware', async () => {
+	
+	function fn() {
+		return new OK(true)
+	}
+	function anotherFn() {
+		return new Created()
+	}
+
+	let i = 0
+	const PATCH = functions(
+		(event) => {
+			if(i == 0) {
+				return new BadRequest('error')
+			}
+			i++
+			return {
+				value: 123 as const
+			}
+		},
+		(event) => {
+			return {
+				thing: 'text'
+			}
+		},
+		event => {
+			return new Created(event.results.value)
+		},
+		{
+			fn,
+			anotherFn
+		}
+	)
+
+	const fns = PATCH(new FakeKitEvent()).use
+
+	const result = await fns.fn().catch(err => err)
+	const result2 = await fns.anotherFn()
+
+	if(isResponse(result)) {
+		expect(result.body).toBe('error')
+	} else {
+		throw new Error('Expected response')
+	}
+
+	expect(result2).toBe(123)
 })
 
 Deno.test('functions', async () => {
