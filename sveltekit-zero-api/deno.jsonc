@@ -11,6 +11,7 @@
 	"imports": {
 		"svelte": "npm:svelte@^5.1.12",
 		"@sveltejs/kit": "npm:@sveltejs/kit@^2.8.0",
-		"zod": "npm:zod@^3.23.8"
+		"zod": "npm:zod@^3.23.8",
+		"typescript": "npm:typescript@^5.6.3"
   }
 }

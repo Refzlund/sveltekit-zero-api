@@ -138,9 +138,7 @@ function endpoint<const Callbacks extends [...Callback<KitEvent, EndpointCallbac
 		let useProxy: ReturnType<typeof createEndpointProxy> | null = null
 
 		async function endpointHandler() {
-			// TODO Don't await an additional 2ms because of `.use` functionality.
-			// TODO Consider a different approach.
-			await new Promise((res) => setTimeout(res, 0))
+			await new Promise((res) => res(true))
 
 			event.results ??= {}
 

@@ -1,7 +1,7 @@
-import { BadRequest, KitResponse, OK } from '../server/http.ts'
-import { FakeKitEvent } from '../server/kitevent.ts'
-import { endpoint } from '../server/endpoint.ts'
-import { EndpointProxy, ReturnedEndpointProxy } from '../endpoint-proxy.ts'
+import { BadRequest, KitResponse, OK } from '../src/server/http.ts'
+import { FakeKitEvent } from '../src/server/kitevent.ts'
+import { endpoint } from '../src/server/endpoint.ts'
+import { EndpointProxy, ReturnedEndpointProxy } from '../src/endpoint-proxy.ts'
 import { expect } from '@std/expect'
 
 Deno.test('proxy exception catching ᵗʰᵉᵐ ᵃˡˡ', async () => {
@@ -9,7 +9,8 @@ Deno.test('proxy exception catching ᵗʰᵉᵐ ᵃˡˡ', async () => {
 
 	let successCalls = 0
 	const f1 = () =>
-		GET(new FakeKitEvent()).use({})
+		GET(new FakeKitEvent())
+			.use({})
 			.success(() => successCalls++)
 			.$.OK((r) => {
 				throw new Error('🦒')
@@ -28,18 +29,15 @@ Deno.test('proxy exception catching ᵗʰᵉᵐ ᵃˡˡ', async () => {
 })
 
 Deno.test('proxy indepedence ᵈᵃʸ', async () => {
-
-	const GET = endpoint(
-		() => Math.random() > 0.5 ? new OK() : new BadRequest()
-	)
+	const GET = endpoint(() => (Math.random() > 0.5 ? new OK() : new BadRequest()))
 	const f = () => GET(new FakeKitEvent()).use({})
 
 	let rootRuns = 0
 	const root = f().any(() => rootRuns++)
 	const $root = root.$.any((r) => 'root' as const)
 
-	let a = root.$.any(r => 'any' as const)
-	let b = $root.OK(r => 'ok' as const).BadRequest(r => 'br' as const)
+	let a = root.$.any((r) => 'any' as const)
+	let b = $root.OK((r) => 'ok' as const).BadRequest((r) => 'br' as const)
 
 	let z = root.any(() => rootRuns++)
 
@@ -48,10 +46,9 @@ Deno.test('proxy indepedence ᵈᵃʸ', async () => {
 
 	await expect(root1).resolves.toBe('root')
 	await expect(a1).resolves.toBe('any')
-	expect(await b1 ?? 'ok').toBe('ok')
-	expect(await b2 ?? 'br').toBe('br')
+	expect((await b1) ?? 'ok').toBe('ok')
+	expect((await b2) ?? 'br').toBe('br')
 	await expect(z).resolves.toBeInstanceOf(KitResponse)
-
 })
 
 Deno.test('proxy instanceof', async () => {
@@ -89,11 +86,11 @@ Deno.test('proxy instanceof', async () => {
 })
 
 Deno.test('Promise<Proxy>.use applies value', async () => {
-
 	const GET = endpoint(async (event) => new OK(await event.request.json()))
 
 	// TODO maybe GET.use({})
-	const [r1] = GET(new FakeKitEvent()).use({ body: { name: 'John' } })
+	const [r1] = GET(new FakeKitEvent())
+		.use({ name: 'John' })
 		.$.OK((r) => r.body)
 
 	await expect(r1).resolves.toEqual({ name: 'John' })

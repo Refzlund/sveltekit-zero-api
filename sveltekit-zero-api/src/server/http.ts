@@ -46,6 +46,11 @@ export class KitResponse<
 		this.body = body as Body
 		this.headers = new Headers(options.headers || {})
 		if (options.contentType) this.headers.set('content-type', options.contentType)
+		
+		if(!this.headers.has('content-type') && this.body instanceof ReadableStream) {
+			this.headers.set('content-type', 'application/octet-stream')
+		}
+
 		this.status = (options.status || 200) as Status
 		this.statusText = (options.statusText || 'OK') as StatusText
 		this.cause = options.cause

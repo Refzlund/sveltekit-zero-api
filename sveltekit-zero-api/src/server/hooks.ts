@@ -113,7 +113,15 @@ export function zeroAPI({
 		}
 
 		let body = response.body
-		if (stringify && !response.headers.has('content-type') && typeof body === 'object') {
+		const type = typeof body
+
+		let isJSONable = type == 'object'
+			|| type === 'string'
+			|| type === 'number' 
+			|| type === 'boolean'
+			|| type === 'bigint'
+
+		if (stringify && !response.headers.has('content-type') && isJSONable) {
 			event.setHeaders({
 				'content-type': 'application/json'
 			})

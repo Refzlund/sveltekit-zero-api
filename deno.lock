@@ -50,6 +50,7 @@
     "npm:svelte@^5.1.12": "5.1.16_acorn@8.13.0",
     "npm:tailwindcss@^3.4.9": "3.4.14_postcss@8.4.47",
     "npm:typescript@5": "5.6.3",
+    "npm:typescript@^5.6.3": "5.6.3",
     "npm:ua-parser-js@^1.0.39": "1.0.39",
     "npm:vite@5.4.9": "5.4.9",
     "npm:zod@^3.23.8": "3.23.8",
@@ -1412,6 +1413,7 @@
         "dependencies": [
           "npm:@sveltejs/kit@^2.8.0",
           "npm:svelte@^5.1.12",
+          "npm:typescript@^5.6.3",
           "npm:zod@^3.23.8"
         ]
       }
