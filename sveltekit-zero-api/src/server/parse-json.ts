@@ -14,8 +14,8 @@ import { ParseKitEvent, type KitEvent } from './kitevent.ts'
  * 	}
  )
  */
-export async function parseJSON(event: KitEvent) {
-	let json: Record<PropertyKey, any> | Array<any>
+export async function parseJSON<T extends Record<string | number, unknown> | Array<unknown> | string | number>(event: KitEvent) {
+	let json: T
 
 	let contentTypes = ['application/json', 'multipart/form-data'] as const
 	let contentType = event.request.headers.get('content-type')?.toLowerCase() as (typeof contentTypes)[number]
@@ -34,7 +34,7 @@ export async function parseJSON(event: KitEvent) {
 	if (contentType == 'multipart/form-data') {
 		try {
 			const formData = await event.request.formData()
-			json = Object.fromEntries(formData)
+			json = Object.fromEntries(formData) as T
 		} catch (error) {
 			return new BadRequest({
 				code: 'invalid_formdata',
@@ -54,5 +54,5 @@ export async function parseJSON(event: KitEvent) {
 		}
 	}
 
-	return new ParseKitEvent<Record<string | number, unknown> | Array<unknown>>({ body: json })
+	return new ParseKitEvent<T>({ body: json })
 }

@@ -46,7 +46,7 @@ type Fn<
 /**
  * The return-type for an `endpoint`.
  */
-interface EndpointResponse<Results extends EndpointCallbackResult, G extends null | GenericCallback = null> {
+export interface EndpointResponse<Results extends EndpointCallbackResult, G extends null | GenericCallback = null> {
 	(event: KitEvent): Promise<Extract<Results, KitResponse>> & {
 		use: null extends G 
 			? Fn<EndpointInput<Results>, Extract<Results, KitResponse>>

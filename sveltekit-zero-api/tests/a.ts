@@ -1,4 +1,4 @@
-type S<T> = T
+import type { ServerType as S } from "../src/client/index.ts"
 
 type routes = {
         "api": {
@@ -19,3 +19,5 @@ type routes = {
 
 const api = {} as routes['api']
 
+let value = api.someFn(123)
+api.POST({ hello: 'shiba' })
