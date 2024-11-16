@@ -37,6 +37,7 @@
     "npm:@tailwindcss/forms@~0.5.9": "0.5.9_tailwindcss@3.4.14__postcss@8.4.47",
     "npm:@tailwindcss/typography@~0.5.15": "0.5.15_tailwindcss@3.4.14__postcss@8.4.47",
     "npm:@types/is-odd@latest": "3.0.4",
+    "npm:@types/node@*": "22.5.4",
     "npm:@types/ua-parser-js@~0.7.39": "0.7.39",
     "npm:autoprefixer@^10.4.20": "10.4.20_postcss@8.4.47",
     "npm:highlight.js@^11.10.0": "11.10.0",
@@ -500,6 +501,12 @@
     },
     "@types/is-odd@3.0.4": {
       "integrity": "sha512-BdjXVZXuHVqdXNi9gEbwf/W/k2lIhXzqnmygz4BFRTdpgFpJsn1v7AfB3DaLHj04O9hKiqQvnxu5AeogyptDjQ=="
+    },
+    "@types/node@22.5.4": {
+      "integrity": "sha512-FDuKUJQm/ju9fT/SeX/6+gBzoPzlVCzfzmGkwKvRHQVxi4BntVbyIwf6a4Xn62mrvndLiml6z/UBXIdEVjQLXg==",
+      "dependencies": [
+        "undici-types"
+      ]
     },
     "@types/ua-parser-js@0.7.39": {
       "integrity": "sha512-P/oDfpofrdtF5xw433SPALpdSchtJmY7nsJItf8h3KXqOslkbySh8zq4dSWXH2oTjRvJ5PczVEoCZPow6GicLg=="
@@ -1310,6 +1317,9 @@
     },
     "ua-parser-js@1.0.39": {
       "integrity": "sha512-k24RCVWlEcjkdOxYmVJgeD/0a1TiSpqLg+ZalVGV9lsnr4yqu0w7tX/x2xX6G4zpkgQnRf89lxuZ1wsbjXM8lw=="
+    },
+    "undici-types@6.19.8": {
+      "integrity": "sha512-ve2KP6f/JnbPBFyobGHuerC9g1FYGn/F8n1LWTwNxCEzd6IfqTwUQcNXgEtmmQ6DlRrC1hrSrBnCZPokRrDHjw=="
     },
     "update-browserslist-db@1.1.1_browserslist@4.24.2": {
       "integrity": "sha512-R8UzCaa9Az+38REPiJ1tXlImTJXlVfgHZsglwBD/k6nj76ctsH1E3q4doGrukiLQd3sGQYu56r5+lo5r94l29A==",

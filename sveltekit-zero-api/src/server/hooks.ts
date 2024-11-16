@@ -83,6 +83,8 @@ export function zeroAPI({
 		event.results ??= {}
 		let response: unknown
 
+		let time = Date.now()
+
 		try {
 			response = await resolve(event)
 		} catch (error) {
@@ -90,7 +92,10 @@ export function zeroAPI({
 			response = error
 		}
 
-		if (!(response instanceof KitResponse)) return response
+		if (!(response instanceof KitResponse)) {
+			(<Response>response).headers.append('xt', String(Date.now() - time))
+			return response
+		}
 
 		// @ts-expect-error Hidden property
 		let cause = response.cause as unknown
@@ -107,9 +112,7 @@ export function zeroAPI({
 		}
 
 		if(awaitJSON) {
-			event.setHeaders({
-				'sveltekit-zero-api-json': 'true'
-			})
+			response.headers.append('sveltekit-zero-api-json', 'true')
 		}
 
 		let body = response.body
@@ -122,12 +125,11 @@ export function zeroAPI({
 			|| type === 'bigint'
 
 		if (stringify && !response.headers.has('content-type') && isJSONable) {
-			event.setHeaders({
-				'content-type': 'application/json'
-			})
+			response.headers.append('content-type', 'application/json')
 			body = JSON.stringify(body)
 		}
 
+		response.headers.append('xt', String(Date.now() - time))
 		return new Response(body, {
 			status: response.status,
 			headers: response.headers
