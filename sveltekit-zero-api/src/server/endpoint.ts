@@ -185,16 +185,26 @@ function endpoint<const Callbacks extends [...Callback<KitEvent, EndpointCallbac
 
 		Object.assign(promise, {
 			use(input?: { body?: unknown }, options?: { query?: unknown }) {
-				event.request ??= {} as typeof event.request
-				event.request.json = () => new Promise((r) => r(input))
+				const headers = event.request.headers ?? new Headers()
+
+				let body: BodyInit | null = null
+				let method = event.request.method
+
+				if (String(input) === '[object Object]') {
+					body = JSON.stringify(input)
+					headers.set('content-type', 'application/json')
+					method = method === 'GET' ? 'POST' : method
+				}
+
+				event.request = new Request(event.request.url, {
+					...event.request,
+					method,
+					headers,
+					body
+				})
+
 				event.query ??= {}
-				Object.assign(event.query, options?.query ?? {})
-
-				console.log(input, options)
-
-				// @ts-expect-error Assign to readable
-				event.request.headers ??= new Headers()
-				event.request.headers.set('content-type', 'application/json')
+				Object.assign(event.query, options?.query ?? {})			
 
 				useProxy ??= createEndpointProxy(promise)
 				return useProxy

@@ -10,7 +10,7 @@ Deno.test('proxy exception catching ᵗʰᵉᵐ ᵃˡˡ', async () => {
 	let successCalls = 0
 	const f1 = () =>
 		GET(new FakeKitEvent())
-			.use({})
+			.use()
 			.success(() => successCalls++)
 			.$.OK((r) => {
 				throw new Error('🦒')
@@ -30,7 +30,7 @@ Deno.test('proxy exception catching ᵗʰᵉᵐ ᵃˡˡ', async () => {
 
 Deno.test('proxy indepedence ᵈᵃʸ', async () => {
 	const GET = endpoint(() => (Math.random() > 0.5 ? new OK() : new BadRequest()))
-	const f = () => GET(new FakeKitEvent()).use({})
+	const f = () => GET(new FakeKitEvent()).use()
 
 	let rootRuns = 0
 	const root = f().any(() => rootRuns++)
@@ -63,7 +63,7 @@ Deno.test('proxy instanceof', async () => {
 
 	const GET = endpoint(() => new OK())
 
-	const f = GET(new FakeKitEvent()).use({})
+	const f = GET(new FakeKitEvent()).use()
 
 	let ran = 0
 
@@ -86,10 +86,9 @@ Deno.test('proxy instanceof', async () => {
 })
 
 Deno.test('Promise<Proxy>.use applies value', async () => {
-	const GET = endpoint(async (event) => new OK(await event.request.json()))
+	const POST = endpoint(async (event) => new OK(await event.request.json()))
 
-	// TODO maybe GET.use({})
-	const [r1] = GET(new FakeKitEvent())
+	const [r1] = POST(new FakeKitEvent())
 		.use({ name: 'John' })
 		.$.OK((r) => r.body)
 
