@@ -2,7 +2,7 @@ import type { UnionToIntersection } from './../utils/types';
 import type { Functions, FnsRecord } from './functions.type.ts'
 import { Generic } from "./generic.ts";
 import { BadRequest, InternalServerError, KitResponse } from './http.ts'
-import type { KitEvent } from './kitevent.ts'
+import { FakeKitEvent, type KitEvent } from './kitevent.ts'
 
 type FunctionCallbackResult = Record<PropertyKey, any> | KitResponse | void
 
@@ -24,8 +24,50 @@ interface FunctionsBody {
 	}
 }
 
+
+
+/**
+ * Creates an endpoint with the functions format.
+ * Via the API instead of calling it like `let response = await api.users.POST({...})`
+ * you interact with it more like a normal function: `let newUser = await api.users.createUser({...})`
+ *
+ * You can either submit `FormData`, `ReadableStream` or mulitple arguments passed as a JSON-array.
+ * 
+ * **JSON Request**
+ * ```
+ * Headers
+ *     x-function: someFn
+ *     content-type: application/json
+ * Body
+ *     [
+ *         ...
+ *     ] // arguments-array passed to function name
+ * ```
+ * It's of course limited to JSON applicable content.
+ * 
+ * `ReadableStream`
+ * ```
+ * Headers
+ *     x-function: someFn
+ *     content-type: application/octet-stream
+ * Body
+ *     ReadableStream
+ * ```
+ * 
+ * `FormData`
+ * ```
+ * Headers
+ *     x-function: someFn
+ *     content-type: multipart/form-data
+ * Body
+ *     FormData
+ * ```
+ * 
+ *
+ * @note Do not end function names in `$` as those are reserved for route slugged params.
+ */
 export function functions<const Fns extends FnsRecord>(fns: Fns): 
-	(event: KitEvent<FunctionsBody>) => KitResponse & { use: Functions<Fns> }
+	(event?: KitEvent<FunctionsBody>) => KitResponse & { use: Functions<Fns> }
 
 
 
@@ -34,7 +76,7 @@ export function functions<const Fns extends FnsRecord>(fns: Fns):
 export function functions<const Fns extends FnsRecord, B1 extends FunctionCallbackResult>(
 	cb1: FnCallback<B1>, 
 	fns: Fns
-): (event: KitEvent<FunctionsBody>) => KitResponse & { use: Functions<Fns, Extract<B1, KitResponse>> }
+): (event?: KitEvent<FunctionsBody>) => KitResponse & { use: Functions<Fns, Extract<B1, KitResponse>> }
 
 export function functions<
 	const Fns extends FnsRecord, 
@@ -44,7 +86,7 @@ export function functions<
 	cb1: FnCallback<B1>,
 	cb2: FnCallback<B2, B1>, 
 	fns: Fns
-): (event: KitEvent<FunctionsBody>) => KitResponse & { 
+): (event?: KitEvent<FunctionsBody>) => KitResponse & { 
 	use: Functions<Fns, Extract<B1 | B2, KitResponse>>
 }
 
@@ -58,7 +100,7 @@ export function functions<
 	cb2: FnCallback<B2, B1>,
 	cb3: FnCallback<B3, B1, B2>,
 	fns: Fns
-): (event: KitEvent<FunctionsBody>) => KitResponse & { 
+): (event?: KitEvent<FunctionsBody>) => KitResponse & { 
 	use: Functions<Fns, Extract<B1 | B2 | B3, KitResponse>>
 }
 
@@ -74,7 +116,7 @@ export function functions<
 	cb3: FnCallback<B3, B1, B2>,
 	cb4: FnCallback<B4, B1, B2, B3>,
 	fns: Fns
-): (event: KitEvent<FunctionsBody>) => KitResponse & { 
+): (event?: KitEvent<FunctionsBody>) => KitResponse & { 
 	use: Functions<Fns, Extract<B1 | B2 | B3 | B4, KitResponse>>
 }
 
@@ -92,7 +134,7 @@ export function functions<
 	cb4: FnCallback<B4, B1, B2, B3>,
 	cb5: FnCallback<B5, B1, B2, B3, B4>,
 	fns: Fns
-): (event: KitEvent<FunctionsBody>) => KitResponse & { 
+): (event?: KitEvent<FunctionsBody>) => KitResponse & { 
 	use: Functions<Fns, Extract<B1 | B2 | B3 | B4 | B5, KitResponse>>
 }
 
@@ -112,7 +154,7 @@ export function functions<
 	cb5: FnCallback<B5, B1, B2, B3, B4>,
 	cb6: FnCallback<B6, B1, B2, B3, B4, B5>,
 	fns: Fns
-): (event: KitEvent<FunctionsBody>) => KitResponse & { 
+): (event?: KitEvent<FunctionsBody>) => KitResponse & { 
 	use: Functions<Fns, Extract<B1 | B2 | B3 | B4 | B5 | B6, KitResponse>>
 }
 
@@ -120,20 +162,6 @@ export function functions<
 
 
 
-/**
- * Creates an endpoint with the functions format.
- *
- * The endpoint is called with a JSON-body like so:
- * ```jsonc
- * {
- *     "function": "someFn", // function name
- *     "arguments": [...] // arguments-array passed to function name
- * }
- * ```
- * It's of course limited to JSON applicable content.
- *
- * @note Do not end function names in `$` as those are reserved for route slugged params.
- */
 export function functions(
 	...args: (FnCallback | FnsRecord)[]
 ) {
@@ -141,45 +169,15 @@ export function functions(
 	let cbs = args as FnCallback[]
 
 	function functionsHandler(event: KitEvent<FunctionsBody, never>) {
-		/** Use on backend */
-		let useProxy = null as null | FnsRecord
+		event ??= new FakeKitEvent() // when testing
 
-		let promise = functionRequest(event, fns!, cbs, () => !!useProxy)
+		let proxyUse: ReturnType<typeof createUseProxy> | null = null
+		let promise = functionRequest(event, fns!, cbs, () => proxyUse)
 
 		Object.assign(promise, {
 			get use() {
-				useProxy ??= new Proxy(fns!, {
-					get(target, key) {
-						if (!(key in target)) {
-							return target[key as any]
-						}
-						return (...args: [any]) => {
-							return new Promise((resolve, reject) => {
-								try {
-									functionProxyResolve({
-										resolve,
-										reject,
-										fn: target[key as any],
-										event,
-										args,
-										cbs
-									})
-								} catch (error) {
-									reject(
-										new InternalServerError(
-											{
-												code: 'function_failed',
-												error: 'An unexpected error occurred when running the function.'
-											},
-											{ cause: { function: key, arguments: args, error } }
-										)
-									)
-								}
-							})
-						}
-					}
-				})
-				return useProxy
+				proxyUse ??= createUseProxy(event, fns, cbs)
+				return proxyUse
 			}
 		})
 
@@ -189,57 +187,93 @@ export function functions(
 	return functionsHandler
 }
 
-async function functionRequest(event: KitEvent<any, never>, fns: FnsRecord, cbs: FnCallback[], useProxy: () => boolean) {
-	let json: Record<PropertyKey, any>
-	try {
-		json = await event.request.json()
-		if (useProxy()) return
-	} catch (error) {
-		if (useProxy()) return
-		return new BadRequest({ code: 'invalid_json', error: 'Invalid JSON', details: error })
+async function functionRequest(
+	event: KitEvent<any, never>,
+	fns: FnsRecord,
+	cbs: FnCallback[],
+	proxyUse?: () => any
+) {
+	await new Promise(res => res(true))
+	if(proxyUse?.())
+		return
+
+	const contentType = event.request.headers.get('content-type')
+	let args = null as null | [ReadableStream] | [FormData] | Array<unknown>
+	if (contentType === 'application/json') {
+		try {
+			args = await event.request.json()
+		} catch (error) {
+			throw new BadRequest({ code: 'invalid_json', error: 'Invalid JSON', details: error })
+		}
+	}
+	else if (contentType === 'application/octet-stream') {
+		args = [event.request.body]
+	}
+	else if (contentType === 'multipart/form-data') {
+		try {
+			args = [await event.request.formData()]
+		} catch (error) {
+			throw new BadRequest({ code: 'invalid_form_data', error: 'Invalid form data', details: error })
+		}
+	}
+	else if (contentType !== null) {
+		throw new BadRequest({
+			code: 'invalid_content_type',
+			error: 'Invalid Content-Type header',
+			details: {
+				expected: ['application/json', 'application/octet-stream'],
+				received: contentType
+			}
+		})
 	}
 
-	const { function: fn, arguments: args } = json
+	let fn = event.request.headers.get('x-function')
 	if (!fn || typeof fn !== 'string') {
-		return new BadRequest({
+		throw new BadRequest({
 			code: 'missing_function',
-			error: 'Please provide a function, by providing a `function` property in the body'
+			error: 'Please provide a function, by adding the `x-function` header.'
 		})
 	}
 
 	if (!fns[fn]) {
-		return new BadRequest({
+		throw new BadRequest({
 			code: 'invalid_function',
 			error: 'Invalid function name'
 		})
 	}
 
 	if (args && !Array.isArray(args)) {
-		return new BadRequest({
+		throw new BadRequest({
 			code: 'invalid_arguments',
-			error: 'The `arguments` property must be undefind or an array of arguments for the provided function.',
+			error: 'Provided arguments must be an array',
 			details: {
-				received: args,
-				expected: 'Array | undefined'
+				expected: 'array',
+				received: typeof args
 			}
 		})
 	}
+
 	try {
 		for (const cb of cbs) {
 			const result = await cb(event)
-			if (result instanceof KitResponse)
-				return result
+			if (result instanceof KitResponse) {
+				if(result.ok)
+					return result.body
+				throw result
+			}
 			if (typeof result === 'object') {
 				event.results ??= {}
 				Object.assign(event.results, result)
 			}
 		}
 
-		let result = await fns[fn](event, ...args)
+		let result = await fns[fn](event, ...args || [])
 		if (result instanceof Generic) {
-			return result.function(...args)
+			result = await result.function(...args || []) as KitResponse
 		}
-		return result
+		if(result.ok)
+			return result.body
+		throw result
 	} catch (error) {
 		if (error instanceof KitResponse) {
 			throw error
@@ -255,38 +289,45 @@ async function functionRequest(event: KitEvent<any, never>, fns: FnsRecord, cbs:
 	}
 }
 
-// Doing this as Deno don't like awaiting a Promise callback
-async function functionProxyResolve({
-	resolve, reject, fn, args, event, cbs
-}: {
-	event: KitEvent<any, never>
-	resolve: (value: unknown) => void
-	reject: (reason?: any) => void
-	fn: FnsRecord[string]
-	args: any,
-	cbs: FnCallback[]
-}) {
-	for (const cb of cbs) {
-		const result = await cb(event)
-		if (result instanceof KitResponse) {
-			if (result.ok) return resolve(result.body)
-			return reject(result)
-		}
-		if (result) {
-			event.results ??= {}
-			Object.assign(event.results, result)
-		}
-	}
+function createUseProxy(event: KitEvent<any, never>, fns: FnsRecord, cbs: FnCallback[]) {
+	return new Proxy(fns!, {
+		get(target, key: string) {
+			if (!(key in target)) {
+				return target[key]
+			}
+			return (...args: [any]) => {
+				const headers = event.request.headers
+				let body: BodyInit
 
-	let result: KitResponse | Generic<any> = await fn(event, ...args)
-	if (result instanceof Generic) {
-		result = result.function(...args)
-	}
-	if (!(result instanceof KitResponse)) {
-		throw new Error('Function did not return a KitResponse', { cause: result })
-	}
-	if (result.ok) {
-		return resolve(result.body)
-	}
-	return reject(result)
+				headers.set('x-function', key)
+				if(!args.length) {
+					// No arguments
+				}
+				else if(args[0] instanceof ReadableStream) {
+					body = args[0]
+					headers.set('content-type', 'application/octet-stream')
+				}
+				else if(args[0] instanceof FormData) {
+					body = args[0]
+					headers.set('content-type', 'multipart/form-data')
+				}
+				else {
+					// * JSON
+					body = JSON.stringify(args)
+					headers.set('content-type', 'application/json')
+				}
+
+				event.request = new Request(event.request.url, {
+					...event.request,
+					method: 'PATCH',
+					headers,
+					body: body!
+				})
+
+				return functionRequest(event, fns, cbs)
+			}
+		}
+	})
 }
+
+

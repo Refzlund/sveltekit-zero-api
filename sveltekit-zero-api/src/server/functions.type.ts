@@ -15,7 +15,7 @@ export type FnArgs<T extends FnsRecord[string]> = T extends (
 
 export type FnResult<T extends FnsRecord[string]> = T extends (
 	...args: [infer TKitEvent, ...infer Args]
-) => infer Result
+) => infer Result | Promise<infer Result>
 	? Result
 	: never
 

@@ -5,23 +5,26 @@ import { functions } from '../src/server/functions.ts'
 import { Generic } from '../src/server/generic.ts'
 import { BadRequest, OK } from '../src/server/http.ts'
 import { FakeKitEvent, type KitEvent } from '../src/server/kitevent.ts'
-import { isResponse } from "../src/is-response.ts";
+import { isResponse } from '../src/is-response.ts'
 
-Deno.test('functions: readable stream', async () => {
+/** Returns a ReadableStream that results in { data: number } over ~110ms */
+function streamTest() {
+	let i = 10
+	const stream = new ReadableStream<{ data: number }>({
+		async pull(controller) {
+			if (i == 0) return controller.close()
+			await new Promise((resolve) => {
+				setTimeout(() => resolve(controller.enqueue({ data: i-- })), 10)
+			})
+		}
+	})
+	return stream
+}
+
+Deno.test('functions: receive readable stream', async () => {
 
 	function fn() {
-
-		let i = 10
-		const stream = new ReadableStream<{ data: number }>({
-			async pull(controller) {
-				if (i == 0) return controller.close()
-				await new Promise((resolve) => {
-					setTimeout(() => resolve(controller.enqueue({ data: i-- })), 10)
-				})
-			}
-		})
-
-		return new OK(stream)
+		return new OK(streamTest())
 	}
 
 	const PATCH = functions({
@@ -38,6 +41,27 @@ Deno.test('functions: readable stream', async () => {
 	expect(i).toBe('10987654321')
 })
 
+Deno.test('functions: send readable stream', async () => {
+	
+	async function fn(event: KitEvent, stream: ReadableStream<{ data: number }>) {
+		let now = Date.now()
+		let i = ''
+		for await (const chunk of await stream) {
+			i += `${chunk.data}`
+		}
+
+		return new OK({ data: i, time: Date.now() - now })
+	}
+
+	const PATCH = functions({
+		fn
+	})
+
+	let result = await PATCH(new FakeKitEvent()).use.fn(streamTest())
+	expect(result.data).toBe('10987654321')
+	expect(result.time).toBeGreaterThanOrEqual(110)
+})
+
 Deno.test('functions: middleware', async () => {
 	
 	function fn() {
@@ -50,8 +74,10 @@ Deno.test('functions: middleware', async () => {
 	let i = 0
 	const PATCH = functions(
 		(event) => {
+			console.log(i)
 			if(i == 0) {
 				i++
+				
 				return new BadRequest('error')
 			}
 			
@@ -73,15 +99,13 @@ Deno.test('functions: middleware', async () => {
 		}
 	)
 
-	const fns = PATCH(new FakeKitEvent()).use
-
-	const result = await fns.fn().catch(err => err)
-	const result2 = await fns.anotherFn()
+	const result = await PATCH().use.fn().catch(err => err)
+	const result2 = await PATCH().use.anotherFn()
 
 	if(isResponse(result)) {
 		expect(result.body).toBe('error')
 	} else {
-		throw new Error('Expected response')
+		throw new Error('Expected response', { cause: !result ? String(result) : result })
 	}
 
 	expect(result2).toBe(123)
