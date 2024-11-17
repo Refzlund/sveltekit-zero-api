@@ -27,7 +27,7 @@
 		"tailwindcss": "npm:tailwindcss@^3.4.9",
 		"typescript": "npm:typescript@^5.0.0",
 		"ua-parser-js": "npm:ua-parser-js@^1.0.39",
-		"vite": "npm:vite@5.4.9"
+		"vite": "npm:vite@5.4.11"
 	},
 	"tasks": {
 		"dev": "vite dev --host",

@@ -1,15 +1,11 @@
-import { generateTypes } from "../src/server/vite/generate-types.ts"
+import { generateTypes } from '../src/server/generation/generate-types-file.ts'
 
 Deno.test('route traversal', () => {
-
-	console.log(
-		generateTypes(import.meta.dirname!, 'routes')
-	)
+	console.log(generateTypes(import.meta.dirname!, 'routes'))
 
 	/*
 	
 	import type { ServerType as S } from 'sveltekit-zero-api/client'
-	import * as S0 from '...'
 
 	type Routes = {
 

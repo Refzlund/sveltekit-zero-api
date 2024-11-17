@@ -2,6 +2,7 @@
 	"name": "sveltekit-zero-api",
 	"exports": {
 		".": "./src/index.ts",
+		"./client": "./src/client/index.ts",
 		"./server": "./src/server/index.ts",
 		"./http": "./src/server/http.ts",
 		"./vite": "./src/server/vite.ts",

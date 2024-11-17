@@ -30,7 +30,7 @@ export function generateTypes(path: string, directory: string) {
 				if (key) {
 					let m: RegExpMatchArray | null
 					if ((m = key.match(optionalSlug))) {
-						str += `'${m[1]}$": (${m[1]}?: string | null | undefined) => `
+						str += `"${m[1]}$": (${m[1]}?: string | null | undefined) => `
 					} else if ((m = key.match(restSlug))) {
 						str += `"${m[1]}$": (...${m[1]}: string[]) => `
 					} else if ((m = key.match(simpleSlug))) {
@@ -69,5 +69,8 @@ export function generateTypes(path: string, directory: string) {
 		current.type = `S<typeof import('.${file}')>`
 	}
 
-	return root.toString()
+	return `import type { ServerType as S } from 'sveltekit-zero-api/client'
+
+export type APIRoutes = ${root.toString()}
+	`
 }
