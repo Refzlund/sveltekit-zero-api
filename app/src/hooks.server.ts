@@ -1,5 +1,5 @@
 import { UAParser } from 'ua-parser-js'
-import { zeroAPI } from 'sveltekit-zero-api/server'
+import { zeroAPI } from '@scope/sveltekit-zero-api/server'
 
 export const handle = zeroAPI({}).sequence(
 	async ({ event, resolve }) => {

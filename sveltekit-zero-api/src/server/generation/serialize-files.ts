@@ -46,7 +46,7 @@ export function serializeFiles(files: ReturnType<typeof getEndpointFiles>) {
 	for (let file of files) {
 		const serialized = file
 			.split('/')
-			.slice(2, -1) // exclude empty '/' and routes folder
+			.slice(3, -1) // exclude empty '/', src, routes folder
 			.map((v) =>
 				v
 					.replaceAll(encodingRegex, (v) => encodingMap[v])

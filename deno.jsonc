@@ -27,6 +27,8 @@
 	"unstable": ["sloppy-imports"],
 	"imports": {
 		"@std/assert": "jsr:@std/assert@^1.0.7",
-		"@std/expect": "jsr:@std/expect@^1.0.7"
-	}
+		"@std/expect": "jsr:@std/expect@^1.0.7",
+		"@std/path": "jsr:@std/path@^1.0.8"
+	},
+	"workspace": ["./app", "./sveltekit-zero-api"]
 }

@@ -1,6 +1,6 @@
-<script lang="ts">
+<script lang='ts'>
 	import Code from '$lib/Code/Code.svelte'
-	import { formAPI } from 'sveltekit-zero-api/formapi.svelte'
+	import { formAPI } from '@scope/sveltekit-zero-api/formapi.svelte'
 
 	interface Person {
 		name: string

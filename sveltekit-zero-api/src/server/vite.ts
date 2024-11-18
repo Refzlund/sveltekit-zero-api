@@ -3,8 +3,8 @@ import * as fs from 'node:fs'
 import process from 'node:process'
 import Path from 'node:path'
 import { generateTypes } from "./generation/generate-types-file.ts";
-
-const cwd = process.cwd()
+import { getEndpointFiles } from "./generation/get-endpoint-files.ts";
+import type { Config as SvelteKitConfig } from "@sveltejs/kit";
 
 interface ZeroAPIOptions {
 	/**
@@ -25,32 +25,66 @@ interface ZeroAPIOptions {
 	 * @default undefined
 	 * @example './src/api.d.ts'
 	 */
-	customTypePath?: string
+	customTypePath?: string | undefined
+
+	/**
+	 * Inside the generated `api.d.ts` file we import a type for typing endpoints.
+	 *
+	 * You can replace this line if you have a custom type/location to use instead.
+	 *
+	 * @default 'import type { ServerType as S } from "sveltekit-zero-api/client"'
+	 */
+	customTypeImport?: string
 }
 
 let timeout: number | undefined
-function update(options: ZeroAPIOptions) {
+function update(
+	options: ZeroAPIOptions, 
+	/** @example '../..' */
+	relativeTypePath: string, 
+	/** @example 'C:/projects/app/src/' */
+	routesPath: string, 
+	/** @example 'routes' */
+	routesDirectory: string
+) {
 	if (timeout !== undefined) clearTimeout(timeout)
 	timeout = setTimeout(() => {
+		let files = getEndpointFiles(routesPath, routesDirectory)
+
+		console.log(files)
+
 		fs.writeFileSync(
-			Path.resolve(cwd, options.customTypePath ?? './.svelte-kit/types' + options.apiPath!.replace(/\.ts$/, '.d.ts')),
-			generateTypes(Path.resolve(cwd, './src'), 'routes')
+			Path.resolve(options.customTypePath!),
+			generateTypes(files, options.customTypeImport!, relativeTypePath)
 		)
 	}, 111) // sveltekit debounces by 100ms
 }
 
-export default function viteZeroAPI(options: ZeroAPIOptions): Plugin {
+export default function viteZeroAPI(options: ZeroAPIOptions = {}): Plugin {
 	if (process.env.NODE_ENV === 'production')
 		return { name: 'vite-plugin-sveltekit-zero-api' }
 
-	options.apiPath ??= './src/api.ts'
-	options.customTypePath ??= undefined
+	options.apiPath ??= Path.normalize('./src/api.ts')
+	options.customTypePath ??= Path.join('./.svelte-kit/types', options.apiPath!.replace(/\.ts$/, '.d.ts'))
+	options.customTypeImport ??= 'import type { ServerType as S } from "sveltekit-zero-api/client"'
+
+	let svelteConfig: Promise<SvelteKitConfig> = import('file:///' + Path.resolve('./svelte.config.js'))
+		.catch((v) => import('file:///' + Path.resolve('./svelte.config.mjs')))
+		.then((v) => svelteConfig = v)
 
 	return {
 		name: 'vite-plugin-sveltekit-zero-api',
-		configureServer(vite) {
-			update(options)
-			vite.watcher.on('change', () => update(options))
+		async configureServer(vite) {
+			let routes = Path.resolve((await svelteConfig)?.kit?.files?.routes ?? './src/routes').split(Path.sep)
+
+			let routesDirectory = routes.pop()!
+			let routesPath = routes.join('/') // for TS imports
+
+			// must be / instead of `Path.sep` for TS
+			let relativeTypePath = Array(options.customTypePath!.split(Path.sep).length - 1).fill('..').join('/')
+
+			update(options, relativeTypePath, routesPath, routesDirectory)
+			vite.watcher.on('change', () => update(options, relativeTypePath, routesPath, routesDirectory))
 		}
 	}
 }

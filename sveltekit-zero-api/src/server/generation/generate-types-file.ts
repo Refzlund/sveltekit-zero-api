@@ -1,8 +1,6 @@
-import { getEndpointFiles } from './get-endpoint-files.ts'
 import { serializeFiles } from './serialize-files.ts'
 
-export function generateTypes(path: string, directory: string) {
-	let files = getEndpointFiles(path, directory)
+export function generateTypes(files: string[], importType: string, relativeTypePath: string) {
 	let serializedFiles = serializeFiles(files)
 
 	interface TypePath {
@@ -17,7 +15,7 @@ export function generateTypes(path: string, directory: string) {
 	const simpleSlug = /^\[([^\]]+)\]$/
 	const complexSlug = /\[([^\]]+)\]/
 
-	function typePath(key: string | null, indent = 0) {
+	function serverPath(key: string | null, indent = 0) {
 		return {
 			type: null as string | null,
 			children: {},
@@ -55,21 +53,21 @@ export function generateTypes(path: string, directory: string) {
 		} as TypePath
 	}
 
-	let root = typePath(null)
+	let root = serverPath(null)
 
 	for (let [file, serialized] of serializedFiles) {
 		let current = root
 		for (let key of serialized) {
 			if (!current.children[key]) {
-				current = current.children[key] = typePath(key, current.indent + 1)
+				current = current.children[key] = serverPath(key, current.indent + 1)
 			} else {
 				current = current.children[key]
 			}
 		}
-		current.type = `S<typeof import('.${file}')>`
+		current.type = `S<typeof import('${relativeTypePath}${file}')>`
 	}
 
-	return `import type { ServerType as S } from 'sveltekit-zero-api/client'
+	return `${importType}
 
 export type APIRoutes = ${root.toString()}
 	`

@@ -1,7 +1,0 @@
-{
-	"name": "root",
-	"workspaces": [
-		"./sveltekit-zero-api",
-		"./app"
-	]
-}

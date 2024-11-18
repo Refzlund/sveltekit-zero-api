@@ -1,5 +1,5 @@
-import { InternalServerError, OK } from 'sveltekit-zero-api/http'
-import { functions } from 'sveltekit-zero-api/server'
+import { InternalServerError, OK } from '@scope/sveltekit-zero-api/http'
+import { functions } from '@scope/sveltekit-zero-api/server'
 
 function someFunction() {
 	if (Math.random() > 0.5) {

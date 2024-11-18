@@ -1,8 +1,9 @@
 import * as fs from 'node:fs'
+import process from 'node:process'
+
+const cwd = process.cwd().replaceAll('\\', '/') // for TS imports
 
 export function getEndpointFiles(path: string, file: string, array: string[] = []) {
-	let initial = path
-	
 	function getEndpointFiles(path: string, file: string, array: string[] = []) {
 		const full = path + '/' + file
 
@@ -15,7 +16,7 @@ export function getEndpointFiles(path: string, file: string, array: string[] = [
 			}
 		} else {
 			if (!file.startsWith('+server')) return array
-			array.push(full.replaceAll(initial, ''))
+			array.push(full.replaceAll(cwd, ''))
 		}
 		return array
 	}
