@@ -7,7 +7,7 @@ export function convertResponse<T>(response: T | KitResponse, options: ZeroAPISe
 	let { client: {} = {}, sever: { stringify = true, logWithCause = 'non-ok' } = {} } = options
 
 	// @ts-expect-error Hidden property
-	let cause = response.cause as unknown
+	let cause = response.cause as unknown // TODO instance of error - then include stack
 	if (cause && (logWithCause === 'all' || (logWithCause === 'non-ok' && !response.ok))) {
 		let stringed = cause.toString()
 		if (stringed.startsWith('[object ') && stringed.endsWith(']')) {
@@ -17,7 +17,16 @@ export function convertResponse<T>(response: T | KitResponse, options: ZeroAPISe
 				stringed = 'Could not parse KitResponse[cause] into string: ' + error
 			}
 		}
-		console.log('- KitResponse with cause: ', response)
+
+		let responseMsg = (response as unknown as { message: string }).message
+
+		let stack = cause instanceof Error ? cause.stack : ''
+
+		console.log(`
+${responseMsg.split('\n').splice(2).join('\n')}
+\x1b[33mKitResponse cause\x1b[0m
+${stack || stringed}
+`)
 	}
 
 	let body = response.body

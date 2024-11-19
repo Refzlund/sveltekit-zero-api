@@ -56,8 +56,6 @@ export class KitResponse<
 		this.cause = options.cause
 		this.message = `Kit ${this.statusText}
 
-		
-
     \x1b[94m  ${this.status < 400 ? '\x1b[32m' : '\x1b[91m'}${this.status} ${this.statusText}\x1b[0m
 `
 		if (this.body) {

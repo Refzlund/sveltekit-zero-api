@@ -3,7 +3,7 @@ import { endpoint, functions } from '@scope/sveltekit-zero-api/server'
 
 export const POST = endpoint(
 	() => {
-		return new OK({})
+		return new OK('hellooo')
 	}
 )
 

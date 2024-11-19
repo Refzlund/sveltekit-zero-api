@@ -10,9 +10,9 @@ export default api
 
 
 api.test.someFunction().then(v => console.log({v})).catch(v => {
-	console.log(v.body)
+	console.log('err', v.body)
 })
 
 api.slugged$('id:slugged').deep['<[a]--[b]>$']('shiba', 'giraffe').POST().OK((res) => {
-	console.log(res)
+	console.log({res, body: res.body})
 })

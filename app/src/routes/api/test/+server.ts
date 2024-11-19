@@ -3,10 +3,7 @@ import { functions } from '@scope/sveltekit-zero-api/server'
 
 function someFunction() {
 	if (Math.random() > 0.95) {
-		throw new InternalServerError({
-			code: 'unlucky_call',
-			error: 'Unlucky'
-		})
+		throw new Error('Unlucky coincidence.')
 	}
 	if(Math.random() > 0.5) {
 		return new BadRequest({
