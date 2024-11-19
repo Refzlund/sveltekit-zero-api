@@ -1,6 +1,6 @@
-import { KitResponse } from "./server/http.ts";
-import { proxyCrawl, StateApply, StateGet } from "./utils/proxy-crawl.ts";
-import type { EndpointProxy as EndpointProxyType } from "./endpoint-proxy.type.ts"
+import type { KitResponse } from './server/http.ts'
+import { proxyCrawl, type StateApply, type StateGet } from './utils/proxy-crawl.ts'
+import type { EndpointProxy as EndpointProxyType } from './endpoint-proxy.type.ts'
 
 
 /**
@@ -36,7 +36,7 @@ export function createEndpointProxy<T extends KitResponse>(pureResponse: Promise
 
 	const response = new Promise<T | Response>((resolve, reject) => {
 		pureResponse.then(res => res).catch(res => res).then(res => {
-			// By setting the timeout to 0, we wait a "JS tick" and
+			// By setting the timeout to 0, we wait a 'JS tick' and
 			// allow potential chained callbacks to take place.
 			setTimeout(async () => {
 				if (!('statusText' in res)) {
@@ -47,6 +47,7 @@ export function createEndpointProxy<T extends KitResponse>(pureResponse: Promise
 
 				if (response instanceof Response) {
 					// * Do some magic? (e.g. if frontend, do .json())
+					// Note: This is done in `client/api-proxy.ts`
 				}
 
 				for(const cb of cbs) {
@@ -196,7 +197,7 @@ export function createEndpointProxy<T extends KitResponse>(pureResponse: Promise
 }
 
 /**
- * We're managing the "state" for each crawl individually. If you
+ * We're managing the 'state' for each crawl individually. If you
  * did `$.success(...).error(...)` you would get [Promise, Promise]
  * 
  * Without the state, if you from that same root did `$.OK(...)` it would
@@ -208,7 +209,7 @@ export function createEndpointProxy<T extends KitResponse>(pureResponse: Promise
 interface CrawlerProps {
 	$promises?: [string, Promise<unknown>][]
 	/**
-	 * Is a "Promise-cache", so when you do `v.then(); v.then()` you
+	 * Is a 'Promise-cache', so when you do `v.then(); v.then()` you
 	 * would relate to the same promise, rather than creating a new one
 	 * every time.
 	 */

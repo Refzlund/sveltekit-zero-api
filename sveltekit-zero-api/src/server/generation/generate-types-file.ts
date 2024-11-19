@@ -1,7 +1,8 @@
+import { complexSlug, optionalSlug, restSlug, simpleSlug } from '../../utils/slugs.ts'
 import { serializeFiles } from './serialize-files.ts'
 
-export function generateTypes(files: string[], importType: string, relativeTypePath: string) {
-	let serializedFiles = serializeFiles(files)
+export function generateTypes(files: string[], importType: string, relativeTypePath: string, routesLength: number) {
+	let serializedFiles = serializeFiles(files, routesLength)
 
 	interface TypePath {
 		type: string | null
@@ -9,11 +10,6 @@ export function generateTypes(files: string[], importType: string, relativeTypeP
 		indent: number
 		toString(): string
 	}
-
-	const optionalSlug = /^\[\[([^\]]+)\]\]$/
-	const restSlug = /^\[\.\.\.([^\]]+)\]$/
-	const simpleSlug = /^\[([^\]]+)\]$/
-	const complexSlug = /\[([^\]]+)\]/
 
 	function serverPath(key: string | null, indent = 0) {
 		return {
@@ -28,9 +24,9 @@ export function generateTypes(files: string[], importType: string, relativeTypeP
 				if (key) {
 					let m: RegExpMatchArray | null
 					if ((m = key.match(optionalSlug))) {
-						str += `"${m[1]}$": (${m[1]}?: string | null | undefined) => `
+						str += `"$${m[1]}$": (${m[1]}?: string | null | undefined) => `
 					} else if ((m = key.match(restSlug))) {
-						str += `"${m[1]}$": (...${m[1]}: string[]) => `
+						str += `"${m[1]}$$": (...${m[1]}: string[]) => `
 					} else if ((m = key.match(simpleSlug))) {
 						str += `"${m[1]}$": (${m[1]}: string) => `
 					} else if ((m = key.match(complexSlug))) {

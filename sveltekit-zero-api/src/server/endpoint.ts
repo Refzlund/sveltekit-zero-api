@@ -3,7 +3,8 @@ import type { FixKeys, Simplify } from '../utils/types.ts'
 import { BadRequest, KitResponse } from './http.ts'
 import { ParseKitEvent, type KitEvent, type KitEventFn } from './kitevent.ts'
 import type { EndpointProxy } from '../endpoint-proxy.type.ts'
-import { Generic } from "./generic.ts";
+import { Generic } from './generic.ts'
+import { convertResponse } from './convert-response.ts'
 
 /**
  * The "result" of an `endpoint` paramters `callback`
@@ -154,7 +155,7 @@ function endpoint<const Callbacks extends [...Callback<KitEvent, EndpointCallbac
 						try {
 							event.body = await event.request.json()
 						} catch (error) {
-							throw new BadRequest({ code: 'invalid_json', error: 'Invalid JSON', details: error })
+							throw new BadRequest({ code: 'invalid_json', error: 'A generic endpoint must receive JSON', details: error })
 						}
 						result = await result.function()
 					}
@@ -165,7 +166,9 @@ function endpoint<const Callbacks extends [...Callback<KitEvent, EndpointCallbac
 						throw error
 					}
 				}
-				if (result instanceof KitResponse) return result
+				if (result instanceof KitResponse) {
+					return result
+				}
 				if (result instanceof ParseKitEvent) {
 					event.body = result.body
 					event.query ??= {}
@@ -212,6 +215,17 @@ function endpoint<const Callbacks extends [...Callback<KitEvent, EndpointCallbac
 		})
 
 		return promise
+			.then(
+				v => convertResponse(v, event.zeroAPIOptions),
+			)
+			.catch(
+				err => {
+					if(err instanceof KitResponse) {
+						return convertResponse(err, event.zeroAPIOptions)
+					}
+					throw err
+				}
+			)
 	}
 }
 

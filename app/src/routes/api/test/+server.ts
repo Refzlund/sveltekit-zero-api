@@ -1,11 +1,17 @@
-import { InternalServerError, OK } from '@scope/sveltekit-zero-api/http'
+import { BadRequest, InternalServerError, OK } from '@scope/sveltekit-zero-api/http'
 import { functions } from '@scope/sveltekit-zero-api/server'
 
 function someFunction() {
-	if (Math.random() > 0.5) {
+	if (Math.random() > 0.95) {
 		throw new InternalServerError({
 			code: 'unlucky_call',
 			error: 'Unlucky'
+		})
+	}
+	if(Math.random() > 0.5) {
+		return new BadRequest({
+			code: 'user_error',
+			error: 'You made a mistake. Being unlucky that is.'
 		})
 	}
 	return new OK({ message: 'ok' })

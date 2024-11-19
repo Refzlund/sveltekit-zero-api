@@ -1,4 +1,5 @@
 import type { UnionToIntersection } from './../utils/types';
+import { convertResponse } from "./convert-response.ts";
 import type { Functions, FnsRecord } from './functions.type.ts'
 import { Generic } from "./generic.ts";
 import { BadRequest, InternalServerError, KitResponse } from './http.ts'
@@ -67,27 +68,27 @@ interface FunctionsBody {
  * @note Do not end function names in `$` as those are reserved for route slugged params.
  */
 export function functions<const Fns extends FnsRecord>(fns: Fns): 
-	(event?: KitEvent<FunctionsBody>) => KitResponse & { use: Functions<Fns> }
+	(event?: KitEvent<FunctionsBody>) => Promise<Response> & { use(): Functions<Fns> }
 
 
 
 // #region functions overloads
 
 export function functions<const Fns extends FnsRecord, B1 extends FunctionCallbackResult>(
-	cb1: FnCallback<B1>, 
+	cb1: FnCallback<B1>,
 	fns: Fns
-): (event?: KitEvent<FunctionsBody>) => KitResponse & { use: Functions<Fns, Extract<B1, KitResponse>> }
+): (event?: KitEvent<FunctionsBody>) => Promise<Response> & { use(): Functions<Fns, Extract<B1, KitResponse>> }
 
 export function functions<
-	const Fns extends FnsRecord, 
+	const Fns extends FnsRecord,
 	B1 extends FunctionCallbackResult,
 	B2 extends FunctionCallbackResult
 >(
 	cb1: FnCallback<B1>,
-	cb2: FnCallback<B2, B1>, 
+	cb2: FnCallback<B2, B1>,
 	fns: Fns
-): (event?: KitEvent<FunctionsBody>) => KitResponse & { 
-	use: Functions<Fns, Extract<B1 | B2, KitResponse>>
+): (event?: KitEvent<FunctionsBody>) => Promise<Response> & {
+	use(): Functions<Fns, Extract<B1 | B2, KitResponse>>
 }
 
 export function functions<
@@ -100,8 +101,8 @@ export function functions<
 	cb2: FnCallback<B2, B1>,
 	cb3: FnCallback<B3, B1, B2>,
 	fns: Fns
-): (event?: KitEvent<FunctionsBody>) => KitResponse & { 
-	use: Functions<Fns, Extract<B1 | B2 | B3, KitResponse>>
+): (event?: KitEvent<FunctionsBody>) => Promise<Response> & {
+	use(): Functions<Fns, Extract<B1 | B2 | B3, KitResponse>>
 }
 
 export function functions<
@@ -116,8 +117,8 @@ export function functions<
 	cb3: FnCallback<B3, B1, B2>,
 	cb4: FnCallback<B4, B1, B2, B3>,
 	fns: Fns
-): (event?: KitEvent<FunctionsBody>) => KitResponse & { 
-	use: Functions<Fns, Extract<B1 | B2 | B3 | B4, KitResponse>>
+): (event?: KitEvent<FunctionsBody>) => Promise<Response> & {
+	use(): Functions<Fns, Extract<B1 | B2 | B3 | B4, KitResponse>>
 }
 
 export function functions<
@@ -134,8 +135,8 @@ export function functions<
 	cb4: FnCallback<B4, B1, B2, B3>,
 	cb5: FnCallback<B5, B1, B2, B3, B4>,
 	fns: Fns
-): (event?: KitEvent<FunctionsBody>) => KitResponse & { 
-	use: Functions<Fns, Extract<B1 | B2 | B3 | B4 | B5, KitResponse>>
+): (event?: KitEvent<FunctionsBody>) => Promise<Response> & {
+	use(): Functions<Fns, Extract<B1 | B2 | B3 | B4 | B5, KitResponse>>
 }
 
 export function functions<
@@ -154,8 +155,8 @@ export function functions<
 	cb5: FnCallback<B5, B1, B2, B3, B4>,
 	cb6: FnCallback<B6, B1, B2, B3, B4, B5>,
 	fns: Fns
-): (event?: KitEvent<FunctionsBody>) => KitResponse & { 
-	use: Functions<Fns, Extract<B1 | B2 | B3 | B4 | B5 | B6, KitResponse>>
+): (event?: KitEvent<FunctionsBody>) => Promise<Response> & {
+	use(): Functions<Fns, Extract<B1 | B2 | B3 | B4 | B5 | B6, KitResponse>>
 }
 
 // #endregion
@@ -175,13 +176,19 @@ export function functions(
 		let promise = functionRequest(event, fns!, cbs, () => proxyUse)
 
 		Object.assign(promise, {
-			get use() {
+			use() {
 				proxyUse ??= createUseProxy(event, fns, cbs)
 				return proxyUse
 			}
 		})
 
-		return promise as any
+		return promise
+			.then(r => convertResponse(r, event.zeroAPIOptions)!)
+			.catch(r => {
+				if (r instanceof KitResponse)
+					return convertResponse(r, event.zeroAPIOptions)
+				throw r
+			})
 	}
 
 	return functionsHandler
@@ -257,9 +264,7 @@ async function functionRequest(
 		for (const cb of cbs) {
 			const result = await cb(event)
 			if (result instanceof KitResponse) {
-				if(result.ok)
-					return result.body
-				throw result
+				return result
 			}
 			if (typeof result === 'object') {
 				event.results ??= {}
@@ -271,9 +276,7 @@ async function functionRequest(
 		if (result instanceof Generic) {
 			result = await result.function(...args || []) as KitResponse
 		}
-		if(result.ok)
-			return result.body
-		throw result
+		return result
 	} catch (error) {
 		if (error instanceof KitResponse) {
 			throw error
@@ -324,7 +327,25 @@ function createUseProxy(event: KitEvent<any, never>, fns: FnsRecord, cbs: FnCall
 					body: body!
 				})
 
-				return functionRequest(event, fns, cbs)
+				return new Promise((resolve, reject) => {
+					functionRequest(event, fns, cbs)
+						.then(v => {
+							if(!v) {
+								throw new Error()
+							}
+							if(!v.ok) {
+								return reject(v) 
+							}
+							if(v.headers.get('content-type') === 'application/json') {
+								return resolve(v.body)
+							}
+							if(v.headers.get('content-type') === 'multipart/form-data') {
+								return resolve(v.body)
+							}
+							return v.body
+						})
+						.catch(reject)
+				})
 			}
 		}
 	})

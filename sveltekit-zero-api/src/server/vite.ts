@@ -45,17 +45,16 @@ function update(
 	/** @example 'C:/projects/app/src/' */
 	routesPath: string, 
 	/** @example 'routes' */
-	routesDirectory: string
+	routesDirectory: string,
+	routesLength: number
 ) {
 	if (timeout !== undefined) clearTimeout(timeout)
 	timeout = setTimeout(() => {
 		let files = getEndpointFiles(routesPath, routesDirectory)
 
-		console.log(files)
-
 		fs.writeFileSync(
 			Path.resolve(options.customTypePath!),
-			generateTypes(files, options.customTypeImport!, relativeTypePath)
+			generateTypes(files, options.customTypeImport!, relativeTypePath, routesLength)
 		)
 	}, 111) // sveltekit debounces by 100ms
 }
@@ -82,9 +81,11 @@ export default function viteZeroAPI(options: ZeroAPIOptions = {}): Plugin {
 
 			// must be / instead of `Path.sep` for TS
 			let relativeTypePath = Array(options.customTypePath!.split(Path.sep).length - 1).fill('..').join('/')
+			// when serializing, cut this part off for the routed types
+			let routesLength = Path.join((await svelteConfig)?.kit?.files?.routes ?? './src/routes').split(Path.sep).length
 
-			update(options, relativeTypePath, routesPath, routesDirectory)
-			vite.watcher.on('change', () => update(options, relativeTypePath, routesPath, routesDirectory))
+			update(options, relativeTypePath, routesPath, routesDirectory, routesLength)
+			vite.watcher.on('change', () => update(options, relativeTypePath, routesPath, routesDirectory, routesLength))
 		}
 	}
 }

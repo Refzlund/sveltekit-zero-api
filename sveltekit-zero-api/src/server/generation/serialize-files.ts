@@ -14,7 +14,7 @@ import type { getEndpointFiles } from "./get-endpoint-files.ts";
  * ]
  * ```
  */
-export function serializeFiles(files: ReturnType<typeof getEndpointFiles>) {
+export function serializeFiles(files: ReturnType<typeof getEndpointFiles>, routesLength: number) {
 	/** https://svelte.dev/docs/kit/advanced-routing#Encoding */
 	let encodingMap = {
 		'[x+5c]': '\\',
@@ -46,7 +46,7 @@ export function serializeFiles(files: ReturnType<typeof getEndpointFiles>) {
 	for (let file of files) {
 		const serialized = file
 			.split('/')
-			.slice(3, -1) // exclude empty '/', src, routes folder
+			.slice(routesLength + 1, -1) // exclude empty '/', src, routes folder
 			.map((v) =>
 				v
 					.replaceAll(encodingRegex, (v) => encodingMap[v])

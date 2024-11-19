@@ -2,6 +2,10 @@
 
 	import '../app.pcss'
 
+	import api from '../api.ts'
+
+	
+
 	let { children } = $props()
 
 </script>

@@ -1,7 +1,8 @@
-import { Cookies, Handle, RequestEvent } from '@sveltejs/kit'
-import { KitResponse } from './http.ts'
-import { EndpointCallbackResult } from './endpoint.ts'
-import { Simplify, UnionToIntersection } from '../utils/types.ts'
+import type { Handle, RequestEvent } from '@sveltejs/kit'
+import type { KitResponse } from './http.ts'
+import type { EndpointCallbackResult } from './endpoint.ts'
+import type { Simplify, UnionToIntersection } from '../utils/types.ts'
+import type { ZeroAPIServerOptions } from './hooks.ts'
 
 export interface KitEvent<
 	Input extends {
@@ -17,6 +18,7 @@ export interface KitEvent<
 	 * `App.Locals` little brother.
 	 */
 	results: [Results] extends [never] ? Record<PropertyKey, unknown> : Results
+	zeroAPIOptions: ZeroAPIServerOptions
 }
 
 /**
@@ -143,6 +145,7 @@ export class FakeKitEvent implements KitEvent {
 	setHeaders = {} as any
 	url = {} as any
 	cookies = {} as any
+	zeroAPIOptions = {}
 
 	hooks: Handle | undefined
 

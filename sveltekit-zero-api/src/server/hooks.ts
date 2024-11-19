@@ -2,6 +2,7 @@ import type { Handle, ResolveOptions } from '@sveltejs/kit'
 import { KitResponse } from './http.ts'
 import type { KitEvent } from './kitevent.ts'
 import { sequence as sveltekitSequence } from '@sveltejs/kit/hooks'
+import { convertResponse } from "./convert-response.ts";
 
 export type KitHandle = (
 	input: {
@@ -11,18 +12,7 @@ export type KitHandle = (
 ) => Promise<KitResponse | Response> | KitResponse | Response
 
 export interface ZeroAPIServerOptions {
-	client?: {
-		/**
-		 * If `true`, access body directly on client via `response.json`
-		 * when using `api...`
-		 *
-		 * This is done by providing the reasponse header:
-		 * `'sveltekit-zero-api-json': 'true'`
-		 *
-		 * @default false
-		 */
-		awaitJSON?: boolean
-	}
+	client?: {}
 	sever?: {
 		/**
 		 * Whether to stringify objects to JSON when no 'content-type' is provided.
@@ -36,9 +26,9 @@ export interface ZeroAPIServerOptions {
 		/**
 		 * Log KitResponses that has `{ cause: ... }`?
 		 *
-		 * @default true
+		 * @default 'non-ok'
 		 */
-		logWithCause?: boolean
+		logWithCause?: 'non-ok' | 'all' | false
 	}
 }
 
@@ -68,20 +58,14 @@ export interface ZeroAPIServerOptions {
  *     }
  })
  */
-export function zeroAPI({
-	client: {
-		awaitJSON = true
-	} = {},
-	sever: {
-		stringify = true,
-		logWithCause = true
-	} = {}
-}: ZeroAPIServerOptions) {
-
+export function zeroAPI(options: ZeroAPIServerOptions) {
 	const handle: Handle = async ({ event, resolve }) => {
 		// @ts-expect-error RequestEvent should not have `results` inside of it.
 		event.results ??= {}
-		let response: unknown
+		// @ts-expect-error Just adding options to event
+		event.zeroAPIOptions = options 
+
+		let response: Response
 
 		let time = Date.now()
 
@@ -89,51 +73,13 @@ export function zeroAPI({
 			response = await resolve(event)
 		} catch (error) {
 			if (!(error instanceof KitResponse)) throw error
-			response = error
+			response = error as any
 		}
 
-		if (!(response instanceof KitResponse)) {
-			(<Response>response).headers.append('xt', String(Date.now() - time))
-			return response
-		}
-
-		// @ts-expect-error Hidden property
-		let cause = response.cause as unknown
-		if (cause && logWithCause) {
-			let stringed = cause.toString()
-			if (stringed.startsWith('[object ') && stringed.endsWith(']')) {
-				try {
-					stringed = JSON.stringify(cause)
-				} catch (error) {
-					stringed = 'Could not parse KitResponse[cause] into string: ' + error
-				}
-			}
-			console.log('- KitResponse with cause: ', KitResponse)
-		}
-
-		if(awaitJSON) {
-			response.headers.append('sveltekit-zero-api-json', 'true')
-		}
-
-		let body = response.body
-		const type = typeof body
-
-		let isJSONable = type == 'object'
-			|| type === 'string'
-			|| type === 'number' 
-			|| type === 'boolean'
-			|| type === 'bigint'
-
-		if (stringify && !response.headers.has('content-type') && isJSONable) {
-			response.headers.append('content-type', 'application/json')
-			body = JSON.stringify(body)
-		}
+		response = convertResponse(response, options)
 
 		response.headers.append('xt', String(Date.now() - time))
-		return new Response(body, {
-			status: response.status,
-			headers: response.headers
-		}) as any
+		return response
 	}
 
 	function sequence(...handlers: KitHandle[]) {

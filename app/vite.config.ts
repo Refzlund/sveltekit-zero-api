@@ -12,9 +12,18 @@ export default defineConfig({
 			customTypeImport: 'import type { ServerType as S } from "@scope/sveltekit-zero-api/client"'
 		})
 	],
+	server: {
+		fs: {
+			allow: ['..']
+		}
+	},
 	resolve: {
 		alias: {
-			'@scope/sveltekit-zero-api': join(dirname(fromFileUrl(import.meta.url)), '../sveltekit-zero-api')
+			'@scope/sveltekit-zero-api/server': join(dirname(fromFileUrl(import.meta.url)), '../sveltekit-zero-api/src/server/index.ts'),
+			'@scope/sveltekit-zero-api/http': join(dirname(fromFileUrl(import.meta.url)), '../sveltekit-zero-api/src/server/http.ts'),
+			'@scope/sveltekit-zero-api/formapi.svelte': join(dirname(fromFileUrl(import.meta.url)), '../sveltekit-zero-api/src/client/formapi.svelte.ts'),
+			'@scope/sveltekit-zero-api/client': join(dirname(fromFileUrl(import.meta.url)), '../sveltekit-zero-api/src/client/index.ts'),
+			'@scope/sveltekit-zero-api': join(dirname(fromFileUrl(import.meta.url)), '../sveltekit-zero-api/src/index.ts'),
 		}
 	}
 })
