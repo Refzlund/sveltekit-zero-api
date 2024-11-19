@@ -33,16 +33,19 @@ type GenericCallback =
 		| ((body: any, options: { query: any }) => EndpointProxy<KitResponse<any,any,any>>)
 	>
 
+
 type Fn<
 	Input extends {
 		body?: any
 		query?: any
 	}, 
 	Result extends KitResponse
-> = (
+> = ((
 	body?: Input['body'], 
-	options?: { query?: Input['query'] }
-) => EndpointProxy<Result>
+	options?: { query?: Input['query'] } & RequestInit
+) => EndpointProxy<Result>) & {
+	xhr: (body?: Input['body'], options?: { query?: Input['query'] } & RequestInit) => EndpointProxy<Result, never, true>
+}
 
 /**
  * The return-type for an `endpoint`.

@@ -37,7 +37,7 @@ interface ZeroAPIOptions {
 	customTypeImport?: string
 }
 
-let timeout: number | undefined
+let timeout: any
 function update(
 	options: ZeroAPIOptions, 
 	/** @example '../..' */
@@ -48,7 +48,7 @@ function update(
 	routesDirectory: string,
 	routesLength: number
 ) {
-	if (timeout !== undefined) clearTimeout(timeout)
+	if (timeout !== undefined) globalThis.clearTimeout(timeout)
 	timeout = setTimeout(() => {
 		let files = getEndpointFiles(routesPath, routesDirectory)
 

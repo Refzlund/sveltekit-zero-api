@@ -27,13 +27,13 @@ export interface ReturnedEndpointProxy extends EndpointProxyType<KitResponse<any
 type ResponseType = KitResponse | Response
 
 /** @note In order to get correct types, the response should be `Promise<KitResponse>` */
-export function createEndpointProxy<T extends KitResponse>(pureResponse: Promise<T | Response>): EndpointProxyType<T, never> {
+export function createEndpointProxy<T extends KitResponse>(pureResponse: Promise<T | Response>, xhr?: XMLHttpRequest): EndpointProxyType<T, never> {
 	// Proxy
 	// ex. `let [result] = GET(event, { body: { ... }}).error(...).$.OK(...)`
 
 	/** Callbacks */
 	let cbs: [string, (response: ResponseType) => any][] = []
-
+	
 	const response = new Promise<T | Response>((resolve, reject) => {
 		pureResponse.then(res => res).catch(res => res).then(res => {
 			// By setting the timeout to 0, we wait a 'JS tick' and
@@ -168,6 +168,30 @@ export function createEndpointProxy<T extends KitResponse>(pureResponse: Promise
 
 			if (typeof args[0] !== 'function') {
 				throw new Error('Callback must be a function', { cause: { keys, key, args } })
+			}
+
+
+			let k = key.toString()
+			if (k.startsWith('xhr') || k.startsWith('upload')) {
+				if (!xhr) {
+					throw new Error('This request is not associated with an XMLHttpRequest (xhr)', { cause: { keys, key, args } })
+				}
+
+				let upload = k.startsWith('upload')
+				let event = k.slice(upload ? 6 : 3).toLowerCase()
+
+				const fn = (ev: any) => {
+					if (event === 'init') 
+						return args[0](xhr)
+					args[0](ev, xhr)
+				}
+				if(upload) {
+					xhr.upload.addEventListener(event, fn)
+				} else {
+					xhr.addEventListener(event, fn)
+				}
+				
+				return crawler
 			}
 
 			if (keys[0] !== '$') {

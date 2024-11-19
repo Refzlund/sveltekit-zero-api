@@ -1,11 +1,9 @@
-import { InternalServerError, BadRequest, OK } from '@scope/sveltekit-zero-api/http'
-import { endpoint, functions } from '@scope/sveltekit-zero-api/server'
+import { InternalServerError, BadRequest, OK } from 'sveltekit-zero-api/http'
+import { endpoint, functions } from 'sveltekit-zero-api/server'
 
-export const POST = endpoint(
-	() => {
-		return new OK('hellooo')
-	}
-)
+export const POST = endpoint(() => {
+	return new OK('hellooo')
+})
 
 function someFunction() {
 	if (Math.random() > 0.5) {

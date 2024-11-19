@@ -1,0 +1,6 @@
+{
+	"workspaces": [
+		"./app",
+		"./sveltekit-zero-api/npm"
+	]
+}

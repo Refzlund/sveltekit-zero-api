@@ -3,8 +3,25 @@ import { build, emptyDir } from 'jsr:@deno/dnt'
 await emptyDir('./npm')
 
 await build({
-	entryPoints: ['./src/index.ts'],
+	entryPoints: [
+		{ name: '.', path: './src/index.ts' },
+		{ name: './client', path: './src/client/index.ts' },
+		{ name: './server', path: './src/server/index.ts' },
+		{ name: './http', path: './src/server/http.ts' },
+		{ name: './vite', path: './src/server/vite.ts' },
+		{ name: './formapi.svelte', path: './src/client/formapi.svelte.ts' }
+	],
+	compilerOptions: {
+		noImplicitAny: false,
+		lib: ['ESNext', 'DOM', 'DOM.Iterable', 'ESNext.AsyncIterable'],
+		target: 'Latest'
+	},
+	packageManager: 'bun',
 	outDir: './npm',
+	rootTestDir: './tests',
+	esModule: true,
+	scriptModule: false, // sveltekit uses ESM🤷
+	test: false,
 
 	shims: {
 		// see JS docs for overview and more options

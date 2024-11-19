@@ -1,4 +1,4 @@
-import { Created } from './../src/server/http'
+import { Created } from './../src/server/http.ts'
 import { expect } from '@std/expect'
 import type { Simplify } from '../src/utils/types.ts'
 import { functions } from '../src/server/functions.ts'
@@ -31,7 +31,7 @@ Deno.test('functions: receive readable stream', async () => {
 		fn
 	})
 
-	let fns = PATCH(new FakeKitEvent()).use
+	let fns = PATCH(new FakeKitEvent()).use()
 
 	let i = ''
 	for await (const chunk of await fns.fn()) {
@@ -57,7 +57,7 @@ Deno.test('functions: send readable stream', async () => {
 		fn
 	})
 
-	let result = await PATCH(new FakeKitEvent()).use.fn(streamTest())
+	let result = await PATCH(new FakeKitEvent()).use().fn(streamTest())
 	expect(result.data).toBe('10987654321')
 	expect(result.time).toBeGreaterThanOrEqual(110)
 })
@@ -99,8 +99,8 @@ Deno.test('functions: middleware', async () => {
 		}
 	)
 
-	const result = await PATCH().use.fn().catch(err => err)
-	const result2 = await PATCH().use.anotherFn()
+	const result = await PATCH().use().fn().catch(err => err)
+	const result2 = await PATCH().use().anotherFn()
 
 	if(isResponse(result)) {
 		expect(result.body).toBe('error')
@@ -136,7 +136,7 @@ Deno.test('functions', async () => {
 		specificFn: (event) => new Generic(<const T extends Input>(input: T) => Generic.fn(someFn(event, input)))
 	})
 
-	let fns = PATCH(new FakeKitEvent()).use
+	let fns = PATCH(new FakeKitEvent()).use()
 
 	let result = fns.someFn({ name: 'Shiba', age: 23 })
 	await expect(result).rejects.toThrow() // Throws a response when not success

@@ -48,7 +48,7 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 									result,
 									argCount: state.args.length,
 									slug: key,
-									expected: key.matchAll(complexSlug).toArray().length
+									expected: Array.from(key.matchAll(complexSlug)).length
 								}
 							})
 						}
@@ -77,12 +77,17 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 
 			// * Both functions and normal API calls requests a response.
 
+			const xhr = key === 'xhr' ? new XMLHttpRequest() : undefined
+
 			let searchParams: URLSearchParams | undefined | false
-			const route = '/' + state.keys.join('/')
+			const route = '/' + xhr ? state.keys.slice(0, -1).join('/') : state.keys.join('/')
 
-			let isMethod = methods.includes(key)
+			let isMethod = xhr || methods.includes(key)
 
-			let method = isMethod ? key : 'PATCH' // functions always use PATCH
+			let method = isMethod ? (xhr ? state.keys[state.keys.length-1].toString() : key) : 'PATCH' // functions always use PATCH
+			if(!methods.includes(method)) {
+				throw new Error('Invalid method: ' + method, { cause: state })
+			}
 
 			type BodyType = null | undefined | ReadableStream | FormData | object | string
 			let body: BodyType | Array<unknown> = isMethod
@@ -101,9 +106,15 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 
 			if (body !== null && body !== undefined && !headers.has('content-type')) {
 				if (body instanceof ReadableStream) {
-					headers.set('content-type', 'application/octet-stream')
+					// https://caniuse.com/mdn-api_request_duplex - largely unsupported still
+					// headers.set('content-type', 'application/octet-stream')
+					throw new Error(
+						'Streaming data is largely unsupported in browsers, as Request Duplex is required. See '
+						+ 'https://caniuse.com/mdn-api_request_duplex'
+					)
 				} else if (body instanceof FormData) {
-					headers.set('content-type', 'multipart/form-data')
+					// https://stackoverflow.com/a/49510941 - fetch sets content-type automatically incl. form boundary
+					// headers.set('content-type', 'multipart/form-data')
 				} else if (
 					typeof body === 'object' 
 					|| typeof body === 'string' 
@@ -121,35 +132,93 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 				headers.append('x-function', key)
 			}
 
+
+			const url = options.url?.toString() || '/' + route + (searchParams ? '?' + searchParams.toString() : '')
+
 			// ('query' in requestInit ? '?' + new URLSearchParams(requestInit.query).toString() : '')
-			let response = fetch(
-				options.url?.toString() || '' + route + (searchParams ? '?' + searchParams.toString() : ''),
-				
+			let response = !xhr && fetch(
+				url,
 				// avoid making the "preflight http request", which will make it twice as fast
 				method === 'GET' ? undefined : {
 					...requestInit,
-					body: body === null ? undefined : body,
+					body: (body === null ? undefined : body) as BodyInit,
 					headers,
 					method
 				}
-			).then(async res => {
-				if (res.headers.get('content-type')?.includes('application/json')) {
-					let body = await res.json()
-					Object.defineProperty(res, 'body', { get() { return body } } )
-				}
-				return res
-			})
-			.catch(async res => {
-				if (res.headers.get('content-type')?.includes('application/json')) {
-					let body = await res.json()
-					Object.defineProperty(res, 'body', { get() { return body } } )
-				}
-				return res
-			})
+			)
 
-			if (isMethod) {
-				return createEndpointProxy(response)
+			if (isMethod && xhr) {
+				// Use XHR
+
+				let xhrResolve: (response: Response) => void
+				response = new Promise((resolve, reject) => {
+					xhrResolve = resolve
+				})
+
+				setTimeout(() => {
+					xhr.dispatchEvent(new CustomEvent('init'))
+
+					xhr.open(method, url, true)
+
+					for(const [key, value] of headers) {
+						xhr.setRequestHeader(key, value)
+					}
+
+					function onloadend() {
+						const headers = new Headers()
+						xhr!.getAllResponseHeaders().trim().split(/[\r\n]+/).forEach((line) => {
+							const parts = line.split(': ')
+							const header = parts.shift()
+							const value = parts.join(': ')
+							if (header) headers.append(header, value)
+						})
+
+						xhrResolve(
+							new Response(xhr!.response, {
+								status: xhr!.status,
+								statusText: xhr!.statusText,
+								headers
+							})
+						)
+					}
+
+					xhr.addEventListener('loadend', onloadend)
+
+					xhr.send(body as XMLHttpRequestBodyInit | Document | null | undefined)
+				}, 0)
 			}
+
+			if (response === false)
+				throw new Error('Response was not created correctly') // type narrowing
+
+			response = response
+				.then(async (res) => {
+					if (res.headers.get('content-type')?.includes('application/json')) {
+						let body = await res.json()
+						Object.defineProperty(res, 'body', {
+							get() {
+								return body
+							}
+						})
+					}
+					return res
+				})
+				.catch(async (res) => {
+					if (!('headers' in res)) throw res
+					if (res.headers.get('content-type')?.includes('application/json')) {
+						let body = await res.json()
+						Object.defineProperty(res, 'body', {
+							get() {
+								return body
+							}
+						})
+					}
+					return res as Response
+				})
+
+			if(isMethod) {
+				return createEndpointProxy(response, xhr)
+			}			
 
 			return new Promise((resolve, reject) => {
 				response

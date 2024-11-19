@@ -1,7 +1,7 @@
-import type { UnionToIntersection } from './../utils/types';
-import { convertResponse } from "./convert-response.ts";
+import type { UnionToIntersection } from './../utils/types.ts'
+import { convertResponse } from './convert-response.ts'
 import type { Functions, FnsRecord } from './functions.type.ts'
-import { Generic } from "./generic.ts";
+import { Generic } from './generic.ts'
 import { BadRequest, InternalServerError, KitResponse } from './http.ts'
 import { FakeKitEvent, type KitEvent } from './kitevent.ts'
 

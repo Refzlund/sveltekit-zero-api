@@ -25,13 +25,26 @@ type ProxyCallback<
 		$: EndpointProxy<Results, []>
 	} : {})
 
+type xhrEvents = 
+	| 'xhrAbort'     | 'uploadAbort'
+	| 'xhrError'     | 'uploadError'
+	| 'xhrLoad'      | 'uploadLoad'
+	| 'xhrLoadend'   | 'uploadLoadend'
+	| 'xhrLoadstart' | 'uploadLoadstart'
+	| 'xhrProgress'  | 'uploadProgress'
+	| 'xhrTimeout'   | 'uploadTimeout'
+
 /**
  * An `EndpointResponse` return type, that can be proxy-crawled
  * to do `.OK(...).$.error(...)` etc.
  *
  * This should work the same on frontend and backend.
  */
-export type EndpointProxy<Results extends KitResponse, Returned extends Promisify<any>[] = never> = 
+export type EndpointProxy<
+	Results extends KitResponse, 
+	Returned extends Promisify<any>[] = never,
+	XHR extends boolean = false
+> = 
 	// Promise<KitResponse>     $:  Promise<[...any[]]>
 	& Promise<[Returned] extends [never] ? Results : AwaitAll<Returned>>
 	// $:  [...Promise<any>[]]
@@ -49,4 +62,15 @@ export type EndpointProxy<Results extends KitResponse, Returned extends Promisif
 				> ? Results : never
 			) => A
 		) => EndpointProxy<Results, [Returned] extends [never] ? never : [...Returned, Promisify<A | undefined>]>
-	}
+	} & (XHR extends true ? [Returned] extends [never] ? {
+		[K in xhrEvents]: (callback: (event: ProgressEvent, xhr: XMLHttpRequest) => void) => EndpointProxy<Results, never, true>
+	} & {
+		/**
+		 * When only `const xhr = new XMLHttpRequest()` has been established.
+		 * 
+		 * Before `xhr.open(method, url, true)`
+		*/
+		xhrInit(callback: (xhr: XMLHttpRequest) => void): EndpointProxy<Results, never, true>
+		xhrReadystatechange(callback: (event: Event, xhr: XMLHttpRequest) => void): EndpointProxy<Results, never, true>
+		uploadReadystatechange(callback: (event: Event, xhr: XMLHttpRequest) => void): EndpointProxy<Results, never, true>
+	} : {} : {})

@@ -1,6 +1,7 @@
 {
 	"tasks": {
-		"app": "cd app && vite dev --host"
+		"app": "cd ./sveltekit-zero-api && deno run -A ./build.ts && cd ../app && bun dev",
+		"preinstall": "bun install"
 	},
 	"compilerOptions": {
 		"lib": ["deno.window", "ESNext", "DOM", "DOM.Iterable"],

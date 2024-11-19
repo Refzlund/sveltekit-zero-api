@@ -2,7 +2,7 @@ import { expect } from '@std/expect'
 import { endpoint } from '../src/server/endpoint.ts'
 import { BadRequest, KitResponse, OK } from '../src/server/http.ts'
 import { FakeKitEvent, type KitEvent, ParseKitEvent } from '../src/server/kitevent.ts'
-import { parseJSON } from '../src/server/parse-json.ts'
+import { parseJSON } from '../src/server/parsers/parse-json.ts'
 import z from 'zod'
 import { Generic } from '../src/server/generic.ts'
 
@@ -113,4 +113,15 @@ Deno.test('endpoint ParseKitEvent', async () => {
 	expect(success).toEqual({ name: 'John' })
 
 	expect(ran).toBe(2)
+})
+
+Deno.test('endpoint: xhr-types', () => {
+
+	const POST = endpoint((event) => new OK({ value: '123' }))
+
+	let xhr = POST(new FakeKitEvent())
+		.use.xhr({})
+		
+		
+	
 })
