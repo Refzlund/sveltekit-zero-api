@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Code from '$lib/Code/Code.svelte'
 	import { formAPI } from 'sveltekit-zero-api/formapi.svelte'
+	import api from '$lib/../api'
 
 	interface Person {
 		name: string
@@ -11,31 +12,23 @@
 		pets: string[]
 	}
 
-	// * Endpoint
-	const api = {
-		users: {
-			async GET() {
-				return [] as Person[]
-			},
-			async POST(body: {}) {
-				return {} as Person
-			}
-		}
+	function onsubmit() {
+		// let data = new FormData(userForm.form)
+		console.log(userForm.form)
+		// console.log(Object.fromEntries(data))
+		// console.log(data.get('name'))
+		
+		//api.formdata.POST(new FormData(userForm.form))
+		//	.any(res => console.log({ body: res.body }))
 	}
 
-	function runedAPI<T>(
-		endpoint: {
-			GET(): Promise<T[]>
-		},
-		discriminator: (body: any) => any
-	) {}
-
-	const users = runedAPI(api.users, (body) => body.id)
-
-	const userForm = formAPI(api.users)
+	// @ts-ignore
+	const userForm = formAPI<Person>()
 </script>
 
 <!---------------------------------------------------->
+
+<button onclick={onsubmit}>Submit</button>
 
 <form use:userForm class="mb-4">
 	<!-- <input name='name' /> -->

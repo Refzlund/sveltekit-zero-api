@@ -1,5 +1,5 @@
 import { Created } from './../src/server/http.ts'
-import { expect } from '@std/expect'
+import { expect } from './'
 import type { Simplify } from '../src/utils/types.ts'
 import { functions } from '../src/server/functions.ts'
 import { Generic } from '../src/server/generic.ts'

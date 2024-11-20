@@ -2,14 +2,12 @@ import type { Handle, ResolveOptions } from '@sveltejs/kit'
 import { KitResponse } from './http.ts'
 import type { KitEvent } from './kitevent.ts'
 import { sequence as sveltekitSequence } from '@sveltejs/kit/hooks'
-import { convertResponse } from "./convert-response.ts";
+import { convertResponse } from './convert-response.ts'
 
-export type KitHandle = (
-	input: {
-		event: KitEvent,
-		resolve: (event: KitEvent, opts?: ResolveOptions) => Promise<KitResponse | Response>
-	}
-) => Promise<KitResponse | Response> | KitResponse | Response
+export type KitHandle = (input: {
+	event: KitEvent
+	resolve: (event: KitEvent, opts?: ResolveOptions) => Promise<KitResponse | Response>
+}) => Promise<KitResponse | Response> | KitResponse | Response
 
 export interface ZeroAPIServerOptions {
 	client?: {}
@@ -63,7 +61,7 @@ export function zeroAPI(options: ZeroAPIServerOptions) {
 		// @ts-expect-error RequestEvent should not have `results` inside of it.
 		event.results ??= {}
 		// @ts-expect-error Just adding options to event
-		event.zeroAPIOptions = options 
+		event.zeroAPIOptions = options
 
 		let response: Response
 
@@ -90,4 +88,3 @@ export function zeroAPI(options: ZeroAPIServerOptions) {
 
 	return handle as typeof handle & { sequence: typeof sequence }
 }
-

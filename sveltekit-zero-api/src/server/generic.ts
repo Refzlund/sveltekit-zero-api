@@ -40,7 +40,7 @@ export class Generic<T extends Function> {
 
 	/**
 	 * We use this function to "type" the response of a `functions({ ... })`-fn correctly.
-	*/
+	 */
 	static fn<T extends KitResponse>(response: T) {
 		return response as unknown as Promisify<
 			Extract<T, KitResponse<StatusCode['Success']>>['body'],

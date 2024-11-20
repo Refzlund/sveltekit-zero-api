@@ -80,12 +80,12 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 			const xhr = key === 'xhr' ? new XMLHttpRequest() : undefined
 
 			let searchParams: URLSearchParams | undefined | false
-			const route = '/' + xhr ? state.keys.slice(0, -1).join('/') : state.keys.join('/')
+			const route = xhr ? state.keys.slice(0, -1).join('/') : state.keys.join('/')
 
 			let isMethod = xhr || methods.includes(key)
 
-			let method = isMethod ? (xhr ? state.keys[state.keys.length-1].toString() : key) : 'PATCH' // functions always use PATCH
-			if(!methods.includes(method)) {
+			let method = isMethod ? (xhr ? state.keys[state.keys.length - 1].toString() : key) : 'PATCH' // functions always use PATCH
+			if (!methods.includes(method)) {
 				throw new Error('Invalid method: ' + method, { cause: state })
 			}
 
@@ -109,17 +109,17 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 					// https://caniuse.com/mdn-api_request_duplex - largely unsupported still
 					// headers.set('content-type', 'application/octet-stream')
 					throw new Error(
-						'Streaming data is largely unsupported in browsers, as Request Duplex is required. See '
-						+ 'https://caniuse.com/mdn-api_request_duplex'
+						'Streaming data is largely unsupported in browsers, as Request Duplex is required. See ' +
+							'https://caniuse.com/mdn-api_request_duplex'
 					)
 				} else if (body instanceof FormData) {
 					// https://stackoverflow.com/a/49510941 - fetch sets content-type automatically incl. form boundary
 					// headers.set('content-type', 'multipart/form-data')
 				} else if (
-					typeof body === 'object' 
-					|| typeof body === 'string' 
-					|| typeof body === 'number' 
-					|| typeof body === 'boolean'
+					typeof body === 'object' ||
+					typeof body === 'string' ||
+					typeof body === 'number' ||
+					typeof body === 'boolean'
 				) {
 					headers.set('content-type', 'application/json')
 					body = JSON.stringify(body)
@@ -132,20 +132,24 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 				headers.append('x-function', key)
 			}
 
-
-			const url = options.url?.toString() || '/' + route + (searchParams ? '?' + searchParams.toString() : '')
+			const url =
+				options.url?.toString() || '/' + route + (searchParams ? '?' + searchParams.toString() : '')
 
 			// ('query' in requestInit ? '?' + new URLSearchParams(requestInit.query).toString() : '')
-			let response = !xhr && fetch(
-				url,
-				// avoid making the "preflight http request", which will make it twice as fast
-				method === 'GET' ? undefined : {
-					...requestInit,
-					body: (body === null ? undefined : body) as BodyInit,
-					headers,
-					method
-				}
-			)
+			let response =
+				!xhr &&
+				fetch(
+					url,
+					// avoid making the "preflight http request", which will make it twice as fast
+					method === 'GET'
+						? undefined
+						: {
+								...requestInit,
+								body: (body === null ? undefined : body) as BodyInit,
+								headers,
+								method
+						  }
+				)
 
 			if (isMethod && xhr) {
 				// Use XHR
@@ -160,18 +164,22 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 
 					xhr.open(method, url, true)
 
-					for(const [key, value] of headers) {
+					for (const [key, value] of headers) {
 						xhr.setRequestHeader(key, value)
 					}
 
 					function onloadend() {
 						const headers = new Headers()
-						xhr!.getAllResponseHeaders().trim().split(/[\r\n]+/).forEach((line) => {
-							const parts = line.split(': ')
-							const header = parts.shift()
-							const value = parts.join(': ')
-							if (header) headers.append(header, value)
-						})
+						xhr!
+							.getAllResponseHeaders()
+							.trim()
+							.split(/[\r\n]+/)
+							.forEach((line) => {
+								const parts = line.split(': ')
+								const header = parts.shift()
+								const value = parts.join(': ')
+								if (header) headers.append(header, value)
+							})
 
 						xhrResolve(
 							new Response(xhr!.response, {
@@ -188,8 +196,7 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 				}, 0)
 			}
 
-			if (response === false)
-				throw new Error('Response was not created correctly') // type narrowing
+			if (response === false) throw new Error('Response was not created correctly') // type narrowing
 
 			response = response
 				.then(async (res) => {
@@ -216,13 +223,13 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 					return res as Response
 				})
 
-			if(isMethod) {
+			if (isMethod) {
 				return createEndpointProxy(response, xhr)
-			}			
+			}
 
 			return new Promise((resolve, reject) => {
 				response
-					.then(res => {
+					.then((res) => {
 						if (!res.ok) {
 							return reject(res)
 						}

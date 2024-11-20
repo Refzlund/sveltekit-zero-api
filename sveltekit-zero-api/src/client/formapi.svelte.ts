@@ -17,11 +17,11 @@ interface Options<T extends Record<PropertyKey, any>> {
 
 /** Takes all properties of T, and deeply ensure they become U */
 type MapDeepTo<T, U> = {
-	[K in keyof T]-?: NonNullable<T[K]> extends Record<PropertyKey, any> 
+	[K in keyof T]-?: NonNullable<T[K]> extends Record<PropertyKey, any>
 		? MapDeepTo<T[K], U>
 		: T[K] extends any[]
-			? Array<MapDeepTo<T[K][number], U>>
-			: NonNullable<U>
+		? Array<MapDeepTo<T[K][number], U>>
+		: NonNullable<U>
 }
 
 interface FormAPIError {
@@ -30,35 +30,26 @@ interface FormAPIError {
 
 type FormAPIAction = (node: HTMLInputElement) => void
 
-type FormAPI<T extends Record<PropertyKey, any>> = 
-		& Writable<T> 
-		& ((node: HTMLFormElement, options?: Options<T>) => void) 
-		& { 
-			$: MapDeepTo<T, FormAPIAction>
-			errors: MapDeepTo<T, FormAPIError>
-			submit: () => Promise<Response>
-		}
+type FormAPI<T extends Record<PropertyKey, any>> = Writable<T> &
+	((node: HTMLFormElement, options?: Options<T>) => void) & {
+		$: MapDeepTo<T, FormAPIAction>
+		errors: MapDeepTo<T, FormAPIError>
+		submit: () => Promise<Response>
+		/** Form bound to this Form Rune */
+		form: HTMLFormElement
+	}
 
-export function formAPI<T extends Record<PropertyKey, any>>(
-	endpoint:
-		| {
-				$id(id: string): {
-					GET(): Promise<T>
-					PUT(body: any): Promise<T>
-				}
-		  }
-		| {
-				POST(body: any): Promise<T>
-		  }
-) {
+export function formAPI<T extends Record<PropertyKey, any>>() {
 	let value = $state({} as Record<PropertyKey, any>)
 	let errors = $state({})
-	
+
+	let form = $state() as HTMLFormElement
+
 	let inputMap = new SvelteMap<PropertyKey[], SvelteSet<HTMLInputElement>>()
 	let mapped = new SvelteSet<PropertyKey[]>()
 
 	function getParent(
-		keys: PropertyKey[], 
+		keys: PropertyKey[],
 		/** `null` returns undefined if missing, `make` creates parent tree, `nearest` returns nearest parent in the tree */
 		reaction: null | 'make' | 'nearest'
 	) {
@@ -108,15 +99,14 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 				// ex.   <input use:form.$.nested.string />
 				let propertyKeys = [...state.keys, state.key] as PropertyKey[]
 				const [node] = state.args as [HTMLInputElement]
-				
+
 				const propertiesStr = propertyKeys.join('.')
-				for(const keys of mapped) {
-					if(keys.join('.') === propertiesStr)
-						propertyKeys = keys
+				for (const keys of mapped) {
+					if (keys.join('.') === propertiesStr) propertyKeys = keys
 				}
 
 				let set = inputMap.get(propertyKeys)
-				if(!set) {
+				if (!set) {
 					set = new SvelteSet()
 					inputMap.set(propertyKeys, set)
 					mapped.add(propertyKeys)
@@ -133,7 +123,7 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 					destroy() {
 						node.removeEventListener('input', updateParent)
 						set.delete(node)
-						if(set.size === 0) {
+						if (set.size === 0) {
 							inputMap.delete(propertyKeys)
 							mapped.delete(propertyKeys)
 						}
@@ -146,58 +136,62 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 		})
 	}
 
-	const formEnhance = ((
-		node: HTMLFormElement,
-		{
-			enhance = true,
-			id,
-			value
-		}: Options<T> = {}
-	) => {
-		if(enhance) {
-			if(!node.getAttribute('method'))
-				node.setAttribute('method', 'POST')
+	const formEnhance = ((node: HTMLFormElement, { enhance = true, id, value }: Options<T> = {}) => {
+		if (enhance) {
+			if (!node.getAttribute('method')) node.setAttribute('method', 'POST')
 			svelteEnhance(node, enhance === true ? undefined : enhance)
 		}
+
+		form = node
 
 		let inputs = node.querySelectorAll('input[name]')
 
 		function applyCrawl(inputs: HTMLElement[]) {
 			for (const input of inputs) {
 				const isValid = input.tagName === 'INPUT'
-				if(!isValid || !('getAttribute' in input))
-					continue
+				if (!isValid || !('getAttribute' in input)) continue
 
 				let name = input.getAttribute('name')
-				if (!name)
-					continue
+				if (!name) continue
 
 				let crawler = proxies.$
-				for (const key of name.split('.'))
-					crawler = crawler[key]
+				for (const key of name.split('.')) crawler = crawler[key]
 				crawler(input)
 			}
 		}
 
 		applyCrawl(inputs as any)
 
-		const observer = new MutationObserver((mutations) => 
-			mutations.map((v) => applyCrawl(v.addedNodes as any))
-		)
+		const observer = new MutationObserver((mutations) => mutations.map((v) => applyCrawl(v.addedNodes as any)))
 		observer.observe(node, {
 			childList: true,
 			subtree: true
 		})
-
 	}) as FormAPI<T>
 
 	Object.assign(formEnhance, {
-		...toStore(() => value, v => value = v),
-		get value() { return value },
-		set value(v: T) { value = v },
-		get $() { return proxies.$ },
-		get errors() { return proxies.errors },
-		get submit() { return submit }
+		...toStore(
+			() => value,
+			(v) => (value = v)
+		),
+		get value() {
+			return value
+		},
+		set value(v: T) {
+			value = v
+		},
+		get $() {
+			return proxies.$
+		},
+		get errors() {
+			return proxies.errors
+		},
+		get submit() {
+			return submit
+		},
+		get form() {
+			return form
+		}
 	})
 
 	function submit() {}

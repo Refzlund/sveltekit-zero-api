@@ -14,18 +14,17 @@ type FnCallback<
 	R3 extends FunctionCallbackResult = never,
 	R4 extends FunctionCallbackResult = never,
 	R5 extends FunctionCallbackResult = never,
-	R6 extends FunctionCallbackResult = never,
-> = 
-	(event: KitEvent<FunctionsBody, UnionToIntersection<Exclude<R1 | R2 | R3 | R4 | R5 | R6, KitResponse>>>) => Result | Promise<Result>
+	R6 extends FunctionCallbackResult = never
+> = (
+	event: KitEvent<FunctionsBody, UnionToIntersection<Exclude<R1 | R2 | R3 | R4 | R5 | R6, KitResponse>>>
+) => Result | Promise<Result>
 
 interface FunctionsBody {
-	body: { 
+	body: {
 		function: string
 		arguments: unknown[]
 	}
 }
-
-
 
 /**
  * Creates an endpoint with the functions format.
@@ -33,7 +32,7 @@ interface FunctionsBody {
  * you interact with it more like a normal function: `let newUser = await api.users.createUser({...})`
  *
  * You can either submit `FormData`, `ReadableStream` or mulitple arguments passed as a JSON-array.
- * 
+ *
  * **JSON Request**
  * ```
  * Headers
@@ -45,7 +44,7 @@ interface FunctionsBody {
  *     ] // arguments-array passed to function name
  * ```
  * It's of course limited to JSON applicable content.
- * 
+ *
  * `ReadableStream`
  * ```
  * Headers
@@ -54,7 +53,7 @@ interface FunctionsBody {
  * Body
  *     ReadableStream
  * ```
- * 
+ *
  * `FormData`
  * ```
  * Headers
@@ -63,14 +62,13 @@ interface FunctionsBody {
  * Body
  *     FormData
  * ```
- * 
+ *
  *
  * @note Do not end function names in `$` as those are reserved for route slugged params.
  */
-export function functions<const Fns extends FnsRecord>(fns: Fns): 
-	(event?: KitEvent<FunctionsBody>) => Promise<Response> & { use(): Functions<Fns> }
-
-
+export function functions<const Fns extends FnsRecord>(
+	fns: Fns
+): (event?: KitEvent<FunctionsBody>) => Promise<Response> & { use(): Functions<Fns> }
 
 // #region functions overloads
 
@@ -92,7 +90,7 @@ export function functions<
 }
 
 export function functions<
-	const Fns extends FnsRecord, 
+	const Fns extends FnsRecord,
 	B1 extends FunctionCallbackResult,
 	B2 extends FunctionCallbackResult,
 	B3 extends FunctionCallbackResult
@@ -106,7 +104,7 @@ export function functions<
 }
 
 export function functions<
-	const Fns extends FnsRecord, 
+	const Fns extends FnsRecord,
 	B1 extends FunctionCallbackResult,
 	B2 extends FunctionCallbackResult,
 	B3 extends FunctionCallbackResult,
@@ -122,7 +120,7 @@ export function functions<
 }
 
 export function functions<
-	const Fns extends FnsRecord, 
+	const Fns extends FnsRecord,
 	B1 extends FunctionCallbackResult,
 	B2 extends FunctionCallbackResult,
 	B3 extends FunctionCallbackResult,
@@ -140,7 +138,7 @@ export function functions<
 }
 
 export function functions<
-	const Fns extends FnsRecord, 
+	const Fns extends FnsRecord,
 	B1 extends FunctionCallbackResult,
 	B2 extends FunctionCallbackResult,
 	B3 extends FunctionCallbackResult,
@@ -161,12 +159,8 @@ export function functions<
 
 // #endregion
 
-
-
-export function functions(
-	...args: (FnCallback | FnsRecord)[]
-) {
-	let fns = args.pop()! as FnsRecord	
+export function functions(...args: (FnCallback | FnsRecord)[]) {
+	let fns = args.pop()! as FnsRecord
 	let cbs = args as FnCallback[]
 
 	function functionsHandler(event: KitEvent<FunctionsBody, never>) {
@@ -183,10 +177,9 @@ export function functions(
 		})
 
 		return promise
-			.then(r => convertResponse(r, event.zeroAPIOptions)!)
-			.catch(r => {
-				if (r instanceof KitResponse)
-					return convertResponse(r, event.zeroAPIOptions)
+			.then((r) => convertResponse(r, event.zeroAPIOptions)!)
+			.catch((r) => {
+				if (r instanceof KitResponse) return convertResponse(r, event.zeroAPIOptions)
 				throw r
 			})
 	}
@@ -200,9 +193,8 @@ async function functionRequest(
 	cbs: FnCallback[],
 	proxyUse?: () => any
 ) {
-	await new Promise(res => res(true))
-	if(proxyUse?.())
-		return
+	await new Promise((res) => res(true))
+	if (proxyUse?.()) return
 
 	const contentType = event.request.headers.get('content-type')
 	let args = null as null | [ReadableStream] | [FormData] | Array<unknown>
@@ -212,18 +204,15 @@ async function functionRequest(
 		} catch (error) {
 			throw new BadRequest({ code: 'invalid_json', error: 'Invalid JSON', details: error })
 		}
-	}
-	else if (contentType === 'application/octet-stream') {
+	} else if (contentType === 'application/octet-stream') {
 		args = [event.request.body]
-	}
-	else if (contentType === 'multipart/form-data') {
+	} else if (contentType === 'multipart/form-data') {
 		try {
 			args = [await event.request.formData()]
 		} catch (error) {
 			throw new BadRequest({ code: 'invalid_form_data', error: 'Invalid form data', details: error })
 		}
-	}
-	else if (contentType !== null) {
+	} else if (contentType !== null) {
 		throw new BadRequest({
 			code: 'invalid_content_type',
 			error: 'Invalid Content-Type header',
@@ -272,9 +261,9 @@ async function functionRequest(
 			}
 		}
 
-		let result = await fns[fn](event, ...args || [])
+		let result = await fns[fn](event, ...(args || []))
 		if (result instanceof Generic) {
-			result = await result.function(...args || []) as KitResponse
+			result = (await result.function(...(args || []))) as KitResponse
 		}
 		return result
 	} catch (error) {
@@ -303,18 +292,15 @@ function createUseProxy(event: KitEvent<any, never>, fns: FnsRecord, cbs: FnCall
 				let body: BodyInit
 
 				headers.set('x-function', key)
-				if(!args.length) {
+				if (!args.length) {
 					// No arguments
-				}
-				else if(args[0] instanceof ReadableStream) {
+				} else if (args[0] instanceof ReadableStream) {
 					body = args[0]
 					headers.set('content-type', 'application/octet-stream')
-				}
-				else if(args[0] instanceof FormData) {
+				} else if (args[0] instanceof FormData) {
 					body = args[0]
 					headers.set('content-type', 'multipart/form-data')
-				}
-				else {
+				} else {
 					// * JSON
 					body = JSON.stringify(args)
 					headers.set('content-type', 'application/json')
@@ -329,17 +315,17 @@ function createUseProxy(event: KitEvent<any, never>, fns: FnsRecord, cbs: FnCall
 
 				return new Promise((resolve, reject) => {
 					functionRequest(event, fns, cbs)
-						.then(v => {
-							if(!v) {
+						.then((v) => {
+							if (!v) {
 								throw new Error()
 							}
-							if(!v.ok) {
-								return reject(v) 
+							if (!v.ok) {
+								return reject(v)
 							}
-							if(v.headers.get('content-type') === 'application/json') {
+							if (v.headers.get('content-type') === 'application/json') {
 								return resolve(v.body)
 							}
-							if(v.headers.get('content-type') === 'multipart/form-data') {
+							if (v.headers.get('content-type') === 'multipart/form-data') {
 								return resolve(v.body)
 							}
 							return v.body
@@ -350,5 +336,3 @@ function createUseProxy(event: KitEvent<any, never>, fns: FnsRecord, cbs: FnCall
 		}
 	})
 }
-
-

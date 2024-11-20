@@ -1,7 +1,12 @@
 import { complexSlug, optionalSlug, restSlug, simpleSlug } from '../../utils/slugs.ts'
 import { serializeFiles } from './serialize-files.ts'
 
-export function generateTypes(files: string[], importType: string, relativeTypePath: string, routesLength: number) {
+export function generateTypes(
+	files: string[],
+	importType: string,
+	relativeTypePath: string,
+	routesLength: number
+) {
 	let serializedFiles = serializeFiles(files, routesLength)
 
 	interface TypePath {

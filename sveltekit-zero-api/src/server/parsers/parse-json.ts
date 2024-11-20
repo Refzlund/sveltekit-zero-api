@@ -1,4 +1,4 @@
-import { BadRequest } from "../http.ts";
+import { BadRequest } from '../http.ts'
 import { ParseKitEvent, type KitEvent } from '../kitevent.ts'
 
 /**
@@ -14,13 +14,15 @@ import { ParseKitEvent, type KitEvent } from '../kitevent.ts'
  * 	}
  )
  */
-export async function parseJSON<T extends Record<string | number, unknown> | Array<unknown> | string | number>(event: KitEvent) {
+export async function parseJSON<T extends Record<string | number, unknown> | Array<unknown> | string | number>(
+	event: KitEvent
+) {
 	let json: T
 
 	let contentTypes = ['application/json', 'multipart/form-data'] as const
-	let contentType = event.request.headers.get('content-type')?.toLowerCase() as (typeof contentTypes)[number]
+	let contentType = event.request.headers.get('content-type') as (typeof contentTypes)[number]
 
-	if (!contentType || !contentTypes.includes(contentType)) {
+	if (!contentType || !contentTypes.some((v) => contentType.includes(v))) {
 		return new BadRequest({
 			code: 'bad_content_type',
 			error: 'Bad Content-Type header',

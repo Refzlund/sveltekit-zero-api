@@ -2,7 +2,7 @@ import { BadRequest, KitResponse, OK } from '../src/server/http.ts'
 import { FakeKitEvent } from '../src/server/kitevent.ts'
 import { endpoint } from '../src/server/endpoint.ts'
 import { EndpointProxy, ReturnedEndpointProxy } from '../src/endpoint-proxy.ts'
-import { expect } from '@std/expect'
+import { expect } from './'
 
 Deno.test('proxy exception catching ᵗʰᵉᵐ ᵃˡˡ', async () => {
 	const GET = endpoint(() => new OK())

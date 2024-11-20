@@ -12,7 +12,7 @@ interface ZeroAPIOptions {
 	 * If `undefined` then the file wont be generated.
 	 *
 	 * If `customTypePath` is ***also*** `undefined`, no types will be generated.
-	 * @default './src/api.ts'
+	 * @default './src/api'
 	 */
 	apiPath?: string
 
@@ -23,7 +23,7 @@ interface ZeroAPIOptions {
 	 * For instance `.svelte-kit/types/src/api.d.ts`
 	 *
 	 * @default undefined
-	 * @example './src/api.d.ts'
+	 * @example './src/api.d'
 	 */
 	customTypePath?: string | undefined
 
@@ -39,11 +39,11 @@ interface ZeroAPIOptions {
 
 let timeout: any
 function update(
-	options: ZeroAPIOptions, 
+	options: ZeroAPIOptions,
 	/** @example '../..' */
-	relativeTypePath: string, 
+	relativeTypePath: string,
 	/** @example 'C:/projects/app/src/' */
-	routesPath: string, 
+	routesPath: string,
 	/** @example 'routes' */
 	routesDirectory: string,
 	routesLength: number
@@ -60,16 +60,15 @@ function update(
 }
 
 export default function viteZeroAPI(options: ZeroAPIOptions = {}): Plugin {
-	if (process.env.NODE_ENV === 'production')
-		return { name: 'vite-plugin-sveltekit-zero-api' }
+	if (process.env.NODE_ENV === 'production') return { name: 'vite-plugin-sveltekit-zero-api' }
 
-	options.apiPath ??= Path.normalize('./src/api.ts')
-	options.customTypePath ??= Path.join('./.svelte-kit/types', options.apiPath!.replace(/\.ts$/, '.d.ts'))
+	options.apiPath ??= Path.normalize('./src/api')
+	options.customTypePath ??= Path.join('./.svelte-kit/types', options.apiPath!.replace(/\.ts$/, '.d'))
 	options.customTypeImport ??= 'import type { ServerType as S } from "sveltekit-zero-api/client"'
 
 	let svelteConfig: Promise<SvelteKitConfig> = import('file:///' + Path.resolve('./svelte.config.js'))
 		.catch((v) => import('file:///' + Path.resolve('./svelte.config.mjs')))
-		.then((v) => svelteConfig = v)
+		.then((v) => (svelteConfig = v))
 
 	return {
 		name: 'vite-plugin-sveltekit-zero-api',
@@ -80,12 +79,18 @@ export default function viteZeroAPI(options: ZeroAPIOptions = {}): Plugin {
 			let routesPath = routes.join('/') // for TS imports
 
 			// must be / instead of `Path.sep` for TS
-			let relativeTypePath = Array(options.customTypePath!.split(Path.sep).length - 1).fill('..').join('/')
+			let relativeTypePath = Array(options.customTypePath!.split(Path.sep).length - 1)
+				.fill('..')
+				.join('/')
 			// when serializing, cut this part off for the routed types
-			let routesLength = Path.join((await svelteConfig)?.kit?.files?.routes ?? './src/routes').split(Path.sep).length
+			let routesLength = Path.join((await svelteConfig)?.kit?.files?.routes ?? './src/routes').split(
+				Path.sep
+			).length
 
 			update(options, relativeTypePath, routesPath, routesDirectory, routesLength)
-			vite.watcher.on('change', () => update(options, relativeTypePath, routesPath, routesDirectory, routesLength))
+			vite.watcher.on('change', () =>
+				update(options, relativeTypePath, routesPath, routesDirectory, routesLength)
+			)
 		}
 	}
 }

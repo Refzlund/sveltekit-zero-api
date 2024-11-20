@@ -1,4 +1,4 @@
-import type { getEndpointFiles } from "./get-endpoint-files.ts";
+import type { getEndpointFiles } from './get-endpoint-files.ts'
 
 /**
  * ex

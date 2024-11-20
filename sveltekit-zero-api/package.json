@@ -1,0 +1,32 @@
+{
+	"name": "sveltekit-zero-api",
+	"description": "Your package.",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/username/repo.git"
+	},
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/username/repo/issues"
+	},
+	"module": "./esm/index.js",
+	"exports": {
+		".": "./src/index.ts",
+		"./client": "./src/client/index.ts",
+		"./server": "./src/server/index.ts",
+		"./http": "./src/server/http.ts",
+		"./vite": "./src/server/vite.ts",
+		"./formapi.svelte": "./src/client/formapi.svelte.ts"
+	},
+	"peerDependencies": {
+		"svelte": "^5.1.12",
+		"@sveltejs/kit": "^2.8.0",
+		"typescript": "^5.6.3",
+		"vite": "^5.4.11"
+	},
+	"devDependencies": {
+		"zod": "^3.23.8",
+		"@types/node": "^20.9.0"
+	},
+	"_generatedBy": "dnt@dev"
+}

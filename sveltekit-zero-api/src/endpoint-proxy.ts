@@ -2,7 +2,6 @@ import type { KitResponse } from './server/http.ts'
 import { proxyCrawl, type StateApply, type StateGet } from './utils/proxy-crawl.ts'
 import type { EndpointProxy as EndpointProxyType } from './endpoint-proxy.type.ts'
 
-
 /**
  * e.g. Responses from endpoints
  */
@@ -15,50 +14,55 @@ export interface EndpointProxy extends EndpointProxyType<KitResponse<any, any, a
 
 /**
  * An EndpointProxy that has marked a `.$.` to return an array of promised callbacks.
-*/
+ */
 export class ReturnedEndpointProxy {
 	constructor() {
-		throw new Error('Cannot construct ReturnedEndpointProxy. Please use `createEndpointProxy` and use `.$` instead.')
+		throw new Error(
+			'Cannot construct ReturnedEndpointProxy. Please use `createEndpointProxy` and use `.$` instead.'
+		)
 	}
 }
 export interface ReturnedEndpointProxy extends EndpointProxyType<KitResponse<any, any, any, boolean>, any[]> {}
 
-
 type ResponseType = KitResponse | Response
 
 /** @note In order to get correct types, the response should be `Promise<KitResponse>` */
-export function createEndpointProxy<T extends KitResponse>(pureResponse: Promise<T | Response>, xhr?: XMLHttpRequest): EndpointProxyType<T, never> {
+export function createEndpointProxy<T extends KitResponse>(
+	pureResponse: Promise<T | Response>,
+	xhr?: XMLHttpRequest
+): EndpointProxyType<T, never> {
 	// Proxy
 	// ex. `let [result] = GET(event, { body: { ... }}).error(...).$.OK(...)`
 
 	/** Callbacks */
 	let cbs: [string, (response: ResponseType) => any][] = []
-	
+
 	const response = new Promise<T | Response>((resolve, reject) => {
-		pureResponse.then(res => res).catch(res => res).then(res => {
-			// By setting the timeout to 0, we wait a 'JS tick' and
-			// allow potential chained callbacks to take place.
-			setTimeout(async () => {
-				if (!('statusText' in res)) {
-					throw res
-				}
+		pureResponse
+			.then((res) => res)
+			.catch((res) => res)
+			.then((res) => {
+				// By setting the timeout to 0, we wait a 'JS tick' and
+				// allow potential chained callbacks to take place.
+				setTimeout(async () => {
+					if (!('statusText' in res)) {
+						throw res
+					}
 
-				let response = res as T | Response
+					let response = res as T | Response
 
-				if (response instanceof Response) {
-					// * Do some magic? (e.g. if frontend, do .json())
-					// Note: This is done in `client/api-proxy.ts`
-				}
+					if (response instanceof Response) {
+						// * Do some magic? (e.g. if frontend, do .json())
+						// Note: This is done in `client/api-proxy.ts`
+					}
 
-				for(const cb of cbs) {
-					await endpointProxyCallback(
-						response, cb[0], cb[1]
-					).catch(reject)
-				}
+					for (const cb of cbs) {
+						await endpointProxyCallback(response, cb[0], cb[1]).catch(reject)
+					}
 
-				resolve(response)
-			}, 0)
-		})
+					resolve(response)
+				}, 0)
+			})
 	})
 
 	return proxyCrawl<CrawlerProps>({
@@ -83,7 +87,7 @@ export function createEndpointProxy<T extends KitResponse>(pureResponse: Promise
 				if (key === Symbol.iterator) {
 					// -> const [promiseOK, promiseError] = GET(...).$...
 					const closest = closest$promisesParent(state)
-					let array = closest.is$root ? [] : closest.$promises!.map(v => v[1])
+					let array = closest.is$root ? [] : closest.$promises!.map((v) => v[1])
 					return array[Symbol.iterator].bind(array)
 				}
 
@@ -131,10 +135,10 @@ export function createEndpointProxy<T extends KitResponse>(pureResponse: Promise
 					let results = Array($promises.length).fill(undefined)
 					let error: unknown = false
 					let resolved = 0
-					for(let i = 0; i < $promises.length; i++) {
+					for (let i = 0; i < $promises.length; i++) {
 						const promise = $promises[i][1]
 						promise
-							.then(v => {
+							.then((v) => {
 								results[i] = v
 							})
 							.catch((e) => {
@@ -149,7 +153,7 @@ export function createEndpointProxy<T extends KitResponse>(pureResponse: Promise
 							})
 					}
 				}))
-				
+
 				return promise[key].apply(promise, args as [])
 			}
 
@@ -170,27 +174,27 @@ export function createEndpointProxy<T extends KitResponse>(pureResponse: Promise
 				throw new Error('Callback must be a function', { cause: { keys, key, args } })
 			}
 
-
 			let k = key.toString()
 			if (k.startsWith('xhr') || k.startsWith('upload')) {
 				if (!xhr) {
-					throw new Error('This request is not associated with an XMLHttpRequest (xhr)', { cause: { keys, key, args } })
+					throw new Error('This request is not associated with an XMLHttpRequest (xhr)', {
+						cause: { keys, key, args }
+					})
 				}
 
 				let upload = k.startsWith('upload')
 				let event = k.slice(upload ? 6 : 3).toLowerCase()
 
 				const fn = (ev: any) => {
-					if (event === 'init') 
-						return args[0](xhr)
+					if (event === 'init') return args[0](xhr)
 					args[0](ev, xhr)
 				}
-				if(upload) {
+				if (upload) {
 					xhr.upload.addEventListener(event, fn)
 				} else {
 					xhr.addEventListener(event, fn)
 				}
-				
+
 				return crawler
 			}
 
@@ -206,10 +210,12 @@ export function createEndpointProxy<T extends KitResponse>(pureResponse: Promise
 			}
 
 			let promise = new Promise((resolve, reject) => {
-				response.then((response) => {
-					let fn = args[0]
-					endpointProxyCallback(response, key as string, fn, resolve, reject)
-				}).catch(reject)
+				response
+					.then((response) => {
+						let fn = args[0]
+						endpointProxyCallback(response, key as string, fn, resolve, reject)
+					})
+					.catch(reject)
 			})
 
 			let closest = closest$promisesParent(state.parent)
@@ -223,13 +229,13 @@ export function createEndpointProxy<T extends KitResponse>(pureResponse: Promise
 /**
  * We're managing the 'state' for each crawl individually. If you
  * did `$.success(...).error(...)` you would get [Promise, Promise]
- * 
+ *
  * Without the state, if you from that same root did `$.OK(...)` it would
  * be appended to the others, but you would get the wrong type.
- * 
+ *
  * With the state, each callback has an array (`$promises`) of the promises
- * within the same chain. So `OK` would not append the Promise to the others. 
-*/
+ * within the same chain. So `OK` would not append the Promise to the others.
+ */
 interface CrawlerProps {
 	$promises?: [string, Promise<unknown>][]
 	/**
@@ -256,8 +262,8 @@ function closest$promisesParent(state?: StateGet<CrawlerProps> | StateApply<Craw
 }
 
 async function endpointProxyCallback(
-	result: ResponseType, 
-	statusText: string, 
+	result: ResponseType,
+	statusText: string,
 	cb: (response: ResponseType) => any,
 	resolve?: (value: any) => void,
 	reject?: (value: any) => void
@@ -268,34 +274,26 @@ async function endpointProxyCallback(
 			v = await cb(result)
 		} else if (statusText === result.statusText) {
 			v = await cb(result)
-		}
-		else if (result.status >= 100 && result.status < 200 && statusText === 'informational') {
+		} else if (result.status >= 100 && result.status < 200 && statusText === 'informational') {
+			v = await cb(result)
+		} else if (result.status >= 200 && result.status < 300 && statusText === 'success') {
+			v = await cb(result)
+		} else if (result.status >= 300 && result.status < 400 && statusText === 'redirect') {
+			v = await cb(result)
+		} else if (result.status >= 400 && result.status < 500 && statusText === 'clientError') {
+			v = await cb(result)
+		} else if (result.status >= 500 && result.status < 600 && statusText === 'serverError') {
+			v = await cb(result)
+		} else if (result.status >= 400 && result.status < 600 && statusText === 'error') {
 			v = await cb(result)
 		}
-		else if (result.status >= 200 && result.status < 300 && statusText === 'success') {
-			v = await cb(result)
-		}
-		else if (result.status >= 300 && result.status < 400 && statusText === 'redirect') {
-			v = await cb(result)
-		}
-		else if (result.status >= 400 && result.status < 500 && statusText === 'clientError') {
-			v = await cb(result)
-		}
-		else if (result.status >= 500 && result.status < 600 && statusText === 'serverError') {
-			v = await cb(result)
-		}
-		else if (result.status >= 400 && result.status < 600 && statusText === 'error') {
-			v = await cb(result)
-		}
-		if(resolve)
-			resolve(v)
+		if (resolve) resolve(v)
 		return v
 	} catch (error) {
-		if(reject) {
+		if (reject) {
 			reject(error)
 		} else {
 			throw error
 		}
 	}
-	
 }

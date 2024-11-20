@@ -1,4 +1,4 @@
-import { expect } from '@std/expect'
+import { expect } from './'
 import { endpoint } from '../src/server/endpoint.ts'
 import { BadRequest, KitResponse, OK } from '../src/server/http.ts'
 import { FakeKitEvent, type KitEvent, ParseKitEvent } from '../src/server/kitevent.ts'
