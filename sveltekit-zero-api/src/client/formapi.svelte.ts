@@ -173,25 +173,18 @@ export function formAPI<T extends Record<PropertyKey, any>>() {
 		...toStore(
 			() => value,
 			(v) => (value = v)
-		),
-		get value() {
-			return value
+		)
+	})
+
+	Object.defineProperties(formEnhance, {
+		value: {
+			get: () => value,
+			set: (v: T) => (value = v)
 		},
-		set value(v: T) {
-			value = v
-		},
-		get $() {
-			return proxies.$
-		},
-		get errors() {
-			return proxies.errors
-		},
-		get submit() {
-			return submit
-		},
-		get form() {
-			return form
-		}
+		$: { get: () => proxies.$ },
+		errors: { get: () => proxies.errors },
+		submit: { get: () => submit },
+		form: { get: () => form }
 	})
 
 	function submit() {}

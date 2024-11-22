@@ -1,3 +1,4 @@
+import { parseItems } from '../../utils/parse-keys.ts'
 import { BadRequest } from '../http.ts'
 import { ParseKitEvent, type KitEvent } from '../kitevent.ts'
 
@@ -14,7 +15,7 @@ import { ParseKitEvent, type KitEvent } from '../kitevent.ts'
  * 	}
  )
  */
-export async function parseJSON<T extends Record<string | number, unknown> | Array<unknown> | string | number>(
+export async function parseJSON<T extends FormData | Record<string | number, unknown> | Array<unknown> | string | number>(
 	event: KitEvent
 ) {
 	let json: T
@@ -33,15 +34,15 @@ export async function parseJSON<T extends Record<string | number, unknown> | Arr
 		})
 	}
 
-	if (contentType == 'multipart/form-data') {
+	if (contentType.includes('multipart/form-data')) {
 		try {
 			const formData = await event.request.formData()
-			json = Object.fromEntries(formData) as T
+			json = parseItems(formData) as T
 		} catch (error) {
 			return new BadRequest({
 				code: 'invalid_formdata',
 				error: 'Could not parse FormData',
-				details: error
+				details: String(<any>error)
 			})
 		}
 	} else {
@@ -51,7 +52,7 @@ export async function parseJSON<T extends Record<string | number, unknown> | Arr
 			return new BadRequest({
 				code: 'invalid_json',
 				error: 'Could not parse JSON',
-				details: error
+				details: String(<any>error)
 			})
 		}
 	}

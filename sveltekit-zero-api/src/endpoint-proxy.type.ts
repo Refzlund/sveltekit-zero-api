@@ -91,13 +91,13 @@ export type EndpointProxy<
 						 *
 						 * Before `xhr.open(method, url, true)`
 						 */
-						xhrInit(callback: (xhr: XMLHttpRequest) => void): EndpointProxy<Results, never, true>
-						xhrReadystatechange(
+						xhrInit: (callback: (xhr: XMLHttpRequest) => void) => EndpointProxy<Results, never, true>
+						xhrReadystatechange: (
 							callback: (event: Event, xhr: XMLHttpRequest) => void
-						): EndpointProxy<Results, never, true>
-						uploadReadystatechange(
+						) => EndpointProxy<Results, never, true>
+						uploadReadystatechange: (
 							callback: (event: Event, xhr: XMLHttpRequest) => void
-						): EndpointProxy<Results, never, true>
+						) => EndpointProxy<Results, never, true>
 				  }
 				: {}
 			: {})

@@ -25,8 +25,9 @@
 		"vite": "^5.4.11"
 	},
 	"devDependencies": {
-		"zod": "^3.23.8",
-		"@types/node": "^20.9.0"
+		"@types/bun": "^1.1.13",
+		"@types/node": "^20.9.0",
+		"zod": "^3.23.8"
 	},
 	"_generatedBy": "dnt@dev"
 }

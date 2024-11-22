@@ -7,5 +7,6 @@ export { functions } from './functions.ts'
 export { Generic } from './generic.ts'
 
 export { parseJSON } from './parsers/parse-json.ts'
+export { parseFormData } from './parsers/parse-formdata.ts'
 
 export { type KitEvent, FakeKitEvent, ParseKitEvent } from './kitevent.ts'

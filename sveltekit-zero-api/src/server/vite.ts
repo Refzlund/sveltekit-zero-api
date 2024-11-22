@@ -62,8 +62,8 @@ function update(
 export default function viteZeroAPI(options: ZeroAPIOptions = {}): Plugin {
 	if (process.env.NODE_ENV === 'production') return { name: 'vite-plugin-sveltekit-zero-api' }
 
-	options.apiPath ??= Path.normalize('./src/api')
-	options.customTypePath ??= Path.join('./.svelte-kit/types', options.apiPath!.replace(/\.ts$/, '.d'))
+	options.apiPath ??= Path.normalize('./src/api.ts')
+	options.customTypePath ??= Path.join('./.svelte-kit/types', options.apiPath!.replace(/\.ts$/, '.d.ts'))
 	options.customTypeImport ??= 'import type { ServerType as S } from "sveltekit-zero-api/client"'
 
 	let svelteConfig: Promise<SvelteKitConfig> = import('file:///' + Path.resolve('./svelte.config.js'))
