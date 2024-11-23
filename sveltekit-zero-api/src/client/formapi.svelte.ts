@@ -3,9 +3,11 @@ import { enhance as svelteEnhance } from '$app/forms'
 import { SvelteMap, SvelteSet } from 'svelte/reactivity'
 
 import { proxyCrawl } from '../utils/proxy-crawl.ts'
-import { untrack } from 'svelte'
+import { MapDeepTo } from '../utils/types.ts'
+import { EndpointProxy } from '../endpoint-proxy.type.ts'
+import { EndpointFunction } from '../server/endpoint.ts'
 
-interface Options<T extends Record<PropertyKey, any>> {
+interface ActionOptions<T extends Record<PropertyKey, any>> {
 	/** @default true */
 	enhance?: boolean | Parameters<typeof svelteEnhance>[1]
 
@@ -15,13 +17,23 @@ interface Options<T extends Record<PropertyKey, any>> {
 	value?: T
 }
 
-/** Takes all properties of T, and deeply ensure they become U */
-type MapDeepTo<T, U> = {
-	[K in keyof T]-?: NonNullable<T[K]> extends Record<PropertyKey, any>
-		? MapDeepTo<T[K], U>
-		: T[K] extends any[]
-		? Array<MapDeepTo<T[K][number], U>>
-		: NonNullable<U>
+interface FormAPIOptions {
+	get?: () => void
+	put?: () => void
+	post?: () => void
+	/** If provided, will use `PATCH` instead of `PUT` and only send changed data from `GET`. */
+	patch?: () => void
+	/** .POST, .[id]/GET .[id]/PUT */
+	full?: {
+		POST: EndpointFunction
+		[key: `${string}$`]: undefined | {
+			GET?: EndpointFunction
+			PUT?: EndpointFunction
+		}
+	}
+	onSubmit?(method: 'POST' | 'PUT' | 'PATCH', data: FormData): FormData
+	validation: unknown
+	enhance: boolean | Parameters<typeof svelteEnhance>[1]
 }
 
 interface FormAPIError {
@@ -31,17 +43,34 @@ interface FormAPIError {
 type FormAPIAction = (node: HTMLInputElement) => void
 
 type FormAPI<T extends Record<PropertyKey, any>> = Writable<T> &
-	((node: HTMLFormElement, options?: Options<T>) => void) & {
+	((node: HTMLFormElement, options?: ActionOptions<T>) => void) & {
 		$: MapDeepTo<T, FormAPIAction>
 		errors: MapDeepTo<T, FormAPIError>
 		submit: () => Promise<Response>
 		/** Form bound to this Form Rune */
 		form: HTMLFormElement
+		request: {
+			progress: number
+			status: 'none' | 'pending' | 'error' | 'sending' | 'cancelled' | 'done'
+			uploaded: number
+			totalSize: number
+		}
 	}
 
-export function formAPI<T extends Record<PropertyKey, any>>() {
+export function formAPI<T extends Record<PropertyKey, any>>(
+	options: FormAPIOptions | NonNullable<FormAPIOptions['full']>
+) {
+	let full = 'full' in options ? options.full : options 
+	
 	let value = $state({} as Record<PropertyKey, any>)
 	let errors = $state({})
+
+	let request = $state({
+		progress: 0,
+		status: 'none',
+		uploaded: 0,
+		totalSize: 0
+	})
 
 	let form = $state() as HTMLFormElement
 
@@ -73,6 +102,8 @@ export function formAPI<T extends Record<PropertyKey, any>>() {
 	function updateNode(node: HTMLInputElement, v: any) {
 		if (node.type === 'checkbox') {
 			node.checked = v ?? null
+		} else if (node.type === 'file') {
+			node.files = v ?? null
 		} else {
 			node.value = v ?? null
 		}
@@ -115,7 +146,9 @@ export function formAPI<T extends Record<PropertyKey, any>>() {
 
 				function updateParent() {
 					getParent(propertyKeys, 'make')![propertyKeys[propertyKeys.length - 1]] =
-						node.type === 'checkbox' ? node.checked : node.value
+						node.type === 'checkbox' ? node.checked :
+						node.type === 'file' ? node.files :
+						node.value
 				}
 
 				node.addEventListener('input', updateParent)
@@ -136,13 +169,21 @@ export function formAPI<T extends Record<PropertyKey, any>>() {
 		})
 	}
 
-	const formEnhance = ((node: HTMLFormElement, { enhance = true, id, value }: Options<T> = {}) => {
+	const formEnhance = ((node: HTMLFormElement, { enhance = true, id, value }: ActionOptions<T> = {}) => {
 		if (enhance) {
 			if (!node.getAttribute('method')) node.setAttribute('method', 'POST')
 			svelteEnhance(node, enhance === true ? undefined : enhance)
 		}
 
 		form = node
+		form.enctype = 'multipart/form-data'
+		
+		form.addEventListener('submit', e => {
+			e.preventDefault()
+			e.stopPropagation()
+			e.stopImmediatePropagation()
+			submit()
+		}, { capture: true })
 
 		let inputs = node.querySelectorAll('input[name]')
 
@@ -167,6 +208,12 @@ export function formAPI<T extends Record<PropertyKey, any>>() {
 			childList: true,
 			subtree: true
 		})
+
+		return {
+			destroy() {
+				observer.disconnect()
+			}
+		} as any
 	}) as FormAPI<T>
 
 	Object.assign(formEnhance, {
@@ -184,10 +231,35 @@ export function formAPI<T extends Record<PropertyKey, any>>() {
 		$: { get: () => proxies.$ },
 		errors: { get: () => proxies.errors },
 		submit: { get: () => submit },
-		form: { get: () => form }
+		form: { get: () => form },
+		request: { get: () => request }
 	})
 
-	function submit() {}
+	function submit() {
+		let data = new FormData(form)
+		if('onSubmit' in options) {
+			data = options.onSubmit!(form.method as 'POST' | 'PUT' | 'PATCH', data)
+		}
+		full?.POST.xhr(data)
+			.xhrInit(() => request = {
+				progress: 0,
+				status: 'pending',
+				totalSize: 0,
+				uploaded: 0
+			})
+			.uploadProgress(e => request = { 
+				progress: e.loaded / e.total, 
+				status: 'sending', 
+				totalSize: e.total, 
+				uploaded: e.loaded
+			})
+			.xhrError(() => {
+				request.status = 'error'	
+			})
+			.success(() => {
+				request.status = 'done'
+			})
+	}
 
 	return formEnhance
 }

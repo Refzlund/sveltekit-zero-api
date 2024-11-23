@@ -32,12 +32,12 @@ type GenericCallback = Generic<
 	| ((body: any, options: { query: any }) => EndpointProxy<KitResponse<any, any, any>>)
 >
 
-type Fn<
+export type EndpointFunction<
 	Input extends {
 		body?: any
 		query?: any
-	},
-	Result extends KitResponse
+	} = any,
+	Result extends KitResponse = KitResponse<any, any>
 > = ((body?: Input['body'], options?: { query?: Input['query'] } & RequestInit) => EndpointProxy<Result>) & {
 	xhr: (
 		body?: Input['body'],
@@ -54,7 +54,7 @@ export interface EndpointResponse<
 > {
 	(event: KitEvent): Promise<Extract<Results, KitResponse>> & {
 		use: null extends G
-			? Fn<EndpointInput<Results>, Extract<Results, KitResponse>>
+			? EndpointFunction<EndpointInput<Results>, Extract<Results, KitResponse>>
 			: G extends Generic<infer Input>
 			? Input
 			: never

@@ -27,3 +27,12 @@ export type AwaitAll<T extends
 	| (Promise<unknown> | unknown)[]
 	| readonly (Promise<unknown> | unknown)[]
 > = T extends [infer U, ...infer V] ? [Awaited<U>, ...AwaitAll<V>] : T
+
+/** Takes all properties of T, and deeply ensure they become U */
+export type MapDeepTo<T, U> = {
+	[K in keyof T]-?: NonNullable<T[K]> extends Record<PropertyKey, any>
+		? MapDeepTo<T[K], U>
+		: T[K] extends any[]
+		? Array<MapDeepTo<T[K][number], U>>
+		: NonNullable<U>
+} 

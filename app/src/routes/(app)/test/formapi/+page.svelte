@@ -2,6 +2,7 @@
 	import Code from '$lib/Code/Code.svelte'
 	import { formAPI } from 'sveltekit-zero-api/formapi.svelte'
 	import api from '$lib/../api'
+	import { tweened } from 'svelte/motion'
 
 	interface Person {
 		name: string
@@ -11,70 +12,24 @@
 		children?: Person[]
 		pets: string[]
 	}
-
-	function createFormDataWithAllTypes() {
-		const formData = new FormData()
-
-		// Text data
-		formData.append('text', 'Sample text value')
-		formData.append('number', 42) // Numbers are treated as strings
-
-		// File data (mock file for example purposes)
-		const mockFile = new File(['Hello, world!'], 'example.txt', { type: 'text/plain' })
-		formData.append('file', mockFile)
-
-		// Blob data
-		const blob = new Blob(['Blob content'], { type: 'text/plain' })
-		formData.append('blob', blob, 'blobExample.txt')
-
-		// JSON data
-		const jsonData = { name: 'Arthur', age: 25 }
-		formData.append('json', JSON.stringify(jsonData))
-
-		// Array data
-		const arrayData = ['reading', 'coding', 'gaming']
-		formData.append('array', JSON.stringify(arrayData))
-
-		// Boolean value (stored as string)
-		formData.append('boolean', String(true))
-
-		// Checkbox-like values
-		formData.append('isSubscribed', 'true')
-
-		// Complex object as stringified JSON
-		const complexObject = {
-			id: 123,
-			attributes: { height: 180, weight: 75 },
-			preferences: ['music', 'travel', 'food'],
-		}
-		formData.append('complexObject', JSON.stringify(complexObject))
-
-		// Multiple values for the same key (e.g., multiple files)
-		const file1 = new File(['File 1 content'], 'file1.txt', { type: 'text/plain' })
-		const file2 = new File(['File 2 content'], 'file2.txt', { type: 'text/plain' })
-		formData.append('multiFile', file1)
-		formData.append('multiFile', file2)
-
-		return formData
-	}
-
-	function onsubmit() {
-		let data = new FormData(userForm.form)
-		
-		api.formdata.POST.xhr(data)
-			.uploadProgress(e => console.log('progress', e.loaded / e.total))
-			.any(res => console.log({ body: res.body }))
-	}
-
-	// @ts-ignore
-	const userForm = formAPI<Person>()
+	
+	const userForm = formAPI<Person>(api.formdata)
+	let progress = tweened(0)
+	$effect(() => {
+		progress.set(userForm.request.progress)
+	})
 </script>
 
 <!---------------------------------------------------->
 
-<button onclick={onsubmit}>Submit</button>
+<bar
+	style='--tw-gradient-from-position: {$progress*100}%; --tw-gradient-to-position: {$progress*100}%;'
+	class='w-60 bg-green-400 h-4 bg-gradient-to-r to-white from-green-600 duration-150 rounded outline-gray-400 my-2'
+></bar>
 
 <form use:userForm class="mb-4">
+	<button type="submit">Submit</button>
+
 	<!-- <input name='name' /> -->
 	<input placeholder="Name" use:userForm.$.name />
 	<input name="name" placeholder="Name" />
