@@ -5,24 +5,30 @@ import type { EndpointProxy as EndpointProxyType } from './endpoint-proxy.type.t
 /**
  * e.g. Responses from endpoints
  */
-export class EndpointProxy {
+export class KitRequest {
 	constructor() {
 		throw new Error('Cannot construct EndpointProxy. Please use `createEndpointProxy` instead.')
 	}
 }
-export interface EndpointProxy extends EndpointProxyType<KitResponse<any, any, any, boolean>, never> {}
+export interface KitRequest extends EndpointProxyType<KitResponse<any, any, any, boolean>, never> {}
+
+export class KitRequestXHR extends KitRequest {}
+export interface KitRequestXHR extends EndpointProxyType<KitResponse<any, any, any, boolean>, never, true> {}
 
 /**
  * An EndpointProxy that has marked a `.$.` to return an array of promised callbacks.
  */
-export class ReturnedEndpointProxy {
+export class ReturnedKitRequest {
 	constructor() {
 		throw new Error(
 			'Cannot construct ReturnedEndpointProxy. Please use `createEndpointProxy` and use `.$` instead.'
 		)
 	}
 }
-export interface ReturnedEndpointProxy extends EndpointProxyType<KitResponse<any, any, any, boolean>, any[]> {}
+export interface ReturnedKitRequest extends EndpointProxyType<KitResponse<any, any, any, boolean>, any[]> {}
+
+export class ReturnedKitRequestXHR extends ReturnedKitRequest {}
+export interface ReturnedKitRequestXHR extends EndpointProxyType<KitResponse<any, any, any, boolean>, any[], true> {}
 
 type ResponseType = KitResponse | Response
 
@@ -67,8 +73,12 @@ export function createEndpointProxy<T extends KitResponse>(
 
 	return proxyCrawl<CrawlerProps>({
 		getPrototypeOf(state) {
-			if (state.keys[0] === '$') return ReturnedEndpointProxy.prototype
-			return EndpointProxy.prototype
+			if (state.keys[0] === '$') {
+				if (xhr) return KitRequestXHR.prototype
+				return ReturnedKitRequest.prototype
+			}
+			if (xhr) return KitRequestXHR.prototype
+			return KitRequest.prototype
 		},
 		get(state) {
 			let { keys, key, props, crawl, parent } = state

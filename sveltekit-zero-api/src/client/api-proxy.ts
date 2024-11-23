@@ -16,6 +16,10 @@ const methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']
 export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 	return proxyCrawl({
 		apply(state) {
+			if (state.key === 'toString' || state.key === Symbol.toPrimitive) {
+				return 'APIProxy'
+			}
+
 			let key = state.key.toString()
 			if (key.endsWith('$')) {
 				// * Slugged route

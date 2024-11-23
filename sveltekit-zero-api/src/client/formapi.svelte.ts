@@ -4,8 +4,8 @@ import { SvelteMap, SvelteSet } from 'svelte/reactivity'
 
 import { proxyCrawl } from '../utils/proxy-crawl.ts'
 import { MapDeepTo } from '../utils/types.ts'
-import { EndpointProxy } from '../endpoint-proxy.type.ts'
 import { EndpointFunction } from '../server/endpoint.ts'
+import { KitRequestXHR } from '../endpoint-proxy.ts'
 
 interface ActionOptions<T extends Record<PropertyKey, any>> {
 	/** @default true */
@@ -18,20 +18,26 @@ interface ActionOptions<T extends Record<PropertyKey, any>> {
 }
 
 interface FormAPIOptions {
-	get?: () => void
-	put?: () => void
-	post?: () => void
+	get?: (id: string) => KitRequestXHR
+	put?: (id: string, formData: any) => KitRequestXHR
+	post?: (formData: any) => KitRequestXHR
 	/** If provided, will use `PATCH` instead of `PUT` and only send changed data from `GET`. */
-	patch?: () => void
+	patch?: (id: string, formData: any) => KitRequestXHR
 	/** .POST, .[id]/GET .[id]/PUT */
-	full?: {
+	apiRoute?: {
 		POST: EndpointFunction
-		[key: `${string}$`]: undefined | {
-			GET?: EndpointFunction
-			PUT?: EndpointFunction
-		}
+		[slug: `${string}$`]: (id: string) =>
+			| undefined
+			| {
+					GET?: EndpointFunction
+					/** Will use `PUT` over `PATCH` */
+					PUT?: EndpointFunction
+					/** Will `PATCH` if there's not `PUT` */
+					PATCH?: EndpointFunction
+			  }
 	}
 	onSubmit?(method: 'POST' | 'PUT' | 'PATCH', data: FormData): FormData
+	onRequest?(req: KitRequestXHR): void
 	validation: unknown
 	enhance: boolean | Parameters<typeof svelteEnhance>[1]
 }
@@ -58,10 +64,25 @@ type FormAPI<T extends Record<PropertyKey, any>> = Writable<T> &
 	}
 
 export function formAPI<T extends Record<PropertyKey, any>>(
-	options: FormAPIOptions | NonNullable<FormAPIOptions['full']>
+	options: FormAPIOptions | NonNullable<FormAPIOptions['apiRoute']>
 ) {
-	let full = 'full' in options ? options.full : options 
-	
+	let full = (
+		String(options) === 'APIProxy' ? options : (<FormAPIOptions>options).apiRoute
+	) as FormAPIOptions['apiRoute']
+	let apis = {
+		GET: ('get' in options ? options.get : (id: string) => full?.slug$(id)?.GET?.xhr()!)!,
+		PUT: ('put' in options
+			? options.put
+			: (id: string, formData: any) => full?.slug$(id)?.PUT?.xhr(formData)!)!,
+		POST: ('post' in options ? options.post : (formData: any) => full?.POST?.xhr(formData)!)!,
+		PATCH: ('patch' in options
+			? options.patch
+			: (id: string, formData: any) => full?.slug$(id)?.PATCH?.xhr(formData)!)!
+	}
+
+	/** current id of form content */
+	let id = $state() as string | undefined
+
 	let value = $state({} as Record<PropertyKey, any>)
 	let errors = $state({})
 
@@ -144,11 +165,23 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 				}
 				set.add(node)
 
+				function getValue() {
+					return node.type === 'checkbox'
+						? node.checked
+						: node.type === 'file'
+						? node.files
+						: node.value !== null && node.value !== ''
+						? node.value
+						: undefined
+				}
+
 				function updateParent() {
-					getParent(propertyKeys, 'make')![propertyKeys[propertyKeys.length - 1]] =
-						node.type === 'checkbox' ? node.checked :
-						node.type === 'file' ? node.files :
-						node.value
+					getParent(propertyKeys, 'make')![propertyKeys[propertyKeys.length - 1]] = getValue()
+				}
+
+				const initialValue = getValue()
+				if (initialValue !== undefined) {
+					getParent(propertyKeys, 'make')![propertyKeys[propertyKeys.length - 1]] ??= initialValue
 				}
 
 				node.addEventListener('input', updateParent)
@@ -169,7 +202,14 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 		})
 	}
 
-	const formEnhance = ((node: HTMLFormElement, { enhance = true, id, value }: ActionOptions<T> = {}) => {
+	const formEnhance = ((node: HTMLFormElement, actionOptions: ActionOptions<T> = {}) => {
+		let { enhance = true, id: _id, value: _value } = actionOptions
+
+		if (_value) {
+			Object.assign(value, _value)
+		}
+		id = _id
+
 		if (enhance) {
 			if (!node.getAttribute('method')) node.setAttribute('method', 'POST')
 			svelteEnhance(node, enhance === true ? undefined : enhance)
@@ -177,13 +217,17 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 
 		form = node
 		form.enctype = 'multipart/form-data'
-		
-		form.addEventListener('submit', e => {
-			e.preventDefault()
-			e.stopPropagation()
-			e.stopImmediatePropagation()
-			submit()
-		}, { capture: true })
+
+		form.addEventListener(
+			'submit',
+			(e) => {
+				e.preventDefault()
+				e.stopPropagation()
+				e.stopImmediatePropagation()
+				submit()
+			},
+			{ capture: true }
+		)
 
 		let inputs = node.querySelectorAll('input[name]')
 
@@ -212,6 +256,13 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 		return {
 			destroy() {
 				observer.disconnect()
+			},
+			update(actionOptions: ActionOptions<T>) {
+				let { id: _id, value: _value } = actionOptions
+				if (_value) {
+					Object.assign(value, _value)
+				}
+				id = _id
 			}
 		} as any
 	}) as FormAPI<T>
@@ -236,29 +287,36 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 	})
 
 	function submit() {
+		const method = id === undefined || id === null ? 'POST' : 'patch' in apis ? 'PATCH' : 'PUT'
+
 		let data = new FormData(form)
-		if('onSubmit' in options) {
-			data = options.onSubmit!(form.method as 'POST' | 'PUT' | 'PATCH', data)
+
+		if ('onSubmit' in options) {
+			data = options.onSubmit!(method, data)
 		}
-		full?.POST.xhr(data)
+
+		const args: [any, any] = id === undefined || id === null ? ([data,,]) : ([id, data])
+		const req = apis[method]!(...args)
+
+		if ('onRequest' in options) {
+			options.onRequest!(req)
+		}
+
+		req
 			.xhrInit(() => request = {
 				progress: 0,
 				status: 'pending',
 				totalSize: 0,
 				uploaded: 0
 			})
-			.uploadProgress(e => request = { 
-				progress: e.loaded / e.total, 
-				status: 'sending', 
-				totalSize: e.total, 
+			.uploadProgress((e) => request = {
+				progress: e.loaded / e.total,
+				status: 'sending',
+				totalSize: e.total,
 				uploaded: e.loaded
 			})
-			.xhrError(() => {
-				request.status = 'error'	
-			})
-			.success(() => {
-				request.status = 'done'
-			})
+			.xhrError(() => request.status = 'error')
+			.success(() => request.status = 'done')
 	}
 
 	return formEnhance

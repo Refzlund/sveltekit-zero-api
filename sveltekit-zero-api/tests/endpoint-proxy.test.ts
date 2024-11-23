@@ -1,7 +1,7 @@
 import { BadRequest, KitResponse, OK } from '../src/server/http.ts'
 import { FakeKitEvent } from '../src/server/kitevent.ts'
 import { endpoint } from '../src/server/endpoint.ts'
-import { EndpointProxy, ReturnedEndpointProxy } from '../src/endpoint-proxy.ts'
+import { KitRequest, ReturnedKitRequest } from '../src/endpoint-proxy.ts'
 import { expect } from './'
 
 Deno.test('proxy exception catching ᵗʰᵉᵐ ᵃˡˡ', async () => {
@@ -52,12 +52,12 @@ Deno.test('proxy indepedence ᵈᵃʸ', async () => {
 })
 
 Deno.test('proxy instanceof', async () => {
-	function functionParamProxy<T extends EndpointProxy>(e: T) {
-		if (e instanceof EndpointProxy) return e
+	function functionParamProxy<T extends KitRequest>(e: T) {
+		if (e instanceof KitRequest) return e
 		throw new Error()
 	}
-	function functionParamReturnedProxy<T extends ReturnedEndpointProxy>(e: T) {
-		if (e instanceof ReturnedEndpointProxy) return e
+	function functionParamReturnedProxy<T extends ReturnedKitRequest>(e: T) {
+		if (e instanceof ReturnedKitRequest) return e
 		throw new Error()
 	}
 

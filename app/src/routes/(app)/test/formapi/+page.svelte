@@ -33,12 +33,13 @@
 	<!-- <input name='name' /> -->
 	<input placeholder="Name" use:userForm.$.name />
 	<input name="name" placeholder="Name" />
-	<div contenteditable bind:innerText={$userForm.name}>Text</div>
 
-	<div class='flex flex-col p-2 gap-2'>
-		<input type='file' name='file'>
-		<input type='search'>
-	</div>
+	<input type='hidden' name='hidden'>
+	<div contenteditable bind:innerText={$userForm.hidden}>Text</div>
+
+	<input name='value' placeholder='With value' value='Predefined value'>
+
+	<input type='file' name='file'>
 
 	
 
