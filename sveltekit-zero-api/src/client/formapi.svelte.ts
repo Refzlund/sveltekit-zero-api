@@ -2,10 +2,10 @@ import { type Writable, toStore } from 'svelte/store'
 import { enhance as svelteEnhance } from '$app/forms'
 import { SvelteMap, SvelteSet } from 'svelte/reactivity'
 
-import { proxyCrawl } from '../utils/proxy-crawl.ts'
-import { MapDeepTo } from '../utils/types.ts'
-import { EndpointFunction } from '../server/endpoint.ts'
-import { KitRequestXHR } from '../endpoint-proxy.ts'
+import { proxyCrawl } from '../utils/proxy-crawl'
+import { MapDeepTo } from '../utils/types'
+import { EndpointFunction } from '../server/endpoint'
+import { KitRequestXHR } from '../endpoint-proxy'
 
 interface ActionOptions<T extends Record<PropertyKey, any>> {
 	/** @default true */
@@ -295,28 +295,33 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 			data = options.onSubmit!(method, data)
 		}
 
-		const args: [any, any] = id === undefined || id === null ? ([data,,]) : ([id, data])
+		const args: [any, any] = id === undefined || id === null ? [data, ,] : [id, data]
 		const req = apis[method]!(...args)
 
 		if ('onRequest' in options) {
 			options.onRequest!(req)
 		}
 
-		req
-			.xhrInit(() => request = {
-				progress: 0,
-				status: 'pending',
-				totalSize: 0,
-				uploaded: 0
-			})
-			.uploadProgress((e) => request = {
-				progress: e.loaded / e.total,
-				status: 'sending',
-				totalSize: e.total,
-				uploaded: e.loaded
-			})
-			.xhrError(() => request.status = 'error')
-			.success(() => request.status = 'done')
+		req.xhrInit(
+			() =>
+				(request = {
+					progress: 0,
+					status: 'pending',
+					totalSize: 0,
+					uploaded: 0
+				})
+		)
+			.uploadProgress(
+				(e) =>
+					(request = {
+						progress: e.loaded / e.total,
+						status: 'sending',
+						totalSize: e.total,
+						uploaded: e.loaded
+					})
+			)
+			.xhrError(() => (request.status = 'error'))
+			.success(() => (request.status = 'done'))
 	}
 
 	return formEnhance

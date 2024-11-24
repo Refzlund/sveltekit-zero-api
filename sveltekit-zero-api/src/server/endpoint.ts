@@ -1,10 +1,10 @@
-import { createEndpointProxy } from '../endpoint-proxy.ts'
-import type { FixKeys, Simplify } from '../utils/types.ts'
-import { BadRequest, KitResponse } from './http.ts'
-import { ParseKitEvent, type KitEvent, type KitEventFn } from './kitevent.ts'
-import type { EndpointProxy } from '../endpoint-proxy.type.ts'
-import { Generic } from './generic.ts'
-import { convertResponse } from './convert-response.ts'
+import { createEndpointProxy } from '../endpoint-proxy'
+import type { FixKeys, Simplify } from '../utils/types'
+import { BadRequest, KitResponse } from './http'
+import { ParseKitEvent, type KitEvent, type KitEventFn } from './kitevent'
+import type { EndpointProxy } from '../endpoint-proxy.type'
+import { Generic } from './generic'
+import { convertResponse } from './convert-response'
 
 /**
  * The "result" of an `endpoint` paramters `callback`

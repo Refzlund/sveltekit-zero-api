@@ -1,8 +1,8 @@
 import type { Handle, RequestEvent } from '@sveltejs/kit'
-import type { KitResponse } from './http.ts'
-import type { EndpointCallbackResult } from './endpoint.ts'
-import type { Simplify, UnionToIntersection } from '../utils/types.ts'
-import type { ZeroAPIServerOptions } from './hooks.ts'
+import type { KitResponse } from './http'
+import type { EndpointCallbackResult } from './endpoint'
+import type { Simplify, UnionToIntersection } from '../utils/types'
+import type { ZeroAPIServerOptions } from './hooks'
 
 export interface KitEvent<
 	Input extends {

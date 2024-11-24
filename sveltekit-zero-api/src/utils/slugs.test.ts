@@ -1,4 +1,4 @@
-import { complexSlug } from './slugs.ts'
+import { complexSlug } from './slugs'
 
 Deno.test('slugs', () => {
 	let m: RegExpMatchArray | null

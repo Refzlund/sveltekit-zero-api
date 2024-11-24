@@ -1,9 +1,9 @@
-import type { UnionToIntersection } from './../utils/types.ts'
-import { convertResponse } from './convert-response.ts'
-import type { Functions, FnsRecord } from './functions.type.ts'
-import { Generic } from './generic.ts'
-import { BadRequest, InternalServerError, KitResponse } from './http.ts'
-import { FakeKitEvent, type KitEvent } from './kitevent.ts'
+import type { UnionToIntersection } from './../utils/types'
+import { convertResponse } from './convert-response'
+import type { Functions, FnsRecord } from './functions.type'
+import { Generic } from './generic'
+import { BadRequest, InternalServerError, KitResponse } from './http'
+import { FakeKitEvent, type KitEvent } from './kitevent'
 
 type FunctionCallbackResult = Record<PropertyKey, any> | KitResponse | void
 

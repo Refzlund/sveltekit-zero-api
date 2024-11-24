@@ -1,2 +1,2 @@
-export type { EndpointFunction } from './server/endpoint.ts'
-export type { EndpointProxy } from './endpoint-proxy.type.ts'
+export type { EndpointFunction } from './server/endpoint'
+export type { EndpointProxy } from './endpoint-proxy.type'

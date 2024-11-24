@@ -1,6 +1,6 @@
-import type { KitResponse } from './server/http.ts'
-import { proxyCrawl, type StateApply, type StateGet } from './utils/proxy-crawl.ts'
-import type { EndpointProxy as EndpointProxyType } from './endpoint-proxy.type.ts'
+import type { KitResponse } from './server/http'
+import { proxyCrawl, type StateApply, type StateGet } from './utils/proxy-crawl'
+import type { EndpointProxy as EndpointProxyType } from './endpoint-proxy.type'
 
 /**
  * e.g. Responses from endpoints
@@ -28,7 +28,8 @@ export class ReturnedKitRequest {
 export interface ReturnedKitRequest extends EndpointProxyType<KitResponse<any, any, any, boolean>, any[]> {}
 
 export class ReturnedKitRequestXHR extends ReturnedKitRequest {}
-export interface ReturnedKitRequestXHR extends EndpointProxyType<KitResponse<any, any, any, boolean>, any[], true> {}
+export interface ReturnedKitRequestXHR
+	extends EndpointProxyType<KitResponse<any, any, any, boolean>, any[], true> {}
 
 type ResponseType = KitResponse | Response
 

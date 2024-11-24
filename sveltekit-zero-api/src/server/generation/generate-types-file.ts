@@ -1,5 +1,5 @@
-import { complexSlug, optionalSlug, restSlug, simpleSlug } from '../../utils/slugs.ts'
-import { serializeFiles } from './serialize-files.ts'
+import { complexSlug, optionalSlug, restSlug, simpleSlug } from '../../utils/slugs'
+import { serializeFiles } from './serialize-files'
 
 export function generateTypes(
 	files: string[],

@@ -6,11 +6,10 @@
 		"allowJs": true,
 		"checkJs": true,
 		"esModuleInterop": true,
-		"noEmit": true,
-		"allowImportingTsExtensions": true,
 		"isolatedModules": true,
 		"target": "ESNext",
 		"module": "ESNext",
 		"moduleResolution": "bundler"
-	}
+	},
+	"exclude": ["npm", "svelte.config.js"]
 }

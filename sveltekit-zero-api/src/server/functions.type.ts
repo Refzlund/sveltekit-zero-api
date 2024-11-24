@@ -1,7 +1,7 @@
-import type { Promisify } from '../utils/types.ts'
-import type { Generic } from './generic.ts'
-import type { InternalServerError, KitResponse, StatusCode } from './http.ts'
-import type { KitEvent } from './kitevent.ts'
+import type { Promisify } from '../utils/types'
+import type { Generic } from './generic'
+import type { InternalServerError, KitResponse, StatusCode } from './http'
+import type { KitEvent } from './kitevent'
 
 export type Fn = (event: KitEvent, ...args: any[]) => KitResponse | Promise<KitResponse>
 

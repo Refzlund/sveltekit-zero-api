@@ -1,5 +1,5 @@
-import { BadRequest } from '../http.ts'
-import { ParseKitEvent, type KitEvent } from '../kitevent.ts'
+import { BadRequest } from '../http'
+import { ParseKitEvent, type KitEvent } from '../kitevent'
 
 /**
  * Parse incoming JSON/FormData from the body.

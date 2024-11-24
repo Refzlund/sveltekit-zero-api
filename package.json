@@ -1,8 +1,6 @@
 {
 	"scripts": {
-		"app": "cd ./sveltekit-zero-api && deno run -A ./build.ts && cd ../app && bun dev",
-		"test": "cd ./sveltekit-zero-api && deno test",
-		"build": "cd ./sveltekit-zero-api && deno run -A ./build.ts"
+		"app": "cd ./sveltekit-zero-api && bun ./build.ts && cd ../app && bun dev"
 	},
 	"workspaces": [
 		"./app",

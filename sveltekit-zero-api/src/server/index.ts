@@ -1,12 +1,12 @@
-export { type KitHandle, type ZeroAPIServerOptions, zeroAPI } from './hooks.ts'
+export { type KitHandle, type ZeroAPIServerOptions, zeroAPI } from './hooks'
 
-export { type EndpointCallbackResult, endpoint } from './endpoint.ts'
+export { type EndpointCallbackResult, endpoint } from './endpoint'
 
-export { functions } from './functions.ts'
+export { functions } from './functions'
 
-export { Generic } from './generic.ts'
+export { Generic } from './generic'
 
-export { parseJSON } from './parsers/parse-json.ts'
-export { parseFormData } from './parsers/parse-formdata.ts'
+export { parseJSON } from './parsers/parse-json'
+export { parseFormData } from './parsers/parse-formdata'
 
-export { type KitEvent, FakeKitEvent, ParseKitEvent } from './kitevent.ts'
+export { type KitEvent, FakeKitEvent, ParseKitEvent } from './kitevent'

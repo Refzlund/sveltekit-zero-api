@@ -1,7 +1,7 @@
 import { browser } from '$app/environment'
-import { createEndpointProxy } from '../endpoint-proxy.ts'
-import { proxyCrawl } from '../utils/proxy-crawl.ts'
-import { complexSlug } from '../utils/slugs.ts'
+import { createEndpointProxy } from '../endpoint-proxy'
+import { proxyCrawl } from '../utils/proxy-crawl'
+import { complexSlug } from '../utils/slugs'
 
 interface APIProxyOptions {
 	/**

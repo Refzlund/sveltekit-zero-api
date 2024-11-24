@@ -2,8 +2,8 @@ import type { Plugin } from 'vite'
 import * as fs from 'node:fs'
 import process from 'node:process'
 import Path from 'node:path'
-import { generateTypes } from './generation/generate-types-file.ts'
-import { getEndpointFiles } from './generation/get-endpoint-files.ts'
+import { generateTypes } from './generation/generate-types-file'
+import { getEndpointFiles } from './generation/get-endpoint-files'
 import type { Config as SvelteKitConfig } from '@sveltejs/kit'
 
 interface ZeroAPIOptions {

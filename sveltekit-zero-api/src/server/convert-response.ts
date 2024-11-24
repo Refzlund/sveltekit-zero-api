@@ -1,5 +1,5 @@
-import type { ZeroAPIServerOptions } from './hooks.ts'
-import { KitResponse } from './http.ts'
+import type { ZeroAPIServerOptions } from './hooks'
+import { KitResponse } from './http'
 
 export function convertResponse<T>(response: T | KitResponse, options: ZeroAPIServerOptions = {}): T | Response {
 	if (!(response instanceof KitResponse)) return response

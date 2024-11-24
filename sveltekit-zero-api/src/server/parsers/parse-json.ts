@@ -1,6 +1,6 @@
-import { parseItems } from '../../utils/parse-keys.ts'
-import { BadRequest } from '../http.ts'
-import { ParseKitEvent, type KitEvent } from '../kitevent.ts'
+import { parseItems } from '../../utils/parse-keys'
+import { BadRequest } from '../http'
+import { ParseKitEvent, type KitEvent } from '../kitevent'
 
 /**
  * Parse incoming JSON/FormData from the body.
@@ -15,9 +15,9 @@ import { ParseKitEvent, type KitEvent } from '../kitevent.ts'
  * 	}
  )
  */
-export async function parseJSON<T extends FormData | Record<string | number, unknown> | Array<unknown> | string | number>(
-	event: KitEvent
-) {
+export async function parseJSON<
+	T extends FormData | Record<string | number, unknown> | Array<unknown> | string | number
+>(event: KitEvent) {
 	let json: T
 
 	let contentTypes = ['application/json', 'multipart/form-data'] as const

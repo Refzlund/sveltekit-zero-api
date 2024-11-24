@@ -1,6 +1,6 @@
-import type { KitResponse, StatusCode, Statuses, StatusTextType } from './server/http.ts'
-import { StatusCodeType } from './server/http.ts'
-import type { AwaitAll, IfAny, IsAny, Promisify } from './utils/types.ts'
+import type { KitResponse, StatusCode, Statuses, StatusTextType } from './server/http'
+import { StatusCodeType } from './server/http'
+import type { AwaitAll, IfAny, IsAny, Promisify } from './utils/types'
 
 /**
 IfAny<Results, {}, {
@@ -66,7 +66,8 @@ export type EndpointProxy<
 		// Callback chain of Response types (.OK, .BadRequest ...)
 		([Results] extends [KitResponse<infer _, infer StatusText>]
 			? ProxyCallback<Results, StatusText extends StatusTextType ? StatusText : never, Returned>
-			: {}) & { // Callback chain of Response statuses (.success, .clientError ...)
+			: {}) & {
+			// Callback chain of Response statuses (.success, .clientError ...)
 			[K in 'any' | keyof Statuses]: <A extends [Returned] extends [never] ? void : any>(
 				cb: (
 					response: Results extends KitResponse<
