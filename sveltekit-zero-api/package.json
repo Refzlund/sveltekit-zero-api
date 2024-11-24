@@ -1,22 +1,26 @@
 {
 	"name": "sveltekit-zero-api",
 	"description": "Your package.",
+	"version": "2.0.0-next.0",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/username/repo.git"
+		"url": "git+https://github.com/Refzlund/sveltekit-zero-api.git"
 	},
 	"license": "MIT",
 	"bugs": {
-		"url": "https://github.com/username/repo/issues"
+		"url": "https://github.com/Refzlund/sveltekit-zero-api/issues"
 	},
-	"module": "./esm/index.js",
+	"type": "module",
+	"scripts": {
+		"package": "bun ./build.ts"
+	},
 	"exports": {
 		".": "./src/index.ts",
 		"./client": "./src/client/index.ts",
 		"./server": "./src/server/index.ts",
 		"./http": "./src/server/http.ts",
 		"./vite": "./src/server/vite.ts",
-		"./formapi.svelte": "./src/client/formapi.svelte.ts"
+		"./formapi.svelte": "./src/client/formapi/formapi.svelte.ts"
 	},
 	"peerDependencies": {
 		"svelte": "^5.1.12",
@@ -25,9 +29,11 @@
 		"vite": "^5.4.11"
 	},
 	"devDependencies": {
+		"@sveltejs/package": "^2.3.7",
 		"@types/bun": "^1.1.13",
 		"@types/node": "^20.9.0",
-		"zod": "^3.23.8"
-	},
-	"_generatedBy": "dnt@dev"
+		"@typeschema/main": "^0.14.1",
+		"zod": "^3.23.8",
+		"zod-to-json-schema": "^3.23.5"
+	}
 }

@@ -1,53 +1,71 @@
-import { build, emptyDir } from 'jsr:@deno/dnt'
+import Bun from 'bun'
+import * as fs from 'node:fs'
+import Path from 'node:path'
 
-await emptyDir('./npm')
+console.log('Building...')
 
-await build({
-	entryPoints: [
-		{ name: '.', path: './src/index.ts' },
-		{ name: './client', path: './src/client/index.ts' },
-		{ name: './server', path: './src/server/index.ts' },
-		{ name: './http', path: './src/server/http.ts' },
-		{ name: './vite', path: './src/server/vite.ts' },
-		{ name: './formapi.svelte', path: './src/client/formapi.svelte.ts' }
-	],
-	compilerOptions: {
-		noImplicitAny: false,
-		lib: ['ESNext', 'DOM', 'DOM.Iterable', 'ESNext.AsyncIterable'],
-		target: 'Latest'
-	},
-	packageManager: 'bun',
-	outDir: './npm',
-	rootTestDir: './tests',
-	esModule: true,
-	scriptModule: false, // sveltekit uses ESM🤷
-	test: false,
+let paths = {
+	package: Path.resolve('./package.json'),
+	readme: Path.resolve('../README.md'),
+	license: Path.resolve('../LICENSE'),
+	
+	// generated
+	npm: Path.resolve('./npm'),
+	dist: Path.resolve('./dist'),
+	sveltekit: Path.resolve('./.svelte-kit')
+}
 
-	shims: {
-		// see JS docs for overview and more options
-		deno: true
-	},
-	package: {
-		// package.json properties
-		name: 'sveltekit-zero-api',
-		version: Deno.args[0],
-		description: 'Your package.',
-		license: 'MIT',
-		repository: {
-			type: 'git',
-			url: 'git+https://github.com/username/repo.git'
-		},
-		bugs: {
-			url: 'https://github.com/username/repo/issues'
-		},
-		peerDependencies: {
-			svelte: '^5.1.12',
-			'@sveltejs/kit': '^2.8.0'
-		}
-	},
-	postBuild() {
-		// steps to run after building and before running the tests
-		Deno.copyFileSync('LICENSE', 'npm/LICENSE')
-		Deno.copyFileSync('README.md', 'npm/README.md')
-	}
+// Delete files used for building/results of building
+for(const path of [paths.npm, paths.dist, paths.sveltekit]) {
+	if(fs.existsSync(path))
+		fs.rmSync(path, { recursive: true, force: true })
+}
+
+Bun.spawnSync({
+	cmd: ['svelte-package']
 })
+
+fs.mkdirSync(paths.npm)
+
+// Copy files
+for (const path of [paths.package, paths.readme, paths.license]) {
+	fs.copyFileSync(path, Path.join(paths.npm, Path.basename(path)))
+}
+
+// Move files
+for (const path of [paths.dist]) {
+	let target = Path.join(paths.npm, Path.basename(path))
+	for (let i = 0; i < 20; i++) {
+		await new Promise((res) => setTimeout(res, 100))
+		try {
+			fs.renameSync(path, target)
+		} catch (error) {
+			continue
+		}
+		break
+	}
+}
+
+// Delete unncessary dir
+for (const path of [paths.sveltekit]) {
+	if (fs.existsSync(path)) fs.rmSync(path, { recursive: true, force: true })
+}
+
+// Update package.json
+let packagePath = Path.join(paths.npm, Path.basename(paths.package))
+
+let json = JSON.parse(fs.readFileSync(packagePath, 'utf-8'))
+delete json.devDependencies
+delete json.scripts
+
+for(let [key, path] of Object.entries(json.exports) as [string,string][]) {
+	path = path.replace(/^\.\/src/, './dist')
+	json.exports[key] = {
+		types: path.replace(/\.ts$/, '.d.ts'),
+		svelte: path.replace(/\.ts$/, '.js'),
+	}
+}
+
+fs.writeFileSync(packagePath, JSON.stringify(json, null, 4))
+
+console.log('Done.')
