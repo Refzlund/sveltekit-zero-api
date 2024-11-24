@@ -3,6 +3,7 @@
 	import { formAPI } from 'sveltekit-zero-api/formapi.svelte'
 	import api from '$lib/../api'
 	import { tweened } from 'svelte/motion'
+	import { onMount } from 'svelte'
 
 	interface Person {
 		name: string
@@ -13,7 +14,7 @@
 		pets: string[]
 	}
 	
-	const UserForm = formAPI<Person>(api.formdata)
+	const UserForm = formAPI<Person & {bind: string}>(api.formdata)
 	// console.log($UserForm)
 	let progress = tweened(0)
 	$effect(() => {
@@ -31,11 +32,12 @@
 <UserForm class="mb-4">
 	<button type="submit">Submit</button>
 	<input name='name'>
+	<div contenteditable bind:innerText={$UserForm.bind} class='p-2 px-3 border border-gray-700 rounded-lg'>This is bound</div>
 </UserForm>
 
 <Code
 	code={{
-		'result.json': JSON.stringify($UserForm, null, '    ')
+		'result.json': JSON.stringify($UserForm, null, 4)
 	}}
 />
 

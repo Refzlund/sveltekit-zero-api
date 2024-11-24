@@ -13,7 +13,7 @@
 		pets: string[]
 	}
 	
-	const userForm = formAPI<Person & {hidden: string}>(api.formdata)
+	const userForm = formAPI<Person & {bind: string}>(api.formdata)
 	let progress = tweened(0)
 	$effect(() => {
 		progress.set(userForm.request.progress)
@@ -34,7 +34,7 @@
 	<input placeholder="Name" use:userForm.$.name />
 	<input name="name" placeholder="Name" />
 
-	<div contenteditable bind:innerText={$userForm.hidden}>Any</div>
+	<div contenteditable bind:innerText={$userForm.bind} class='p-2 px-3 border border-gray-700 rounded-lg'>This is bound</div>
 
 	<input name='value' placeholder='With value' value='Predefined value'>
 

@@ -13,8 +13,17 @@ interface APIProxyOptions {
 
 const methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']
 
+export class APIProxy {
+	constructor() {
+		throw new Error('Please use `createAPIProxy` instead.')
+	}
+}
+
 export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 	return proxyCrawl({
+		getPrototypeOf() {
+			return APIProxy.prototype
+		},
 		apply(state) {
 			if (state.key === 'toString' || state.key === Symbol.toPrimitive) {
 				return 'APIProxy'

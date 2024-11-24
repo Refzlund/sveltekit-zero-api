@@ -9,11 +9,9 @@ import { KitRequestXHR } from '../../endpoint-proxy'
 
 import Form from './Form.svelte'
 import { parseObjectToKeys } from '../../utils/parse-keys'
+import { APIProxy } from '../api-proxy'
 
 export interface FormAPIActionOptions<T extends Record<PropertyKey, any>> {
-	/** @default true */
-	enhance?: boolean | Parameters<typeof svelteEnhance>[1]
-
 	/** $id(...).GET/PUT */
 	id?: string
 
@@ -27,7 +25,7 @@ interface FormAPIOptions {
 	/** If provided, will use `PATCH` instead of `PUT` and only send changed data from `GET`. */
 	patch?: (id: string, formData: any) => KitRequestXHR
 	/** .POST, .[id]/GET .[id]/PUT */
-	apiRoute?: {
+	api?: {
 		POST: EndpointFunction
 		[slug: `${string}$`]: (id: string) =>
 			| undefined
@@ -41,8 +39,9 @@ interface FormAPIOptions {
 	}
 	onSubmit?(method: 'POST' | 'PUT' | 'PATCH', data: FormData): FormData | void
 	onRequest?(req: KitRequestXHR): void
-	validation: unknown
-	enhance: boolean | Parameters<typeof svelteEnhance>[1]
+	validation?: unknown
+	/** @default true */
+	enhance?: boolean | Parameters<typeof svelteEnhance>[1]
 }
 
 interface FormAPIError {
@@ -70,19 +69,19 @@ type FormAPI<T extends Record<PropertyKey, any>> =
 	}
 
 export function formAPI<T extends Record<PropertyKey, any>>(
-	options: FormAPIOptions | NonNullable<FormAPIOptions['apiRoute']>
+	options: FormAPIOptions | NonNullable<FormAPIOptions['api']>
 ) {
-	let full = (
-		String(options) === 'APIProxy' ? options : (<FormAPIOptions>options).apiRoute
-	) as FormAPIOptions['apiRoute']
+	let opts: FormAPIOptions = options instanceof APIProxy ? {} : <FormAPIOptions>options
+	let full = (options instanceof APIProxy ? options : (<FormAPIOptions>options).api) as FormAPIOptions['api']
+	
 	let apis = {
-		GET: ('get' in options ? options.get : (id: string) => full?.slug$(id)?.GET?.xhr()!)!,
-		PUT: ('put' in options
-			? options.put
+		GET: ('get' in opts ? opts.get : (id: string) => full?.slug$(id)?.GET?.xhr()!)!,
+		PUT: ('put' in opts
+			? opts.put
 			: (id: string, formData: any) => full?.slug$(id)?.PUT?.xhr(formData)!)!,
-		POST: ('post' in options ? options.post : (formData: any) => full?.POST?.xhr(formData)!)!,
-		PATCH: ('patch' in options
-			? options.patch
+		POST: ('post' in opts ? opts.post : (formData: any) => full?.POST?.xhr(formData)!)!,
+		PATCH: ('patch' in opts
+			? opts.patch
 			: (id: string, formData: any) => full?.slug$(id)?.PATCH?.xhr(formData)!)!
 	}
 
@@ -214,16 +213,17 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 	}
 
 	const formEnhance = ((node: HTMLFormElement, actionOptions: FormAPIActionOptions<T> = {}) => {
-		let { enhance = true, id: _id, value: _value } = actionOptions
+		let { id: _id, value: _value } = actionOptions
 
 		if (_value) {
 			Object.assign(value, _value)
 		}
 		id = _id
 
-		if (enhance) {
+		opts.enhance ??= true
+		if (opts.enhance === true) {
 			if (!node.getAttribute('method')) node.setAttribute('method', 'POST')
-			svelteEnhance(node, enhance === true ? undefined : enhance)
+			svelteEnhance(node, opts.enhance === true ? undefined : opts.enhance)
 		}
 
 		form = node
@@ -292,8 +292,8 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 			data.append(key, val)
 		}
 
-		if ('onSubmit' in options) {
-			let result = options.onSubmit!(method, data)
+		if ('onSubmit' in opts) {
+			let result = opts.onSubmit!(method, data)
 			if(result)
 				data = result
 		}
@@ -301,8 +301,8 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 		const args: [any, any] = id === undefined || id === null ? [data, ,] : [id, data]
 		const req = apis[method]!(...args)
 
-		if ('onRequest' in options) {
-			options.onRequest!(req)
+		if ('onRequest' in opts) {
+			opts.onRequest!(req)
 		}
 
 		req.xhrInit(
