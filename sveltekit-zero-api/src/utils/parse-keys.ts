@@ -16,7 +16,7 @@ export function parseObjectToKeys(obj: Record<string, any> | Array<any>, parent 
 	
 	for (let [key, value] of Array.isArray(obj) ? obj.entries() : Object.entries(obj)) {
 		let path = (parent !== '' ? `${parent}.` : '') + key
-		if (value && typeof value === 'object' && typeof value.constructor !== 'function') {
+		if (String(value).endsWith('Object]')) {
 			result.push(...parseObjectToKeys(value, path))
 			continue
 		}
@@ -52,14 +52,20 @@ function parseSegment(key: string | number) {
 }
 
 /** Parse `[['ab.cd.0', 123], ...]` -> `{ 'ab': { cd: [0] } }` */
-export function parseItems(items: Iterable<[string, any]>) {
+export function parseItems(items: Iterable<[string, any]>, arrayDuplicates = true) {
 	let result = {} as Record<string, any>
-
 	for (let [key, value] of items) {
 		let path = parseKeys(key) // ab[1]['123'].abc => ['ab', 1, '123', 'abc']
 		if (path.length == 1) {
-			result[path[0]] = value
-			continue
+			if (result[path[0]] !== undefined && arrayDuplicates) {
+				let item = result[path[0]]
+				if (Array.isArray(item)) {
+					item.push(value)
+				} else {
+					result[path[0]] = [item, value]
+				}
+				continue
+			}
 		}
 
 		let parent = result
@@ -69,10 +75,19 @@ export function parseItems(items: Iterable<[string, any]>) {
 				parent[key] = typeof path[i + 1] === 'number' ? [] : {}
 			}
 			parent = parent[key]
-			
 		}
 
-		parent[path[path.length - 1]] = value
+		let lastKey = path[path.length - 1]
+		if (parent[lastKey] !== undefined && arrayDuplicates) {
+			let item = parent[lastKey]
+			if (Array.isArray(item)) {
+				item.push(value)
+			} else {
+				parent[lastKey] = [item, value]
+			}
+		} else {
+			parent[lastKey] = value
+		}
 	}
 
 	return result

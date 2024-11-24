@@ -282,8 +282,8 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 		const method = id === undefined || id === null ? 'POST' : 'patch' in apis ? 'PATCH' : 'PUT'
 
 		let data = new FormData()
-		for (const [key, val] of parseObjectToKeys(value)) {
-			if(val instanceof FileList) {
+		for (const [key, val] of parseObjectToKeys($state.snapshot(value))) {
+			if (val instanceof FileList) {
 				for (const file of val) {
 					data.append(key, file)
 				}
