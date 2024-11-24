@@ -239,10 +239,11 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 										yield value
 									else {
 										let text = decode.decode(value)
-										let json =
-											['{', '['].includes(text[0]) &&
-											['}', ']'].includes(text[text.length - 1])
-										yield json ? JSON.parse(text) : text
+										try {
+											yield JSON.parse(text)
+										} catch (error) {
+											yield text
+										}
 									}
 								}
 							}
