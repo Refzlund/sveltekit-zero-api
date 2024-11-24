@@ -1,3 +1,3 @@
-Using `bun` for `/app`, as Deno 2 isn't working with SvelteKit right now, when using `deno i --allow-scripts`.
+Run app for testing: `bun app` from root.
 
-Deno 2 used for creating the library; `/sveltekit-zero-api`🦒
+`vite.config.ts` cannot import `.ts` files - so re-run the app when anything changes regarding file/type-generation.
