@@ -33,11 +33,20 @@ ${stack || stringed}
 	const type = typeof body
 
 	let isJSONable =
-		type == 'object' || type === 'string' || type === 'number' || type === 'boolean' || type === 'bigint'
+		(type == 'object' && ('toJSON' in body || String(body).endsWith('Object]'))) 
+		|| type === 'string'
+		|| type === 'number'
+		|| type === 'boolean'
+		|| type === 'bigint'
+	
+	let contentType = response.headers.has('content-type')
 
-	if (stringify && !response.headers.has('content-type') && isJSONable) {
+	if (stringify && !contentType && isJSONable) {
 		response.headers.append('content-type', 'application/json')
 		body = JSON.stringify(body)
+	}
+	else if(body && !contentType) {
+		response.headers.append('content-type', 'plain/text')
 	}
 
 	return new Response(body, {

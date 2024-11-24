@@ -212,28 +212,43 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 			if (response === false) throw new Error('Response was not created correctly') // type narrowing
 
 			response = response
+				.catch(async (res) => {
+					if (!('headers' in res)) throw res
+					return res as Response
+				})
 				.then(async (res) => {
-					if (res.headers.get('content-type')?.includes('application/json')) {
+					let contentType = res.headers.get('content-type')
+					if (contentType?.includes('application/json')) {
 						let body = await res.json()
 						Object.defineProperty(res, 'body', {
 							get() {
 								return body
+							}
+						})
+					}
+					if(res.body instanceof ReadableStream) {
+						// polyfill body-'Symbol.asyncIterator'
+						Object.assign(res.body, {
+							async *[Symbol.asyncIterator]() {
+								const reader = res.body!.getReader()
+								let decode = new TextDecoder()
+								while (true) {
+									const { value, done } = await reader.read()
+									if (done) return
+									if(!contentType?.includes('plain/text'))
+										yield value
+									else {
+										let text = decode.decode(value)
+										let json =
+											['{', '['].includes(text[0]) &&
+											['}', ']'].includes(text[text.length - 1])
+										yield json ? JSON.parse(text) : text
+									}
+								}
 							}
 						})
 					}
 					return res
-				})
-				.catch(async (res) => {
-					if (!('headers' in res)) throw res
-					if (res.headers.get('content-type')?.includes('application/json')) {
-						let body = await res.json()
-						Object.defineProperty(res, 'body', {
-							get() {
-								return body
-							}
-						})
-					}
-					return res as Response
 				})
 
 			if (isMethod) {
