@@ -2,12 +2,15 @@ import { type Writable, toStore } from 'svelte/store'
 import { enhance as svelteEnhance } from '$app/forms'
 import { SvelteMap, SvelteSet } from 'svelte/reactivity'
 
-import { proxyCrawl } from '../utils/proxy-crawl'
-import { MapDeepTo } from '../utils/types'
-import { EndpointFunction } from '../server/endpoint'
-import { KitRequestXHR } from '../endpoint-proxy'
+import { proxyCrawl } from '../../utils/proxy-crawl'
+import { MapDeepTo } from '../../utils/types'
+import { EndpointFunction } from '../../server/endpoint'
+import { KitRequestXHR } from '../../endpoint-proxy'
 
-interface ActionOptions<T extends Record<PropertyKey, any>> {
+import Form from './Form.svelte'
+import { parseObjectToKeys } from '../../utils/parse-keys'
+
+export interface FormAPIActionOptions<T extends Record<PropertyKey, any>> {
 	/** @default true */
 	enhance?: boolean | Parameters<typeof svelteEnhance>[1]
 
@@ -36,7 +39,7 @@ interface FormAPIOptions {
 					PATCH?: EndpointFunction
 			  }
 	}
-	onSubmit?(method: 'POST' | 'PUT' | 'PATCH', data: FormData): FormData
+	onSubmit?(method: 'POST' | 'PUT' | 'PATCH', data: FormData): FormData | void
 	onRequest?(req: KitRequestXHR): void
 	validation: unknown
 	enhance: boolean | Parameters<typeof svelteEnhance>[1]
@@ -48,8 +51,11 @@ interface FormAPIError {
 
 type FormAPIAction = (node: HTMLInputElement) => void
 
-type FormAPI<T extends Record<PropertyKey, any>> = Writable<T> &
-	((node: HTMLFormElement, options?: ActionOptions<T>) => void) & {
+type FormAPI<T extends Record<PropertyKey, any>> = 
+	& typeof Form
+	& Writable<T> 
+	& {
+		action: (node: HTMLFormElement, options?: FormAPIActionOptions<T>) => void
 		$: MapDeepTo<T, FormAPIAction>
 		errors: MapDeepTo<T, FormAPIError>
 		submit: () => Promise<Response>
@@ -85,6 +91,11 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 
 	let value = $state({} as Record<PropertyKey, any>)
 	let errors = $state({})
+
+	const store = toStore(
+		() => value,
+		(v) => (value = v)
+	)
 
 	let request = $state({
 		progress: 0,
@@ -202,7 +213,7 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 		})
 	}
 
-	const formEnhance = ((node: HTMLFormElement, actionOptions: ActionOptions<T> = {}) => {
+	const formEnhance = ((node: HTMLFormElement, actionOptions: FormAPIActionOptions<T> = {}) => {
 		let { enhance = true, id: _id, value: _value } = actionOptions
 
 		if (_value) {
@@ -257,7 +268,7 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 			destroy() {
 				observer.disconnect()
 			},
-			update(actionOptions: ActionOptions<T>) {
+			update(actionOptions: FormAPIActionOptions<T>) {
 				let { id: _id, value: _value } = actionOptions
 				if (_value) {
 					Object.assign(value, _value)
@@ -265,34 +276,26 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 				id = _id
 			}
 		} as any
-	}) as FormAPI<T>
-
-	Object.assign(formEnhance, {
-		...toStore(
-			() => value,
-			(v) => (value = v)
-		)
-	})
-
-	Object.defineProperties(formEnhance, {
-		value: {
-			get: () => value,
-			set: (v: T) => (value = v)
-		},
-		$: { get: () => proxies.$ },
-		errors: { get: () => proxies.errors },
-		submit: { get: () => submit },
-		form: { get: () => form },
-		request: { get: () => request }
 	})
 
 	function submit() {
 		const method = id === undefined || id === null ? 'POST' : 'patch' in apis ? 'PATCH' : 'PUT'
 
-		let data = new FormData(form)
+		let data = new FormData()
+		for (const [key, val] of parseObjectToKeys(value)) {
+			if(val instanceof FileList) {
+				for (const file of val) {
+					data.append(key, file)
+				}
+				continue
+			}
+			data.append(key, val)
+		}
 
 		if ('onSubmit' in options) {
-			data = options.onSubmit!(method, data)
+			let result = options.onSubmit!(method, data)
+			if(result)
+				data = result
 		}
 
 		const args: [any, any] = id === undefined || id === null ? [data, ,] : [id, data]
@@ -324,5 +327,34 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 			.success(() => (request.status = 'done'))
 	}
 
-	return formEnhance
+	let proxy = new Proxy(function(){} as any, {
+		set(_, key, newValue, receiver) {
+			switch (key) {
+				case 'value': return value = newValue
+			}
+			return Reflect.set(Form, key, newValue, receiver)
+		},
+		get(_, key, receiver) {
+			switch (key) {
+				case 'action': return formEnhance
+				case 'value': return value
+				case '$': return proxies.$
+				case 'errors': return proxies.errors
+				case 'submit': return submit
+				case 'form': return form
+				case 'request': return request
+				case 'subscribe': return store.subscribe
+				case 'set': return store.set
+				case 'update': return store.update
+			}
+			return Reflect.get(Form, key, receiver)
+		},
+		apply(_, __, [target, attributes]) {
+			// * Form `<UserForm ...>`
+			attributes.__formApi = proxy
+			return Form(target, attributes)
+		}
+	}) as FormAPI<T>
+	
+	return proxy
 }

@@ -62,8 +62,9 @@ for(let [key, path] of Object.entries(json.exports) as [string,string][]) {
 	path = path.replace(/^\.\/src/, './dist')
 	json.exports[key] = {
 		types: path.replace(/\.ts$/, '.d.ts'),
-		svelte: path.replace(/\.ts$/, '.js'),
 	}
+	let type = /svelte(\.ts)?$/.test(key) ? 'svelte' : 'default'
+	json.exports[key][type] = path.replace(/\.ts$/, '.js')
 }
 
 fs.writeFileSync(packagePath, JSON.stringify(json, null, 4))

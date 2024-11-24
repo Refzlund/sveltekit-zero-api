@@ -10,6 +10,21 @@ export function parseKeys(key: string) {
 		.flat()
 }
 
+/** `a: { b: { c: true } }` -> [['a.b.c', true]] */
+export function parseObjectToKeys(obj: Record<string, any> | Array<any>, parent = '') {
+	let result: [string, any][] = []
+	
+	for (let [key, value] of Array.isArray(obj) ? obj.entries() : Object.entries(obj)) {
+		let path = (parent !== '' ? `${parent}.` : '') + key
+		if (value && typeof value === 'object' && typeof value.constructor !== 'function') {
+			result.push(...parseObjectToKeys(value, path))
+			continue
+		}
+		result.push([String(path), value])
+	}
+	return result
+}
+
 function parseSegment(key: string | number) {
 	if (typeof key === 'number') return [key]
 

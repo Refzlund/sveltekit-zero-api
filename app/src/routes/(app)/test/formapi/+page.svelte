@@ -13,7 +13,7 @@
 		pets: string[]
 	}
 	
-	const userForm = formAPI<Person>(api.formdata)
+	const userForm = formAPI<Person & {hidden: string}>(api.formdata)
 	let progress = tweened(0)
 	$effect(() => {
 		progress.set(userForm.request.progress)
@@ -27,19 +27,18 @@
 	class='w-60 bg-green-400 h-4 bg-gradient-to-r to-white from-green-600 duration-150 rounded outline-gray-400 my-2'
 ></bar>
 
-<form use:userForm class="mb-4">
+<form use:userForm.action class="mb-4">
 	<button type="submit">Submit</button>
 
 	<!-- <input name='name' /> -->
 	<input placeholder="Name" use:userForm.$.name />
 	<input name="name" placeholder="Name" />
 
-	<input type='hidden' name='hidden'>
-	<div contenteditable bind:innerText={$userForm.hidden}>Text</div>
+	<div contenteditable bind:innerText={$userForm.hidden}>Any</div>
 
 	<input name='value' placeholder='With value' value='Predefined value'>
 
-	<input type='file' name='file'>
+	<input type='file' name='file' multiple>
 
 	
 
