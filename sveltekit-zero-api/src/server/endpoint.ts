@@ -5,6 +5,7 @@ import { ParseKitEvent, type KitEvent, type KitEventFn } from './kitevent'
 import type { EndpointProxy } from '../endpoint-proxy.type'
 import { Generic } from './generic'
 import { convertResponse } from './convert-response'
+import { parseResponse } from '../utils/parse-response'
 
 /**
  * The "result" of an `endpoint` paramters `callback`
@@ -195,7 +196,14 @@ function endpoint<const Callbacks extends [...Callback<KitEvent, EndpointCallbac
 			return result!
 		}
 
-		const promise = endpointHandler() as Promise<KitResponse>
+		const promise = endpointHandler()
+			.then((v) => convertResponse(v, event.zeroAPIOptions))
+			.catch((err) => {
+				if (err instanceof KitResponse) {
+					return convertResponse(err, event.zeroAPIOptions)
+				}
+				throw err
+			}) as Promise<Response>
 
 		Object.assign(promise, {
 			use(input?: { body?: unknown }, options?: { query?: unknown }) {
@@ -220,19 +228,20 @@ function endpoint<const Callbacks extends [...Callback<KitEvent, EndpointCallbac
 				event.query ??= {}
 				Object.assign(event.query, options?.query ?? {})
 
-				useProxy ??= createEndpointProxy(promise)
+				useProxy ??= createEndpointProxy(
+					promise
+						.catch(async (res) => {
+							if (!('headers' in res)) throw res
+							return res as Response
+						})
+						.then(parseResponse)
+				)
 				return useProxy
 			}
 		})
 
 		return promise
-			.then((v) => convertResponse(v, event.zeroAPIOptions))
-			.catch((err) => {
-				if (err instanceof KitResponse) {
-					return convertResponse(err, event.zeroAPIOptions)
-				}
-				throw err
-			})
+			
 	}
 }
 

@@ -224,7 +224,7 @@ export function createEndpointProxy<T extends KitResponse>(
 				response
 					.then((response) => {
 						let fn = args[0]
-						endpointProxyCallback(response, key as string, fn, resolve, reject)
+						endpointProxyCallback(response, key as string, fn).then(resolve).catch(reject)
 					})
 					.catch(reject)
 			})
@@ -275,36 +275,22 @@ function closest$promisesParent(state?: StateGet<CrawlerProps> | StateApply<Craw
 async function endpointProxyCallback(
 	result: ResponseType,
 	statusText: string,
-	cb: (response: ResponseType) => any,
-	resolve?: (value: any) => void,
-	reject?: (value: any) => void
+	cb: (response: ResponseType) => any
 ) {
-	try {
-		let v
-		if (statusText === 'any') {
-			v = await cb(result)
-		} else if (statusText === result.statusText) {
-			v = await cb(result)
-		} else if (result.status >= 100 && result.status < 200 && statusText === 'informational') {
-			v = await cb(result)
-		} else if (result.status >= 200 && result.status < 300 && statusText === 'success') {
-			v = await cb(result)
-		} else if (result.status >= 300 && result.status < 400 && statusText === 'redirect') {
-			v = await cb(result)
-		} else if (result.status >= 400 && result.status < 500 && statusText === 'clientError') {
-			v = await cb(result)
-		} else if (result.status >= 500 && result.status < 600 && statusText === 'serverError') {
-			v = await cb(result)
-		} else if (result.status >= 400 && result.status < 600 && statusText === 'error') {
-			v = await cb(result)
-		}
-		if (resolve) resolve(v)
-		return v
-	} catch (error) {
-		if (reject) {
-			reject(error)
-		} else {
-			throw error
-		}
-	}
+	if (statusText === 'any')
+		return await cb(result)
+	if (statusText === result.statusText)
+		return await cb(result)
+	if (result.status >= 100 && result.status < 200 && statusText === 'informational')
+		return await cb(result)
+	if (result.status >= 200 && result.status < 300 && statusText === 'success')
+		return await cb(result)
+	if (result.status >= 300 && result.status < 400 && statusText === 'redirect')
+		return await cb(result)
+	if (result.status >= 400 && result.status < 500 && statusText === 'clientError')
+		return await cb(result)
+	if (result.status >= 500 && result.status < 600 && statusText === 'serverError')
+		return await cb(result)
+	if (result.status >= 400 && result.status < 600 && statusText === 'error')
+		return await cb(result)
 }

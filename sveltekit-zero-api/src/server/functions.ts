@@ -168,7 +168,13 @@ export function functions(...args: (FnCallback | FnsRecord)[]) {
 
 		let proxyUse: ReturnType<typeof createUseProxy> | null = null
 		let promise = functionRequest(event, fns!, cbs, () => proxyUse)
-
+			.then((r) => convertResponse(r, event.zeroAPIOptions)!)
+			.catch((r) => {
+				if (r instanceof KitResponse)
+					return convertResponse(r, event.zeroAPIOptions)
+				throw r
+			})
+		
 		Object.assign(promise, {
 			use() {
 				proxyUse ??= createUseProxy(event, fns, cbs)
@@ -177,11 +183,6 @@ export function functions(...args: (FnCallback | FnsRecord)[]) {
 		})
 
 		return promise
-			.then((r) => convertResponse(r, event.zeroAPIOptions)!)
-			.catch((r) => {
-				if (r instanceof KitResponse) return convertResponse(r, event.zeroAPIOptions)
-				throw r
-			})
 	}
 
 	return functionsHandler
@@ -328,7 +329,7 @@ function createUseProxy(event: KitEvent<any, never>, fns: FnsRecord, cbs: FnCall
 							if (v.headers.get('content-type') === 'multipart/form-data') {
 								return resolve(v.body)
 							}
-							return v.body
+							return resolve(v.body)
 						})
 						.catch(reject)
 				})

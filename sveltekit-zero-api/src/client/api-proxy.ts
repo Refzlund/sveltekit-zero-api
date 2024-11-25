@@ -1,5 +1,6 @@
 import { browser } from '$app/environment'
 import { createEndpointProxy } from '../endpoint-proxy'
+import { parseResponse } from '../utils/parse-response'
 import { proxyCrawl } from '../utils/proxy-crawl'
 import { complexSlug } from '../utils/slugs'
 
@@ -216,41 +217,7 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 					if (!('headers' in res)) throw res
 					return res as Response
 				})
-				.then(async (res) => {
-					let contentType = res.headers.get('content-type')
-					if (contentType?.includes('application/json')) {
-						let body = await res.json()
-						Object.defineProperty(res, 'body', {
-							get() {
-								return body
-							}
-						})
-					}
-					if(res.body instanceof ReadableStream) {
-						// polyfill body-'Symbol.asyncIterator'
-						Object.assign(res.body, {
-							async *[Symbol.asyncIterator]() {
-								const reader = res.body!.getReader()
-								let decode = new TextDecoder()
-								while (true) {
-									const { value, done } = await reader.read()
-									if (done) return
-									if(!contentType?.includes('plain/text'))
-										yield value
-									else {
-										let text = decode.decode(value)
-										try {
-											yield JSON.parse(text)
-										} catch (error) {
-											yield text
-										}
-									}
-								}
-							}
-						})
-					}
-					return res
-				})
+				.then(parseResponse)
 
 			if (isMethod) {
 				return createEndpointProxy(response, xhr)

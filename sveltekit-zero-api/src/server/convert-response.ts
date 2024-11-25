@@ -51,6 +51,7 @@ ${stack || stringed}
 
 	return new Response(body, {
 		status: response.status,
+		statusText: response.statusText,
 		headers: response.headers
 	}) as any
 }

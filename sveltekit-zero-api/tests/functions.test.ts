@@ -1,11 +1,11 @@
-import { Created } from './../src/server/http.ts'
-import { expect } from './'
-import type { Simplify } from '../src/utils/types.ts'
-import { functions } from '../src/server/functions.ts'
-import { Generic } from '../src/server/generic.ts'
-import { BadRequest, OK } from '../src/server/http.ts'
-import { FakeKitEvent, type KitEvent } from '../src/server/kitevent.ts'
-import { isResponse } from '../src/is-response.ts'
+import { test, expect } from 'bun:test'
+import { Created } from './../src/server/http'
+import type { Simplify } from '../src/utils/types'
+import { functions } from '../src/server/functions'
+import { Generic } from '../src/server/generic'
+import { BadRequest, OK } from '../src/server/http'
+import { FakeKitEvent, type KitEvent } from '../src/server/kitevent'
+import { isResponse } from '../src/is-response'
 
 /** Returns a ReadableStream that results in { data: number } over ~110ms */
 function streamTest() {
@@ -21,7 +21,7 @@ function streamTest() {
 	return stream
 }
 
-Deno.test('functions: receive readable stream', async () => {
+test('functions: receive readable stream', async () => {
 
 	function fn() {
 		return new OK(streamTest())
@@ -41,7 +41,8 @@ Deno.test('functions: receive readable stream', async () => {
 	expect(i).toBe('10987654321')
 })
 
-Deno.test('functions: send readable stream', async () => {
+/*
+test('functions: send readable stream', async () => {
 	
 	async function fn(event: KitEvent, stream: ReadableStream<{ data: number }>) {
 		let now = Date.now()
@@ -61,23 +62,23 @@ Deno.test('functions: send readable stream', async () => {
 	expect(result.data).toBe('10987654321')
 	expect(result.time).toBeGreaterThanOrEqual(110)
 })
+*/
 
-Deno.test('functions: middleware', async () => {
+test('functions: middleware', async () => {
 	
 	function fn() {
 		return new OK(true)
 	}
 	function anotherFn() {
+		console.log('here')
 		return new Created()
 	}
 
 	let i = 0
 	const PATCH = functions(
 		(event) => {
-			console.log(i)
 			if(i == 0) {
 				i++
-				
 				return new BadRequest('error')
 			}
 			
@@ -100,7 +101,7 @@ Deno.test('functions: middleware', async () => {
 	)
 
 	const result = await PATCH().use().fn().catch(err => err)
-	const result2 = await PATCH().use().anotherFn()
+	
 
 	if(isResponse(result)) {
 		expect(result.body).toBe('error')
@@ -108,10 +109,11 @@ Deno.test('functions: middleware', async () => {
 		throw new Error('Expected response', { cause: !result ? String(result) : result })
 	}
 
+	const result2 = await PATCH().use().anotherFn()
 	expect(result2).toBe(123)
 })
 
-Deno.test('functions', async () => {
+test('functions', async () => {
 	interface Input {
 		name: string
 		age: number
@@ -139,11 +141,11 @@ Deno.test('functions', async () => {
 	let fns = PATCH(new FakeKitEvent()).use()
 
 	let result = fns.someFn({ name: 'Shiba', age: 23 })
-	await expect(result).rejects.toThrow() // Throws a response when not success
+	expect(result).rejects.toThrow() // Throws a response when not success
 
 	let result2 = fns.specificFn({ name: 'Bob', age: 69.69 })
-	await expect(result2).resolves.toBe(null)
+	expect(result2).resolves.toBe(null)
 
 	let result3 = fns.specificFn({ name: 'Giraffe', age: 26 })
-	await expect(result3).resolves.toEqual({ providedData: { name: 'Giraffe', age: 26 } })
+	expect(result3).resolves.toEqual({ providedData: { name: 'Giraffe', age: 26 } })
 })

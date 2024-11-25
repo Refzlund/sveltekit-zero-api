@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { parseItems, parseKeys } from './parse-keys'
+import { parseItems, parseKeys } from '../src/utils/parse-keys'
 
 test('parseKeys', () => {
 	let result = parseKeys('abc[123][\'321\'].here.["hello"][`yas`].yep.0.derp')
