@@ -80,6 +80,9 @@ export type EndpointProxy<
 				Results,
 				[Returned] extends [never] ? never : [...Returned, Promisify<A | undefined>]
 			>
+		} & {
+			/** Send AbortSignal */
+			abort: () => void
 		} & (XHR extends true
 			? [Returned] extends [never]
 				? {

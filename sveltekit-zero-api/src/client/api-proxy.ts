@@ -149,6 +149,9 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 			const url =
 				options.url?.toString() || '/' + route + (searchParams ? '?' + searchParams.toString() : '')
 
+			const abortController = xhr ? undefined : new AbortController()
+			const abort = xhr ? xhr.abort : abortController!.abort
+
 			// ('query' in requestInit ? '?' + new URLSearchParams(requestInit.query).toString() : '')
 			let response =
 				!xhr &&
@@ -161,9 +164,12 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 								...requestInit,
 								body: (body === null ? undefined : body) as BodyInit,
 								headers,
-								method
+								method,
+								signal: abortController ? abortController.signal : undefined
 						  }
 				)
+
+			
 
 			if (isMethod && xhr) {
 				// Use XHR
@@ -220,7 +226,7 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 				.then(parseResponse)
 
 			if (isMethod) {
-				return createEndpointProxy(response, xhr)
+				return createEndpointProxy(response, abort, xhr)
 			}
 
 			return new Promise((resolve, reject) => {

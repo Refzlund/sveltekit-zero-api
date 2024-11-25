@@ -234,7 +234,8 @@ function endpoint<const Callbacks extends [...Callback<KitEvent, EndpointCallbac
 							if (!('headers' in res)) throw res
 							return res as Response
 						})
-						.then(parseResponse)
+						.then(parseResponse),
+					() => {throw new Error('Can\'t abort on server.')}
 				)
 				return useProxy
 			}

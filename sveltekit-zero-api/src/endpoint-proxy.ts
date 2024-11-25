@@ -36,7 +36,8 @@ type ResponseType = KitResponse | Response
 /** @note In order to get correct types, the response should be `Promise<KitResponse>` */
 export function createEndpointProxy<T extends KitResponse>(
 	pureResponse: Promise<T | Response>,
-	xhr?: XMLHttpRequest
+	abort?: () => void,
+	xhr?: XMLHttpRequest,
 ): EndpointProxyType<T, never> {
 	// Proxy
 	// ex. `let [result] = GET(event, { body: { ... }}).error(...).$.OK(...)`
@@ -83,6 +84,11 @@ export function createEndpointProxy<T extends KitResponse>(
 		},
 		get(state) {
 			let { keys, key, props, crawl, parent } = state
+
+			if (key === 'abort') {
+				abort?.()
+				return
+			}
 
 			if (key === '$' && keys.includes(key)) {
 				throw new Error('.$. cannot be used multiple times.', {
