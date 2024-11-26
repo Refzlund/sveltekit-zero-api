@@ -58,6 +58,7 @@ type FormAPI<T extends Record<PropertyKey, any>> =
 		$: MapDeepTo<T, FormAPIAction>
 		errors: MapDeepTo<T, FormAPIError>
 		submit: () => Promise<Response>
+		reset: () => void
 		/** Form bound to this Form Rune */
 		form: HTMLFormElement
 		request: {
@@ -80,15 +81,15 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 			? opts.put
 			: (id: string, formData: any) => full?.slug$(id)?.PUT?.xhr(formData)!)!,
 		POST: ('post' in opts ? opts.post : (formData: any) => full?.POST?.xhr(formData)!)!,
-		PATCH: ('patch' in opts
-			? opts.patch
-			: (id: string, formData: any) => full?.slug$(id)?.PATCH?.xhr(formData)!)!
+		PATCH: opts.patch
 	}
 
 	/** current id of form content */
 	let id = $state() as string | undefined
 
 	let value = $state({} as Record<PropertyKey, any>)
+	/** Stores the initial content */
+	let resetValue = {} as Record<PropertyKey, any>
 	let errors = $state({})
 
 	const store = toStore(
@@ -239,6 +240,16 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 			},
 			{ capture: true }
 		)
+		
+		form.addEventListener(
+			'reset', (e) => {
+				e.preventDefault()
+				e.stopPropagation()
+				e.stopImmediatePropagation()
+				reset()
+			},
+			{ capture: true }
+		)
 
 		let inputs = node.querySelectorAll('input[name]')
 
@@ -257,6 +268,7 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 		}
 
 		applyCrawl(inputs as any)
+		resetValue = $state.snapshot(value)
 
 		const observer = new MutationObserver((mutations) => mutations.map((v) => applyCrawl(v.addedNodes as any)))
 		observer.observe(node, {
@@ -282,7 +294,10 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 		if(id === null || id === undefined) return
 
 		const req = apis.GET!(id)
-		req.success(({body}) => value = body)
+		req.success(({body}) => {
+			resetValue = body
+			reset()
+		})
 	})
 
 	function submit() {
@@ -334,6 +349,10 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 			.success(() => (request.status = 'done'))
 	}
 
+	function reset() {
+		value = structuredClone(resetValue) ?? {}
+	}
+
 	let proxy = new Proxy(function(){} as any, {
 		set(_, key, newValue, receiver) {
 			switch (key) {
@@ -348,6 +367,7 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 				case '$': return proxies.$
 				case 'errors': return proxies.errors
 				case 'submit': return submit
+				case 'reset': return reset
 				case 'form': return form
 				case 'request': return request
 				case 'subscribe': return store.subscribe

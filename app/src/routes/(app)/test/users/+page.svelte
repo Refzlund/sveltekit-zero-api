@@ -19,16 +19,25 @@
 	{/await}
 </select>
 
-<h3 class='text-xl md-2'>{$Form.name ? 'Updating ' + $Form.name : 'Create new user'}</h3>
+<h3 class='text-xl md-2'>{id ? 'Updating ' + $Form.name : 'Create new user'}</h3>
 
 <Form {id}>
 
-	<label>Name<input name='name'></label>
-	<label>E-mail<input name='email' type='email'></label>
-	<label>Age<input name='age' type='number'></label>
+	<label>
+		Name
+		<input name='name'>
+	</label>
+	<label>
+		E-mail
+		<input name='email' type='email'>
+	</label>
+	<label>
+		Age
+		<input name='age' type='number'>
+	</label>
 
 	<button class='mt-4'>{id === undefined ? 'Create User' : 'Update User'}</button>
-
+	<button type='reset'>Reset</button>
 </Form>
 
 
