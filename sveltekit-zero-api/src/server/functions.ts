@@ -296,11 +296,13 @@ function createUseProxy(event: KitEvent<any, never>, fns: FnsRecord, cbs: FnCall
 				if (!args.length) {
 					// No arguments
 				} else if (args[0] instanceof ReadableStream) {
+					throw new Error('ReadableStreams requires Duplex which is not well supported across browsers atm.')
 					body = args[0]
 					headers.set('content-type', 'application/octet-stream')
 				} else if (args[0] instanceof FormData) {
 					body = args[0]
-					headers.set('content-type', 'multipart/form-data')
+					// is set automatically
+					// headers.set('content-type', 'multipart/form-data')
 				} else {
 					// * JSON
 					body = JSON.stringify(args)

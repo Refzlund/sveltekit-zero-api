@@ -131,25 +131,29 @@
 			}
 		}
 
-		:global {
-			input {
-				@apply block bg-gray-950 rounded-lg border border-gray-800 ring-transparent;
+		:global(label > input) {
+			@apply mt-1;
+		}
 
-				&:focus {
-					@apply border-primary border-opacity-50;
-				}
+		:global(input), :global(select) {
+			 
+			@apply block bg-gray-950 rounded-lg border border-gray-800 ring-transparent;
 
-				&::placeholder {
-					&::before {
-						content: 'text';
-						@apply block  text-gray-400 text-sm select-none pointer-events-none;
-					}
-				}
+			&:focus {
+				@apply border-primary border-opacity-50;
+			}
 
-				&::after {
-					
+			&::placeholder {
+				&::before {
+					content: 'text';
+					@apply block  text-gray-400 text-sm select-none pointer-events-none;
 				}
 			}
+
+			&::after {
+				
+			}
+			
 		}
 	}
 

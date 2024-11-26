@@ -13,9 +13,9 @@ import { APIProxy } from '../api-proxy'
 
 export interface FormAPIActionOptions<T extends Record<PropertyKey, any>> {
 	/** $id(...).GET/PUT */
-	id?: string
+	id?: string | undefined
 
-	value?: T
+	value?: T | undefined
 }
 
 interface FormAPIOptions {
@@ -276,6 +276,13 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 				id = _id
 			}
 		} as any
+	})
+
+	$effect(() => {
+		if(id === null || id === undefined) return
+
+		const req = apis.GET!(id)
+		req.success(({body}) => value = body)
 	})
 
 	function submit() {

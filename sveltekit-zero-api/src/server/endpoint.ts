@@ -38,7 +38,7 @@ export type EndpointFunction<
 		body?: any
 		query?: any
 	} = any,
-	Result extends KitResponse = KitResponse<any, any>
+	Result extends KitResponse<any, any> = KitResponse<any, any>
 > = ((body?: Input['body'], options?: { query?: Input['query'] } & RequestInit) => EndpointProxy<Result>) & {
 	xhr: (
 		body?: Input['body'],
@@ -46,17 +46,19 @@ export type EndpointFunction<
 	) => EndpointProxy<Result, never, true>
 }
 
+type T = 'A' extends 'A' | 'B' ? true : false
+
 /**
  * The return-type for an `endpoint`.
  */
 export interface EndpointResponse<
 	Results extends EndpointCallbackResult,
-	G extends null | GenericCallback = null
+	TGenericResult extends null | GenericCallback = null
 > {
 	(event: KitEvent): Promise<Extract<Results, KitResponse>> & {
-		use: null extends G
+		use: null extends TGenericResult
 			? EndpointFunction<EndpointInput<Results>, Extract<Results, KitResponse>>
-			: G extends Generic<infer Input>
+			: TGenericResult extends Generic<infer Input>
 			? Input
 			: never
 	}
@@ -68,7 +70,7 @@ export interface EndpointResponse<
 
 function endpoint<B1 extends KitResponse, TGenericResult extends null | GenericCallback = null>(
 	/** When creating a `Generic` endpoint, the body WILL be parsed as JSON. */
-	callback1: Callback<KitEvent, B1> | ((event: KitEvent) => Promise<TGenericResult> | TGenericResult)
+	callback1: ((event: KitEvent) => Promise<TGenericResult | B1> | TGenericResult | B1)
 ): EndpointResponse<B1, TGenericResult>
 
 function endpoint<B1 extends EndpointCallbackResult, B2 extends KitResponse>(

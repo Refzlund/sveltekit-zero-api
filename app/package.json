@@ -9,6 +9,7 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
 	},
 	"devDependencies": {
+		"@faker-js/faker": "^9.2.0",
 		"@floating-ui/dom": "^1.6.12",
 		"@iconify-json/devicon": "^1.2.4",
 		"@iconify-json/fluent": "^1.2.6",

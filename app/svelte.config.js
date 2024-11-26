@@ -14,7 +14,7 @@ const config = {
 	kit: {
 		adapter: adapter(),
 		alias: {
-			'#types': './.svelte-kit/types/src/routes'
+			'$api': './src/api.ts'
 		},
 		
 	},

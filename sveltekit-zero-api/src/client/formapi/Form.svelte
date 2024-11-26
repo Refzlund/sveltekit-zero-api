@@ -22,7 +22,6 @@
 
 	let {
 		children,
-		enhance,
 		id,
 		value,
 		// @ts-expect-error internal property
@@ -36,7 +35,7 @@
 <!---------------------------------------------------->
 
 
-<form use:__formApi.action={{ enhance, id, value }} {...formAttributes}>
+<form use:__formApi.action={{ id, value }} {...formAttributes}>
 	{@render children()}
 </form>
 
