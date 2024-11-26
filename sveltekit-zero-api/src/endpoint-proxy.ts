@@ -53,7 +53,7 @@ export function createEndpointProxy<T extends KitResponse>(
 				// By setting the timeout to 0, we wait a 'JS tick' and
 				// allow potential chained callbacks to take place.
 				setTimeout(async () => {
-					if (!('statusText' in res)) {
+					if (typeof res !== 'object' || !('statusText' in res)) {
 						throw res
 					}
 
@@ -84,11 +84,6 @@ export function createEndpointProxy<T extends KitResponse>(
 		},
 		get(state) {
 			let { keys, key, props, crawl, parent } = state
-
-			if (key === 'abort') {
-				abort?.()
-				return
-			}
 
 			if (key === '$' && keys.includes(key)) {
 				throw new Error('.$. cannot be used multiple times.', {
@@ -130,6 +125,10 @@ export function createEndpointProxy<T extends KitResponse>(
 		},
 		apply(state) {
 			let { keys, key, args, props, crawl, parent } = state
+
+			if (key === 'abort') {
+				return abort?.()
+			}
 
 			if (key === 'then' || key === 'catch' || key === 'finally') {
 				if (keys[0] !== '$') {

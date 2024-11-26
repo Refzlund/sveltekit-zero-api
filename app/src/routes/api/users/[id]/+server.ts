@@ -6,7 +6,19 @@ import { users, type User } from '..'
 
 
 export const GET = endpoint(
-	(event) => new OK(users.find(user => user.id === event.params.id))
+	async (event) => {
+		let user = users.find(user => user.id === event.params.id)
+		if(!user) {
+			return new NotFound({ 
+				code: 'no_user',
+				error: 'User not found.'
+			})
+		}
+		event.request.signal.addEventListener('abort', () => console.log('Aborted'))
+		await new Promise((res) => setTimeout(res, 3000))
+		console.log(event.request.signal.aborted)
+		return new OK(user)
+	}
 )
 
 export const PUT = endpoint(

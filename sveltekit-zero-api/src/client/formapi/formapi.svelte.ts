@@ -58,6 +58,8 @@ type FormAPI<T extends Record<PropertyKey, any>> =
 		errors: MapDeepTo<T, FormAPIError>
 		submit: () => Promise<Response>
 		reset: () => void
+		/** Abort any ongoing request `formAPI` is making */
+		abort: () => void
 		/** Form bound to this Form Rune */
 		form: HTMLFormElement
 		request: {
@@ -289,17 +291,28 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 		} as any
 	})
 
+	let currentRequest: KitRequestXHR | undefined
+
 	$effect(() => {
 		if(id === null || id === undefined) return
+		abort()
 
 		const req = apis.GET!(id)
-		req.success(({body}) => {
+		currentRequest = req
+		
+		req.any(() => {
+			if(currentRequest == req) {
+				currentRequest = undefined
+			}
+		})
+		.success(({body}) => {
 			resetValue = body
 			reset()
 		})
 	})
 
 	function submit() {
+		abort()
 		const method = id === undefined || id === null ? 'POST' : apis.PATCH ? 'PATCH' : 'PUT'
 
 		let data = new FormData()
@@ -325,6 +338,8 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 		const args: [any, any] = method === 'POST' ? [data, ,] : [id, data]
 		const req = apis[method]!(...args)
 
+		currentRequest = req
+
 		if ('onRequest' in opts) {
 			opts.onRequest!(req)
 		}
@@ -349,10 +364,20 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 			)
 			.xhrError(() => (request.status = 'error'))
 			.success(() => (request.status = 'done'))
+			.any(() => {
+				if(currentRequest == req) {
+					currentRequest = undefined
+				}
+			})
 	}
 
 	function reset() {
 		value = structuredClone(resetValue) ?? {}
+	}
+
+	function abort() {
+		currentRequest?.abort()
+		currentRequest = undefined
 	}
 
 	let proxy = new Proxy(function(){} as any, {

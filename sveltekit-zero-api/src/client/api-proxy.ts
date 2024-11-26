@@ -150,8 +150,8 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 				options.url?.toString() || '/' + route + (searchParams ? '?' + searchParams.toString() : '')
 
 			const abortController = xhr ? undefined : new AbortController()
-			const abort = xhr ? xhr.abort : abortController!.abort
-
+			const abort = () => xhr ? xhr.abort() : abortController!.abort('Aborted request.')
+			
 			// ('query' in requestInit ? '?' + new URLSearchParams(requestInit.query).toString() : '')
 			let response =
 				!xhr &&
@@ -159,7 +159,7 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 					url,
 					// avoid making the "preflight http request", which will make it twice as fast
 					method === 'GET'
-						? undefined
+						? abortController ? { signal: abortController.signal } : undefined
 						: {
 								...requestInit,
 								body: (body === null ? undefined : body) as BodyInit,
@@ -188,7 +188,14 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 						xhr.setRequestHeader(key, value)
 					}
 
+					let aborted = false
+					xhr.addEventListener('abort', () => aborted = true)
+
 					function onloadend() {
+						if(aborted) {
+							throw 'Aborted request.'
+						}
+
 						const headers = new Headers()
 						xhr!
 							.getAllResponseHeaders()
@@ -202,6 +209,7 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 							})
 
 						xhrResolve(
+							
 							new Response(xhr!.response, {
 								status: xhr!.status,
 								statusText: xhr!.statusText,
@@ -220,6 +228,7 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 
 			response = response
 				.catch(async (res) => {
+					if (typeof res !== 'object') throw res
 					if (!('headers' in res)) throw res
 					return res as Response
 				})
