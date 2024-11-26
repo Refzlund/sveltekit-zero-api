@@ -15,6 +15,7 @@ export function parseObjectToKeys(obj: Record<string, any> | Array<any>, parent 
 	let result: [string, any][] = []
 	
 	for (let [key, value] of Array.isArray(obj) ? obj.entries() : Object.entries(obj)) {
+		if(!(key in obj)) continue // skip holes in sparse arrays
 		let path = (parent !== '' ? `${parent}.` : '') + key
 		if (String(value).endsWith('Object]')) {
 			result.push(...parseObjectToKeys(value, path))

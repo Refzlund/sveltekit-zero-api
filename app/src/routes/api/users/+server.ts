@@ -12,9 +12,9 @@ export const GET = endpoint(
 export const POST = endpoint(
 	parseJSON<Omit<User, 'id'>>,
 	(event) => {
-		let { name, email, age } = event.body
+		let { name, email, age, birth } = event.body
 		
-		users.push({ id: 'User:' + users.length, name, email, age })
+		users.push({ id: 'User:' + users.length, name, email, age, birth })
 		
 		return new Created({ message: 'User created.' })
 	}

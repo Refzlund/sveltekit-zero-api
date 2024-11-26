@@ -3,16 +3,18 @@
 	import { formAPI } from 'sveltekit-zero-api/formapi.svelte'
 	import type { User } from '../../../api/users'
 
-
-	let Form = formAPI<User>(api.users)
+	let Form = formAPI<User>({
+		api: api.users,
+		patch: (id, data) => api.users.id$(id).PATCH.xhr(data)
+	})
 	let id = $state() as string | undefined
 
 </script>
 <!---------------------------------------------------->
 
 <select bind:value={id} class='bg-gray-950 border-gray-800 rounded-md mb-4 text-primary'>
+	<option value={undefined}>None</option>
 	{#await api.users.GET().$.OK(({body}) => body) then [users]}
-		<option value={undefined}>None</option>
 		{#each users! as user}
 			<option value={user.id}>{user.name}</option>
 		{/each}
@@ -30,6 +32,10 @@
 	<label>
 		E-mail
 		<input name='email' type='email'>
+	</label>
+	<label>
+		Birth
+		<input name='birth' type='date'>
 	</label>
 	<label>
 		Age

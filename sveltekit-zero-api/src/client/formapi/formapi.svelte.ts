@@ -10,6 +10,7 @@ import { KitRequestXHR } from '../../endpoint-proxy'
 import Form from './Form.svelte'
 import { parseObjectToKeys } from '../../utils/parse-keys'
 import { APIProxy } from '../api-proxy'
+import { objectDifference } from '../../utils/object-difference'
 
 export interface FormAPIActionOptions<T extends Record<PropertyKey, any>> {
 	/** $id(...).GET/PUT */
@@ -33,8 +34,6 @@ interface FormAPIOptions {
 					GET?: EndpointFunction
 					/** Will use `PUT` over `PATCH` */
 					PUT?: EndpointFunction
-					/** Will `PATCH` if there's not `PUT` */
-					PATCH?: EndpointFunction
 			  }
 	}
 	onSubmit?(method: 'POST' | 'PUT' | 'PATCH', data: FormData): FormData | void
@@ -301,10 +300,13 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 	})
 
 	function submit() {
-		const method = id === undefined || id === null ? 'POST' : 'patch' in apis ? 'PATCH' : 'PUT'
+		const method = id === undefined || id === null ? 'POST' : apis.PATCH ? 'PATCH' : 'PUT'
 
 		let data = new FormData()
-		for (const [key, val] of parseObjectToKeys($state.snapshot(value))) {
+
+		let body = method === 'PATCH' ? objectDifference(resetValue, $state.snapshot(value)) ?? {} : $state.snapshot(value)
+
+		for (const [key, val] of parseObjectToKeys(body)) {
 			if (val instanceof FileList) {
 				for (const file of val) {
 					data.append(key, file)
@@ -320,7 +322,7 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 				data = result
 		}
 
-		const args: [any, any] = id === undefined || id === null ? [data, ,] : [id, data]
+		const args: [any, any] = method === 'POST' ? [data, ,] : [id, data]
 		const req = apis[method]!(...args)
 
 		if ('onRequest' in opts) {
