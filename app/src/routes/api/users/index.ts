@@ -1,14 +1,15 @@
 import { faker } from '@faker-js/faker'
+import z from 'zod'
 
-export interface User {
-	id: string
-	name: string
-	email: string
-	age: number
-	birth: Date | string
-}
+export const User = z.object({
+	id: z.string(),
+	name: z.string().min(3),
+	email: z.string().email(),
+	age: z.number().min(18),
+	birth: z.string().datetime('yyyy-MM-dd'),
+})
 
-export const users: User[] = Array(100).fill(null).map((_, i) => {
+export const users: z.output<typeof User>[] = Array(100).fill(null).map((_, i) => {
 	let birth = faker.date.birthdate()
 	return {
 		id: 'User:' + i,

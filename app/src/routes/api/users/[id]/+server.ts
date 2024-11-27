@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { Created, NotFound, OK } from 'sveltekit-zero-api/http'
 import { endpoint, parseJSON } from 'sveltekit-zero-api/server'
-import { users, type User } from '..'
+import { User, users } from '..'
+import { zod } from '$lib/zod'
 
 
 
@@ -20,7 +21,7 @@ export const GET = endpoint(
 )
 
 export const PUT = endpoint(
-	parseJSON,
+	zod({ body: User }),
 	(event) => {
 		let user = users.find(user => user.id === event.params.id)
 		if(!user) {
@@ -42,7 +43,7 @@ export const PUT = endpoint(
 )
 
 export const PATCH = endpoint(
-	parseJSON,
+	zod({ body: User.partial() }),
 	(event) => {
 		let user = users.find(user => user.id === event.params.id)
 		if(!user) {

@@ -2,12 +2,15 @@
 	import api from '$api'
 	import { formAPI } from 'sveltekit-zero-api/formapi.svelte'
 	import type { User } from '../../../api/users'
+	import type z from 'zod'
 
-	let Form = formAPI<User>({
+	let Form = formAPI<z.output<typeof User>>({
 		api: api.users,
 		patch: (id, data) => api.users.id$(id).PATCH.xhr(data)
 	})
 	let id = $state() as string | undefined
+
+	api.users.id$('-').PATCH(undefined, { headers: { 'x-json-schema': 'true' } }).success(r => console.log(r.body))
 
 </script>
 <!---------------------------------------------------->

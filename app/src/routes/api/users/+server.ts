@@ -1,8 +1,7 @@
-import { randomUUID } from 'node:crypto';
 import { Created, OK } from 'sveltekit-zero-api/http'
-import { endpoint, parseJSON } from 'sveltekit-zero-api/server'
-import { users, type User } from '.'
-
+import { endpoint } from 'sveltekit-zero-api/server'
+import { User, users } from '.'
+import { zod } from '$lib/zod'
 
 
 export const GET = endpoint(
@@ -11,7 +10,7 @@ export const GET = endpoint(
 )
 
 export const POST = endpoint(
-	parseJSON,
+	zod({ body: User.omit({ id: true }) }),
 	(event) => {
 		let { name, email, age, birth } = event.body
 		

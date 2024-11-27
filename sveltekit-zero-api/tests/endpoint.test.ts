@@ -5,6 +5,7 @@ import { FakeKitEvent, type KitEvent, ParseKitEvent } from '../src/server/kiteve
 import { parseJSON } from '../src/server/parsers/parse-json'
 import z from 'zod'
 import { Generic } from '../src/server/generic'
+import zodToJsonSchema from 'zod-to-json-schema'
 
 function zod<Body extends z.ZodTypeAny = never, Query extends z.ZodTypeAny = never>({
 	body,
@@ -13,17 +14,6 @@ function zod<Body extends z.ZodTypeAny = never, Query extends z.ZodTypeAny = nev
 	body?: Body
 	query?: Query
 }) {
-	/*
-		return new ParseKitEvent((event) => {
-			...
-		
-			return {
-				body: ... as z.output<Body>,
-				query: ... as z.output<Query>
-			}
-		}, zodToJsonSchema(body))
-	*/
-
 	return parseJSON.extend(async (_body, _query) => {
 		const bodyResult = body?.safeParse(_body)
 		if (bodyResult !== undefined && !bodyResult.success) {
@@ -47,7 +37,7 @@ function zod<Body extends z.ZodTypeAny = never, Query extends z.ZodTypeAny = nev
 			body: bodyResult?.data as z.output<Body>,
 			query: queryResult?.data as z.output<Query>,
 		}
-	})
+	}, body ? zodToJsonSchema(body) : undefined)
 }
 
 test('Generic endpoint', async () => {
