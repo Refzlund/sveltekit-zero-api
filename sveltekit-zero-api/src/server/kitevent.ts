@@ -1,7 +1,7 @@
 import type { Handle, RequestEvent } from '@sveltejs/kit'
-import type { KitResponse } from './http'
-import type { EndpointCallbackResult } from './endpoint'
-import type { Simplify, UnionToIntersection } from '../utils/types'
+import { BadRequest, KitResponse } from './http'
+import type { Callback, EndpointCallbackResult } from './endpoint'
+import type { MaybePromise, Simplify, UnionToIntersection } from '../utils/types'
 import type { ZeroAPIServerOptions } from './hooks'
 
 export interface KitEvent<
@@ -21,26 +21,27 @@ export interface KitEvent<
 	zeroAPIOptions: ZeroAPIServerOptions
 }
 
+type T = Awaited<ReturnType<ParseKitEvent<{body?,query?}>['fn']>>
+
 /**
  * A helper function to create a KitEvent from the results
  * of endpoint functions.
  */
 export type KitEventFn<
-	// note:  I wanted to omit keys from returned records
-	//        that overlapped with previous ones. However,
-	//        that may come at a later time as it seems "overcomplicative".
-	R1 extends EndpointCallbackResult,
-	R2 extends EndpointCallbackResult = never,
-	R3 extends EndpointCallbackResult = never,
-	R4 extends EndpointCallbackResult = never,
-	R5 extends EndpointCallbackResult = never,
-	R6 extends EndpointCallbackResult = never,
-	R7 extends EndpointCallbackResult = never
+	R1 extends Callback | ParseKitEvent<{}>,
+	R2 extends Callback | ParseKitEvent<{}> = never,
+	R3 extends Callback | ParseKitEvent<{}> = never,
+	R4 extends Callback | ParseKitEvent<{}> = never,
+	R5 extends Callback | ParseKitEvent<{}> = never,
+	R6 extends Callback | ParseKitEvent<{}> = never,
+	R7 extends Callback | ParseKitEvent<{}> = never
 > = KitEvent<
-	Simplify<Pick<Extract<R1 | R2 | R3 | R4 | R5 | R6 | R7, ParseKitEvent<any, any>>, 'body' | 'query'>>,
-	UnionToIntersection<
-		Exclude<R1 | R2 | R3 | R4 | R5 | R6 | R7, KitResponse<any, any, any> | ParseKitEvent<any, any>>
-	>
+	Exclude<Awaited<
+		ReturnType<
+			Extract<R1 | R2 | R3 | R4 | R5 | R6 | R7, ParseKitEvent<any>>['fn']
+		>
+	>, KitResponse<any,any>>,
+	UnionToIntersection<Awaited<ReturnType<Exclude<R1 | R2 | R3 | R4 | R5 | R6 | R7, ParseKitEvent<any> | KitResponse<any, any>>>>>
 > extends KitEvent<infer A, infer B>
 	? KitEvent<A, B>
 	: never
@@ -56,7 +57,7 @@ import {
 } from 'sveltekit-zero-api'
 
 function zod({ body, query }) {
-	return async (event: KitEvent) => {
+	return new ParseKitEvent((event => {
 		let json
 
 		try {
@@ -88,18 +89,40 @@ function zod({ body, query }) {
 			})
 		}
 
-		return new ParseKitEvent({ body: bodyResult.data, query: queryResult.data })
-	}
+		return {
+			body: bodyResult.data,
+			query: queryResult.data
+		}
+	}), zodToJsonSchema(body))
 }
 
 ```
 */
-export class ParseKitEvent<Body = never, Query = never> {
-	body: [Body] extends [never] ? undefined : Body
-	query: [Query] extends [never] ? undefined : Query
-	constructor({ body, query }: { body?: Body; query?: Query }) {
-		this.body = body! as any
-		this.query = query! as any
+export class ParseKitEvent<Result extends { body?: any, query?: any } | KitResponse<any,any> = {}> {
+	fn: (event: KitEvent) => MaybePromise<Result>
+	/** The `jsonSchema` is sent to frontend so they can validate. */
+	jsonSchema?: Record<string, any>
+
+	constructor(
+		fn: (event: KitEvent) => MaybePromise<Result>,
+		jsonSchema?: typeof this.jsonSchema
+	) {
+		this.fn = fn
+		this.jsonSchema = jsonSchema
+	}
+
+	extend<ExtendeResult extends { body?: any, query?: any } | KitResponse<any,any>>(
+		fn: (body: Exclude<Result, KitResponse<any,any>>['body'], query: Exclude<Result, KitResponse<any,any>>['query']) => MaybePromise<ExtendeResult>,
+		jsonSchema?: typeof this.jsonSchema
+	) {
+		type R = Extract<Result, KitResponse<any,any>>
+		return new ParseKitEvent<
+			ExtendeResult | R
+		>(async (event) => {
+			let result = await this.fn(event)
+			if (result instanceof KitResponse) return result
+			return fn(result.body!, result.query ?? event.query) as any
+		}, jsonSchema || this.jsonSchema)
 	}
 }
 

@@ -1,5 +1,5 @@
 import { BadRequest } from '../http'
-import { ParseKitEvent, type KitEvent } from '../kitevent'
+import { ParseKitEvent } from '../kitevent'
 
 /**
  * Parse incoming JSON/FormData from the body.
@@ -14,9 +14,7 @@ import { ParseKitEvent, type KitEvent } from '../kitevent'
  * 	}
  )
  */
-export async function parseFormData<T extends Record<string | number, unknown> | Array<unknown> | string | number>(
-	event: KitEvent
-) {
+export const parseFormData = new ParseKitEvent(async (event) => {
 	let formDataMime = 'multipart/form-data' as const
 	let contentType = event.request.headers.get('content-type')
 
@@ -31,9 +29,9 @@ export async function parseFormData<T extends Record<string | number, unknown> |
 		})
 	}
 
+	let formData: FormData
 	try {
-		const formData = await event.request.formData()
-		return new ParseKitEvent<FormData>({ body: formData })
+		formData = await event.request.formData()
 	} catch (error) {
 		return new BadRequest(
 			{
@@ -45,4 +43,6 @@ export async function parseFormData<T extends Record<string | number, unknown> |
 			{ cause: error }
 		)
 	}
-}
+
+	return { body: formData }
+})

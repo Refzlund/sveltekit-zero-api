@@ -1,6 +1,6 @@
 import { createEndpointProxy } from '../endpoint-proxy'
-import type { FixKeys, Simplify } from '../utils/types'
-import { BadRequest, KitResponse } from './http'
+import type { FixKeys, MaybePromise, Simplify } from '../utils/types'
+import { Accepted, BadRequest, KitResponse, NotFound, OK } from './http'
 import { ParseKitEvent, type KitEvent, type KitEventFn } from './kitevent'
 import type { EndpointProxy } from '../endpoint-proxy.type'
 import { Generic } from './generic'
@@ -10,21 +10,20 @@ import { parseResponse } from '../utils/parse-response'
 /**
  * The "result" of an `endpoint` paramters `callback`
  */
-export type EndpointCallbackResult = Record<PropertyKey, any> | KitResponse | ParseKitEvent
+export type EndpointCallbackResult = Record<PropertyKey, any> | KitResponse
 
 /**
  * A callback function for an `endpoint` parameter.
  */
-interface Callback<Event extends KitEvent<any, any>, Result extends EndpointCallbackResult> {
-	(event: Event): Promise<Result> | Result | void
-}
+export type Callback<Event extends KitEvent<any, any> = KitEvent<any,any>, Result extends EndpointCallbackResult = EndpointCallbackResult> = 
+	| ((event: Event) => Promise<Result> | Result | void)
 
 /**
  * The input for an endpoint.
  */
-type EndpointInput<Results extends EndpointCallbackResult> = Simplify<
-	FixKeys<Pick<Extract<Results, ParseKitEvent<any, any>>, 'body' | 'query'>>
->
+type EndpointInput<P extends ParseKitEvent> = P extends ParseKitEvent<infer T> ? Simplify<
+	FixKeys<Exclude<T, KitResponse<any, any>>>
+> : never
 
 type GenericCallback = Generic<
 	| ((body: any) => EndpointProxy<KitResponse<any, any, any>>)
@@ -46,108 +45,126 @@ export type EndpointFunction<
 	) => EndpointProxy<Result, never, true>
 }
 
-type T = 'A' extends 'A' | 'B' ? true : false
+type EndpointResponseResult<
+	Responses extends KitResponse,
+	P extends ParseKitEvent,
+	TGenericResult extends null | GenericCallback = null
+> = Promise<Responses> & {
+	use: null extends TGenericResult
+		? EndpointFunction<EndpointInput<P>, Responses | Extract<Awaited<ReturnType<P['fn']>>, KitResponse<any, any>>>
+		: TGenericResult extends Generic<infer Input>
+		? Input
+		: never
+}
 
 /**
  * The return-type for an `endpoint`.
  */
 export interface EndpointResponse<
-	Results extends EndpointCallbackResult,
-	TGenericResult extends null | GenericCallback = null
+	Results extends Callback | ParseKitEvent | GenericCallback
 > {
-	(event: KitEvent): Promise<Extract<Results, KitResponse>> & {
-		use: null extends TGenericResult
-			? EndpointFunction<EndpointInput<Results>, Extract<Results, KitResponse>>
-			: TGenericResult extends Generic<infer Input>
-			? Input
-			: never
-	}
+	(event: KitEvent): EndpointResponseResult<
+		Extract<ReturnType<Exclude<Results, ParseKitEvent | GenericCallback>>, KitResponse>,
+		Extract<Results, ParseKitEvent>,
+		// @ts-expect-error works
+		Results extends (event: KitEvent) => MaybePromise<GenericCallback> ? Awaited<ReturnType<Results>> : null
+	>
 }
 
 // * Note:  I believe there's a limit to the amount of parameters
 // *        so I'm limiting it to 7. Might be decreased in the future.
 // #region endpoint overloads
 
-function endpoint<B1 extends KitResponse, TGenericResult extends null | GenericCallback = null>(
+function endpoint<
+	B1 extends (event: KitEvent) => MaybePromise<GenericCallback | KitResponse>
+>(
 	/** When creating a `Generic` endpoint, the body WILL be parsed as JSON. */
-	callback1: ((event: KitEvent) => Promise<TGenericResult | B1> | TGenericResult | B1)
-): EndpointResponse<B1, TGenericResult>
+	callback1: B1
+): EndpointResponse<B1>
 
-function endpoint<B1 extends EndpointCallbackResult, B2 extends KitResponse>(
-	callback1: Callback<KitEvent, B1>,
-	callback2: Callback<KitEventFn<B1>, B2>
+function endpoint<
+	B1 extends Callback<KitEvent> | ParseKitEvent<{}>, 
+	B2 extends Callback<KitEventFn<B1>, KitResponse>
+>(
+	callback1: B1,
+	callback2: B2
 ): EndpointResponse<B1 | B2>
 
-function endpoint<B1 extends EndpointCallbackResult, B2 extends EndpointCallbackResult, B3 extends KitResponse>(
-	callback1: Callback<KitEvent, B1>,
-	callback2: Callback<KitEventFn<B1>, B2>,
-	callback3: Callback<KitEventFn<B1, B2>, B3>
+function endpoint<
+	B1 extends Callback<KitEvent> | ParseKitEvent<{}>,
+	B2 extends Callback<KitEventFn<B1>> | ParseKitEvent<{}>,
+	B3 extends Callback<KitEventFn<B1, B2>, KitResponse>
+>(
+	callback1: B1,
+	callback2: B2,
+	callback3: B3
 ): EndpointResponse<B1 | B2 | B3>
 
 function endpoint<
-	B1 extends EndpointCallbackResult,
-	B2 extends EndpointCallbackResult,
-	B3 extends EndpointCallbackResult,
-	B4 extends KitResponse
+	B1 extends Callback<KitEvent> | ParseKitEvent<{}>,
+	B2 extends Callback<KitEventFn<B1>> | ParseKitEvent<{}>,
+	B3 extends Callback<KitEventFn<B1, B2>> | ParseKitEvent<{}>,
+	B4 extends Callback<KitEventFn<B1, B2, B3>, KitResponse>
 >(
-	callback1: Callback<KitEvent, B1>,
-	callback2: Callback<KitEventFn<B1>, B2>,
-	callback3: Callback<KitEventFn<B1, B2>, B3>,
-	callback4: Callback<KitEventFn<B1, B2, B3>, B4>
+	callback1: B1,
+	callback2: B2,
+	callback3: B3,
+	callback4: B4
 ): EndpointResponse<B1 | B2 | B3 | B4>
 
 function endpoint<
-	B1 extends EndpointCallbackResult,
-	B2 extends EndpointCallbackResult,
-	B3 extends EndpointCallbackResult,
-	B4 extends EndpointCallbackResult,
-	B5 extends KitResponse
+	B1 extends Callback<KitEvent> | ParseKitEvent<{}>,
+	B2 extends Callback<KitEventFn<B1>> | ParseKitEvent<{}>,
+	B3 extends Callback<KitEventFn<B1, B2>> | ParseKitEvent<{}>,
+	B4 extends Callback<KitEventFn<B1, B2, B3>> | ParseKitEvent<{}>,
+	B5 extends Callback<KitEventFn<B1, B2, B3, B4>, KitResponse>
 >(
-	callback1: Callback<KitEvent, B1>,
-	callback2: Callback<KitEventFn<B1>, B2>,
-	callback3: Callback<KitEventFn<B1, B2>, B3>,
-	callback4: Callback<KitEventFn<B1, B2, B3>, B4>,
-	callback5: Callback<KitEventFn<B1, B2, B3, B4>, B5>
+	callback1: B1,
+	callback2: B2,
+	callback3: B3,
+	callback4: B4,
+	callback5: B5
 ): EndpointResponse<B1 | B2 | B3 | B4 | B5>
 
 function endpoint<
-	B1 extends EndpointCallbackResult,
-	B2 extends EndpointCallbackResult,
-	B3 extends EndpointCallbackResult,
-	B4 extends EndpointCallbackResult,
-	B5 extends EndpointCallbackResult,
-	B6 extends KitResponse
+	B1 extends Callback<KitEvent> | ParseKitEvent<{}>,
+	B2 extends Callback<KitEventFn<B1>> | ParseKitEvent<{}>,
+	B3 extends Callback<KitEventFn<B1, B2>> | ParseKitEvent<{}>,
+	B4 extends Callback<KitEventFn<B1, B2, B3>> | ParseKitEvent<{}>,
+	B5 extends Callback<KitEventFn<B1, B2, B3, B4>> | ParseKitEvent<{}>,
+	B6 extends Callback<KitEventFn<B1, B2, B3, B4, B5>, KitResponse>
 >(
-	callback1: Callback<KitEvent, B1>,
-	callback2: Callback<KitEventFn<B1>, B2>,
-	callback3: Callback<KitEventFn<B1, B2>, B3>,
-	callback4: Callback<KitEventFn<B1, B2, B3>, B4>,
-	callback5: Callback<KitEventFn<B1, B2, B3, B4>, B5>,
-	callback6: Callback<KitEventFn<B1, B2, B3, B4, B5>, B6>
+	callback1: B1,
+	callback2: B2,
+	callback3: B3,
+	callback4: B4,
+	callback5: B5,
+	callback6: B6
 ): EndpointResponse<B1 | B2 | B3 | B4 | B5 | B6>
 
+
 function endpoint<
-	B1 extends EndpointCallbackResult,
-	B2 extends EndpointCallbackResult,
-	B3 extends EndpointCallbackResult,
-	B4 extends EndpointCallbackResult,
-	B5 extends EndpointCallbackResult,
-	B6 extends EndpointCallbackResult,
-	B7 extends KitResponse
+	B1 extends Callback<KitEvent> | ParseKitEvent<{}>,
+	B2 extends Callback<KitEventFn<B1>> | ParseKitEvent<{}>,
+	B3 extends Callback<KitEventFn<B1, B2>> | ParseKitEvent<{}>,
+	B4 extends Callback<KitEventFn<B1, B2, B3>> | ParseKitEvent<{}>,
+	B5 extends Callback<KitEventFn<B1, B2, B3, B4>> | ParseKitEvent<{}>,
+	B6 extends Callback<KitEventFn<B1, B2, B3, B4, B5>> | ParseKitEvent<{}>,
+	B7 extends Callback<KitEventFn<B1, B2, B3, B4, B5, B6>, KitResponse>
 >(
-	callback1: Callback<KitEvent, B1>,
-	callback2: Callback<KitEventFn<B1>, B2>,
-	callback3: Callback<KitEventFn<B1, B2>, B3>,
-	callback4: Callback<KitEventFn<B1, B2, B3>, B4>,
-	callback5: Callback<KitEventFn<B1, B2, B3, B4>, B5>,
-	callback6: Callback<KitEventFn<B1, B2, B3, B4, B5>, B6>,
-	callback7: Callback<KitEventFn<B1, B2, B3, B4, B5, B6>, B7>
+	callback1: B1,
+	callback2: B2,
+	callback3: B3,
+	callback4: B4,
+	callback5: B5,
+	callback6: B6,
+	callback7: B7
 ): EndpointResponse<B1 | B2 | B3 | B4 | B5 | B6 | B7>
 
 // #endregion
 
-function endpoint<const Callbacks extends [...Callback<KitEvent, EndpointCallbackResult>[]]>(
-	...callbacks: Callbacks
+function endpoint(
+	...callbacks: (Callback<any, any> | ParseKitEvent<{body?,query?}>)[]
 ) {
 	return (event: KitEvent) => {
 		let useProxy: ReturnType<typeof createEndpointProxy> | null = null
@@ -157,9 +174,37 @@ function endpoint<const Callbacks extends [...Callback<KitEvent, EndpointCallbac
 
 			event.results ??= {}
 
+			if (event.request.headers.has('x-json-schema') ) {
+				let cb = callbacks.find(v => v instanceof ParseKitEvent)
+				if (cb && cb.jsonSchema)
+					throw new Accepted(cb.jsonSchema)
+				throw new NotFound({
+					code: 'no_json_schema',
+					error: 'No JSON Schema is associated with this endpoint.',
+				})
+			}
+
 			let result: EndpointCallbackResult | void
 			for (const callback of callbacks) {
 				try {
+					if(callback instanceof ParseKitEvent) {
+						let parse
+						try {
+							parse = await callback.fn(event)
+						} catch (error) {
+							if (error instanceof KitResponse || error instanceof Response)
+								return error
+							throw error
+						}
+						if(parse instanceof KitResponse || parse instanceof Response)
+							return parse
+
+						event.body = parse.body
+						event.query ??= {}
+						Object.assign(event.query, parse.query ?? {})
+						continue
+					}
+
 					result = await callback(event)
 					if (result instanceof Generic) {
 						try {
@@ -182,12 +227,6 @@ function endpoint<const Callbacks extends [...Callback<KitEvent, EndpointCallbac
 				}
 				if (result instanceof KitResponse) {
 					return result
-				}
-				if (result instanceof ParseKitEvent) {
-					event.body = result.body
-					event.query ??= {}
-					Object.assign(event.query, result.query ?? {})
-					continue
 				}
 
 				if (result) {

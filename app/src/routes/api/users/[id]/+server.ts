@@ -14,15 +14,13 @@ export const GET = endpoint(
 				error: 'User not found.'
 			})
 		}
-		event.request.signal.addEventListener('abort', () => console.log('Aborted'))
-		await new Promise((res) => setTimeout(res, 3000))
-		console.log(event.request.signal.aborted)
+		
 		return new OK(user)
 	}
 )
 
 export const PUT = endpoint(
-	parseJSON<Omit<User, 'id'>>,
+	parseJSON,
 	(event) => {
 		let user = users.find(user => user.id === event.params.id)
 		if(!user) {
@@ -44,7 +42,7 @@ export const PUT = endpoint(
 )
 
 export const PATCH = endpoint(
-	parseJSON<Omit<User, 'id'>>,
+	parseJSON,
 	(event) => {
 		let user = users.find(user => user.id === event.params.id)
 		if(!user) {

@@ -13,34 +13,41 @@ function zod<Body extends z.ZodTypeAny = never, Query extends z.ZodTypeAny = nev
 	body?: Body
 	query?: Query
 }) {
-	return async (event: KitEvent<any, any>) => {
-		let result = await parseJSON(event)
+	/*
+		return new ParseKitEvent((event) => {
+			...
+		
+			return {
+				body: ... as z.output<Body>,
+				query: ... as z.output<Query>
+			}
+		}, zodToJsonSchema(body))
+	*/
 
-		if (result instanceof KitResponse) return result
-
-		const bodyResult = body?.safeParse(result.body)
+	return parseJSON.extend(async (_body, _query) => {
+		const bodyResult = body?.safeParse(_body)
 		if (bodyResult !== undefined && !bodyResult.success) {
 			return new BadRequest({
 				code: 'invalid_body_schema',
-				error: 'Invalid body schema',
-				details: bodyResult.error
+				error: 'Invalid body',
+				details: bodyResult.error,
 			})
 		}
 
-		const queryResult = query?.safeParse(event.query)
+		const queryResult = query?.safeParse(_query)
 		if (queryResult !== undefined && !queryResult.success) {
 			return new BadRequest({
 				code: 'invalid_query_schema',
 				error: 'Invalid query schema',
-				details: queryResult.error
+				details: queryResult.error,
 			})
 		}
 
-		return new ParseKitEvent<z.output<Body>, z.output<Query>>({
-			body: bodyResult?.data,
-			query: queryResult?.data
-		})
-	}
+		return {
+			body: bodyResult?.data as z.output<Body>,
+			query: queryResult?.data as z.output<Query>,
+		}
+	})
 }
 
 test('Generic endpoint', async () => {
@@ -50,7 +57,7 @@ test('Generic endpoint', async () => {
 
 	const POST = endpoint(
 		(event) =>
-			new Generic(<const Body, const Opts extends { query: {} }>(body: Body, options?: Opts) =>
+			new Generic(<const Body, const Opts extends { query: {} } & RequestInit>(body: Body, options?: Opts) =>
 				Generic.endpoint(someEndpoint<Body, Opts['query']>(event))
 			)
 	)
@@ -60,6 +67,9 @@ test('Generic endpoint', async () => {
 		.$.OK((r) => r.body)
 
 	expect(r1).resolves.toEqual({ body: { name: 'bob' }, query: { test: 123 } })
+
+	let test: (v: 'bob') => void = () => {}
+	test((await r1)!.body.name) // type test
 })
 
 test('Simple endpoint', async () => {
@@ -119,7 +129,7 @@ test('endpoint: xhr-types', () => {
 
 	const POST = endpoint((event) => new OK({ value: '123' }))
 
-	let xhr = POST(new FakeKitEvent())
-		.use.xhr({})
+	// not available on server-side
+	let xhr = expect(() => POST(new FakeKitEvent()).use.xhr()).toThrow()
 	
 })

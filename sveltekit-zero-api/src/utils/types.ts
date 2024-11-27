@@ -36,3 +36,5 @@ export type MapDeepTo<T, U> = {
 		? Array<MapDeepTo<T[K][number], U>>
 		: NonNullable<U>
 } 
+
+export type MaybePromise<T> = T | Promise<T>

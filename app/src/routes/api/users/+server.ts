@@ -6,11 +6,12 @@ import { users, type User } from '.'
 
 
 export const GET = endpoint(
+	() => {},
 	() => new OK(users)
 )
 
 export const POST = endpoint(
-	parseJSON<Omit<User, 'id'>>,
+	parseJSON,
 	(event) => {
 		let { name, email, age, birth } = event.body
 		
