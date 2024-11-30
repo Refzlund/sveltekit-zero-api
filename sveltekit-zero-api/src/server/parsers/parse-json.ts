@@ -3,7 +3,9 @@ import { BadRequest } from '../http'
 import { ParseKitEvent } from '../kitevent'
 
 /**
- * Parse incoming JSON/FormData from the body.
+ * Parse incoming JSON/FormData from the request.body.  
+ * Parses date-strings to dates. For `FormData` it will also parse number-strings to numbers. 
+ * 
  * Returns BadRequest if it is not any of those content-type's.
  * 
  * @example
@@ -33,7 +35,9 @@ export const parseJSON = new ParseKitEvent(async (event) => {
 		})
 	}
 
+	let isFormData = false
 	if (contentType.includes('multipart/form-data')) {
+		isFormData = true
 		try {
 			const formData = await event.request.formData()
 			json = parseItems(formData) as T
@@ -54,6 +58,24 @@ export const parseJSON = new ParseKitEvent(async (event) => {
 				details: String(<any>error)
 			})
 		}
+	}
+
+	if(json) {
+		const numberRegex = /^[1-9][0-9]*(\.[0-9]+)?$/
+		function parser(item) {
+			if(typeof item !== 'object') {
+				try {
+					return isFormData && numberRegex.test(item) ? +item : new Date(item)
+				} catch (error) {
+					return item
+				}
+			}
+			for(const [key, value] of Object.entries(item)) {
+				item[key] = parser(value)
+			}
+			return item
+		}
+		json = parser(json)
 	}
 
 	return { body: json }

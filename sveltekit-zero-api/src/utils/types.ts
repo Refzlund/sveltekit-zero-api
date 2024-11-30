@@ -30,7 +30,7 @@ export type AwaitAll<T extends
 
 /** Takes all properties of T, and deeply ensure they become U */
 export type MapDeepTo<T, U> = {
-	[K in keyof T]-?: NonNullable<T[K]> extends Record<PropertyKey, any>
+	[K in keyof T]?: NonNullable<T[K]> extends Record<PropertyKey, any>
 		? MapDeepTo<T[K], U>
 		: T[K] extends any[]
 		? Array<MapDeepTo<T[K][number], U>>

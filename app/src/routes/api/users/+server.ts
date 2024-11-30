@@ -5,7 +5,6 @@ import { zod } from '$lib/zod'
 
 
 export const GET = endpoint(
-	() => {},
 	() => new OK(users)
 )
 
