@@ -23,8 +23,8 @@ export const GET = endpoint(
 export const PUT = endpoint(
 	zod({ body: User }),
 	(event) => {
-		let user = users.find(user => user.id === event.params.id)
-		if(!user) {
+		let index = users.findIndex(user => user.id === event.params.id)
+		if(index < 0) {
 			return new NotFound({ 
 				code: 'no_user',
 				error: 'User not found.'
@@ -33,7 +33,7 @@ export const PUT = endpoint(
 
 		let { name, email, age, birth } = event.body
 		
-		user = { 
+		users[index] = { 
 			id: event.params.id!,
 			name, email, age, birth
 		}
@@ -54,7 +54,7 @@ export const PATCH = endpoint(
 		}
 
 		let { name, email, age, birth } = event.body
-		
+
 		if(name) user.name = name
 		if(email) user.email = email
 		if(age) user.age = age

@@ -54,6 +54,9 @@ interface FormAPIError {
 
 type FormAPIAction = (node: HTMLInputElement) => void
 
+const dateRegex =
+	/(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))/
+
 type FormAPI<T extends Record<PropertyKey, any> = Record<PropertyKey, any>> = 
 	& typeof Form
 	& Writable<T> 
@@ -159,9 +162,13 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 		return parent
 	}
 
-	function nodeDate(v: { toString(): string }, type: 'date' | 'datetime' | 'time' | 'datetime-local') {
-		if(!(v instanceof Date))
-			return v.toString()
+	function nodeDate(v: { toString(): string, toISOString(): string }, type: 'date' | 'datetime' | 'time' | 'datetime-local') {
+		if(!(v instanceof Date)) {
+			if(typeof v === 'string' && dateRegex.test(v))
+				v = new Date(v)
+			else
+				return v.toString()
+		}
 		switch (type) {
 			case 'date': return v.toISOString().split('T')[0]
 			case 'datetime': return v.toISOString()
@@ -392,7 +399,7 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 				}
 				continue
 			}
-			data.append(key, val)
+			data.append(key, val instanceof Date ? val.toISOString() : val)
 		}
 
 		if ('onSubmit' in opts) {
