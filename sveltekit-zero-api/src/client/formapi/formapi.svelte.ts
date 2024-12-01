@@ -226,12 +226,12 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 				return node.type === 'checkbox' ? node.checked 
 					: node.type === 'file' ? node.files 
 					: node.type === 'radio' ? node.checked
-					: node.type === 'number' ? node.value ? parseFloat(node.value) : null
-					: node.type === 'range' ? node.value ? parseFloat(node.value) : null
-					: node.type === 'date' ? node.value ? new SvelteDate(node.value) : null
-					: node.type === 'time' ? node.value ? new SvelteDate(node.value) : null
-					: node.type === 'datetime' ? node.value ? new SvelteDate(node.value) : null
-					: node.type === 'datetime-local' ? node.value ? new SvelteDate(node.value) : null
+					: node.type === 'number' ? node.value ? parseFloat(node.value) : undefined
+					: node.type === 'range' ? node.value ? parseFloat(node.value) : undefined
+					: node.type === 'date' ? node.value ? new SvelteDate(node.value) : undefined
+					: node.type === 'time' ? node.value ? new SvelteDate(node.value) : undefined
+					: node.type === 'datetime' ? node.value ? new SvelteDate(node.value) : undefined
+					: node.type === 'datetime-local' ? node.value ? new SvelteDate(node.value) : undefined
 					: node.value !== null && node.value !== '' ? node.value 
 					: undefined
 			}
@@ -300,6 +300,12 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 			},
 			{ capture: true }
 		)
+
+		const getValidation = () => {
+			getValidationSchema()
+			form.removeEventListener('focusin', getValidation)
+		}
+		form.addEventListener('focusin', getValidation)
 
 		let inputs = node.querySelectorAll('input[name]')
 
@@ -441,30 +447,70 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 		currentRequest = undefined
 	}
 
-	/** return `true` if valid (or no validation schema), `false` if invalid */
-	async function validate(path: PropertyKey | PropertyKey[] = []) {
-		if(opts.validation === false)
-			return true
+	let validationSchemaPromise: Promise<any> | undefined
+	async function getValidationSchema() {
+		if (validationSchemaPromise)
+			return await validationSchemaPromise
 
 		let method = getMethod()
 
-		let schema = (opts.validation ?? validationSchemas[method]) as Record<any,any> | false
+		let schema = (opts.validation ?? validationSchemas[method]) as
+			| Record<any, any>
+			| false
 
 		// missing validation schema
 		if (schema === undefined) {
 			const opts = { headers: { 'x-json-schema': 'true' } }
 			let args: [any, any, any] =
-				method === 'POST' ? [undefined, opts,,] : ['-', undefined, opts]
-			await apis[method]!(...args).success(({ body }) => {
-				// validationSchemas[method] = ajv.compile(body)
-				// schema = validationSchemas[method]
-			}).clientError(({ body }) => {
-				if(body.code === 'no_json_schema') {
+				method === 'POST' ? [undefined, opts, ,] : ['-', undefined, opts]
+			let [req] = apis[method]!(...args)
+				.any(() => validationSchemaPromise = undefined)
+				.clientError(({ body }) => {
+					if (body.code === 'no_json_schema') {
+						validationSchemas[method] = false
+						schema = false
+					}
+				})
+				.$.success(({ body }) => {
+					/*
+						I'm thinking you can define logic as a (svelte context) e.g. `setContext` in 
+						routes root `+layout.svelte`. That
+							1. parses JSONSchema to desired validator format
+							2. validates based on a specific path and returns 
+								{ code: string, error: string } on error and { value: any } on success
+								
+						I could write the logic for ex. zod, so it becomes easier to adapt.
+
+						formAPIValidator might also just set a variable somewhere,
+						(instead of using svelte context) — so it could be provided in ex. `hooks.client.ts`
+
+						Note: This way, the content from the frontend doesn't strictly need to be in a JSON schema format.
+						However, a JSON Schema format is standardized, and therefore recommended, if you want others to make
+						use of the validation schema. 
+
+						/// root +layout.svelte
+						formAPIValidator(
+							(jsonSchema) => createValidatorFromSchema(jsonSchema),
+							(path: string[], validator) => validatePath(validator, path)
+						)
+					*/
+					// TODO - (disabled for now, ergo false) How do we validate? BYO (bring your own)
 					validationSchemas[method] = false
-					schema = false
-				}
-			})
+					return validationSchemas[method]
+				})
+			validationSchemaPromise = req
+			schema = await validationSchemaPromise
 		}
+		return schema
+	}
+
+	/** return `true` if valid (or no validation schema), `false` if invalid */
+	async function validate(path: PropertyKey | PropertyKey[] = []) {
+		if(opts.validation === false)
+			return true
+
+		const schema = await getValidationSchema()
+
 		// cannot fetch validation schema
 		if (schema === false || schema === undefined) {
 			return true
