@@ -12,4 +12,5 @@ export type ServerType<T extends { GET?; POST?; PUT?; PATCH?; DELETE?; HEAD?; OP
 	SSE(options?: R): K
 } : {} : never)
 
-export { createAPIProxy } from './api-proxy'
+
+export { createAPIProxy, url } from './api-proxy'

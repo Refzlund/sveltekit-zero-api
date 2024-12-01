@@ -21,6 +21,13 @@ export class APIProxy {
 	}
 }
 
+const urlSymbol = Symbol('sveltekit-zero-api.url')
+
+
+export function url(path: APIProxy) {
+	return path[urlSymbol]()
+}
+
 export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 	return proxyCrawl({
 		getPrototypeOf() {
@@ -30,6 +37,7 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 			if (state.key === 'toString' || state.key === Symbol.toPrimitive) {
 				return 'APIProxy'
 			}
+
 
 			let key = state.key.toString()
 			if (key.endsWith('$')) {
@@ -43,7 +51,9 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 				if (key.endsWith('$$')) {
 					// "rest$$": (...rest: string[])
 					if (state.args[0] === undefined) {
-						throw new Error('Cannot slug the lack of rest parameters', { cause: state })
+						throw new Error('Cannot slug the lack of rest parameters', {
+							cause: state,
+						})
 					}
 					return state.crawl(state.args)
 				}
@@ -63,8 +73,8 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 									result,
 									argCount: state.args.length,
 									slug: key,
-									expected: Array.from(key.matchAll(complexSlug)).length
-								}
+									expected: Array.from(key.matchAll(complexSlug)).length,
+								},
 							})
 						}
 
@@ -84,6 +94,36 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 				return state.crawl(state.args[0])
 			}
 
+
+			// * -- Request Information --
+
+			const xhr = key === 'xhr' ? new XMLHttpRequest() : undefined
+			const route = xhr
+				? state.keys.slice(0, -1).join('/')
+				: state.keys.join('/')
+
+			/** Is method (endpoints) or function (funcitons) */
+			let isMethod = xhr || methods.includes(key)
+
+			let requestInit: RequestInit & { query?: Record<string, any> } = isMethod
+				? state.args[1] || {}
+				: {}
+
+			let searchParams: URLSearchParams | undefined | false =
+				'query' in requestInit && new URLSearchParams(requestInit.query)
+
+			const url =
+				options.url?.toString() ||
+				'/' + route + (searchParams ? '?' + searchParams.toString() : '')
+
+			// * ---------
+
+
+			if (state.key === urlSymbol) {
+				return url
+			}
+
+
 			if (!browser) {
 				// Only browser/client can make fetch requests.
 				// On the server utilize the `.use` functionality.
@@ -92,33 +132,26 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 
 			// * Both functions and normal API calls requests a response.
 
-			const xhr = key === 'xhr' ? new XMLHttpRequest() : undefined
-			const route = xhr ? state.keys.slice(0, -1).join('/') : state.keys.join('/')
-
-			/** Is method (endpoints) or function (funcitons) */
-			let isMethod = xhr || methods.includes(key)
-			
-			let requestInit: RequestInit & { query?: Record<string, any> } = isMethod
-				? state.args[1] || {}
-				: {}
-			
-			let searchParams: URLSearchParams | undefined | false =
-				'query' in requestInit && new URLSearchParams(requestInit.query)			
-
-			const url =
-				options.url?.toString() ||
-				'/' + route + (searchParams ? '?' + searchParams.toString() : '')
-
-			if(key === 'SSE') {
+			if (key === 'SSE') {
 				return SSE(url)
 			}
 
-			let method = isMethod ? (xhr ? state.keys[state.keys.length - 1].toString() : key) : 'PATCH' // functions always use PATCH
+			let method = isMethod
+				? xhr
+					? state.keys[state.keys.length - 1].toString()
+					: key
+				: 'PATCH' // functions always use PATCH
 			if (!methods.includes(method)) {
 				throw new Error('Invalid method: ' + method, { cause: state })
 			}
 
-			type BodyType = null | undefined | ReadableStream | FormData | object | string
+			type BodyType =
+				| null
+				| undefined
+				| ReadableStream
+				| FormData
+				| object
+				| string
 			let body: BodyType | Array<unknown> = isMethod
 				? state.args[0]
 				: state.args.length === 1
@@ -158,8 +191,9 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 			}
 
 			const abortController = xhr ? undefined : new AbortController()
-			const abort = () => xhr ? xhr.abort() : abortController!.abort('Aborted request.')
-			
+			const abort = () =>
+				xhr ? xhr.abort() : abortController!.abort('Aborted request.')
+
 			// ('query' in requestInit ? '?' + new URLSearchParams(requestInit.query).toString() : '')
 			let response =
 				!xhr &&
@@ -167,17 +201,17 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 					url,
 					// avoid making the "preflight http request", which will make it twice as fast
 					method === 'GET'
-						? abortController ? { signal: abortController.signal } : undefined
+						? abortController
+							? { signal: abortController.signal }
+							: undefined
 						: {
 								...requestInit,
 								body: (body === null ? undefined : body) as BodyInit,
 								headers,
 								method,
-								signal: abortController ? abortController.signal : undefined
+								signal: abortController ? abortController.signal : undefined,
 						  }
 				)
-
-			
 
 			if (isMethod && xhr) {
 				// Use XHR
@@ -197,10 +231,10 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 					}
 
 					let aborted = false
-					xhr.addEventListener('abort', () => aborted = true)
+					xhr.addEventListener('abort', () => (aborted = true))
 
 					function onloadend() {
-						if(aborted) {
+						if (aborted) {
 							throw 'Aborted request.'
 						}
 
@@ -217,11 +251,10 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 							})
 
 						xhrResolve(
-							
 							new Response(xhr!.response, {
 								status: xhr!.status,
 								statusText: xhr!.statusText,
-								headers
+								headers,
 							})
 						)
 					}
@@ -232,7 +265,8 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 				}, 0)
 			}
 
-			if (response === false) throw new Error('Response was not created correctly') // type narrowing
+			if (response === false)
+				throw new Error('Response was not created correctly') // type narrowing
 
 			response = response
 				.catch(async (res) => {

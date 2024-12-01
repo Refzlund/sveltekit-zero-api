@@ -2,6 +2,7 @@
 
 	import api from '$api'
 	import { onMount } from 'svelte'
+	import { url } from 'sveltekit-zero-api/client'
 
 	// api.fns.someFunction().catch(res => console.log('caught', res.body))
 
@@ -21,25 +22,27 @@
 		}
 	})
 
-	let sse = api.fns.SSE()
+	api.fns.SSE()
 		.on.event1(e => message3 += e.data + ' ')
 		.on.event2(e => message3 += `<u>${e.data2}</u> `)
-
-	setTimeout(() => {
-		sse.close()
-	}, 2000);
 
 </script>
 <!---------------------------------------------------->
 
-<div>
-	{message}
-</div>
-<div>
-	{message2}
-</div>
-<div>
-	{@html message3}
+<div class='flex items-center gap-4'>
+	<img class='rounded hover:scale-110 duration-100' src={url(api.image.id$('cute.webp'))} alt='Shiba + Giraffe' width='200px'>
+
+	<div>
+		<div>
+			{message}
+		</div>
+		<div>
+			{message2}
+		</div>
+		<div>
+			{@html message3}
+		</div>
+	</div>
 </div>
 
 <!---------------------------------------------------->

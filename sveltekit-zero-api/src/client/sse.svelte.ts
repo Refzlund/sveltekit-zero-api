@@ -1,6 +1,3 @@
-import { proxyCrawl } from '../utils/proxy-crawl'
-import { APIProxyOptions } from './api-proxy'
-
 export function SSE(url: string) {
 
 	let evtSource = new EventSource(url)
