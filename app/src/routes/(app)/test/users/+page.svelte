@@ -15,13 +15,13 @@
 
 <select bind:value={id} class='bg-gray-950 border-gray-800 rounded-md mb-4 text-primary'>
 	<option value={undefined}>None</option>
-	{#await api.users.GET().$.OK(({body}) => body) then [users]}
+	{#await api.users.GET().$.OK(({body}) => body).serverError(({body}) => body) then [users, error]}
 		{#if users}
 			{#each users as user}
 				<option value={user.id}>{user.name}</option>
 			{/each}
-		{:else}
-			Could not load users
+		{:else if error}
+			Could not load users: {JSON.stringify(error)}
 		{/if}
 	{/await}
 </select>
@@ -32,7 +32,7 @@
 
 	<label>
 		Name
-		<input name='name'>
+		<input required name='name'>
 		<error hidden={!Form.errors.name?.code}>{Form.errors.name?.error}</error>
 	</label>
 	<label>

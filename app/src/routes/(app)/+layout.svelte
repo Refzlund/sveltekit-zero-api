@@ -135,6 +135,18 @@
 			@apply mt-1;
 		}
 
+		:global(label:has(> input)) {
+			@apply relative;
+		}
+
+		:global(label:has(> input[required])::after) {
+			content: '*';
+			right: 0;
+			top: 0;
+			position: absolute;
+			transform: scale(.9) translateX(-.4rem);
+		}
+
 		:global(input), :global(select) {
 			 
 			@apply block bg-gray-950 rounded-lg border border-gray-800 ring-transparent;
