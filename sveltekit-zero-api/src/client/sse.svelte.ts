@@ -54,7 +54,7 @@ export function SSE(url: string) {
 							evtSource.addEventListener('error', cb)
 						}
 					case 'close':
-						return close()
+						return close
 					default:
 						return target[key]
 				}

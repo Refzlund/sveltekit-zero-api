@@ -21,9 +21,13 @@
 		}
 	})
 
-	api.fns.SSE()
+	let sse = api.fns.SSE()
 		.on.event1(e => message3 += e.data + ' ')
 		.on.event2(e => message3 += `<u>${e.data2}</u> `)
+
+	setTimeout(() => {
+		sse.close()
+	}, 2000);
 
 </script>
 <!---------------------------------------------------->
