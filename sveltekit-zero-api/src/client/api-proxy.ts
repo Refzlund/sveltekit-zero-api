@@ -152,11 +152,10 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 				| FormData
 				| object
 				| string
-			let body: BodyType | Array<unknown> = isMethod
-				? state.args[0]
-				: state.args.length === 1
-				? state.args[0]
-				: state.args
+			
+			let body: BodyType | Array<unknown> = 
+				isMethod ? state.args[0] 
+				: state.args[0] instanceof FormData || state.args[0] instanceof ReadableStream ? state.args[0] : state.args
 
 			let headers = new Headers(requestInit?.headers)
 			headers.append('x-requested-with', 'sveltekit-zero-api')

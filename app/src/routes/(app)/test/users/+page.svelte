@@ -3,28 +3,46 @@
 	import { formAPI } from 'sveltekit-zero-api/formapi.svelte'
 	import type { User } from '../../../api/users'
 	import type z from 'zod'
+	import { statefulAPI } from 'sveltekit-zero-api/client'
+	import { floatingUI } from '$lib/floating-ui.svelte'
 
 	let Form = formAPI<z.output<typeof User>>(api.users)
 
 	let id = $state() as string | undefined
 
-	$inspect($Form)
+	let search = statefulAPI(
+		(name: string) => api.users.search(name),
+		{ warmup: 400 }
+	)
+
+	const searchFloat = floatingUI({})
 
 </script>
 <!---------------------------------------------------->
 
-<select bind:value={id} class='bg-gray-950 border-gray-800 rounded-md mb-4 text-primary'>
-	<option value={undefined}>None</option>
-	{#await api.users.GET().$.OK(({body}) => body).serverError(({body}) => body) then [users, error]}
-		{#if users}
-			{#each users as user}
-				<option value={user.id}>{user.name}</option>
+<div class='flex gap-2 items-center mb-8'>
+	<input use:searchFloat.ref bind:value={search.args[0]} class='!m-0' type='search' placeholder="Search users">
+	{#if search.args[0] && search.result}
+		<div use:searchFloat class='bg-gray-950 z-50 rounded flex flex-col gap-2 p-1'>
+			{#each search.result as user}
+				<button class='!bg-transparent !hover:bg-gray-800 w-full' onclick={() => { id = user.id; search.result = undefined; search.args[0] = '' }}>{user.name}</button>
 			{/each}
-		{:else if error}
-			Could not load users: {JSON.stringify(error)}
-		{/if}
-	{/await}
-</select>
+		</div>
+	{/if}
+
+	<select bind:value={id} class='bg-gray-950 border-gray-800 rounded-md m-0 text-primary'>
+		<option value={undefined}>None</option>
+		{#await api.users.GET().$.OK(({body}) => body).serverError(({body}) => body) then [users, error]}
+			{#if users}
+				{#each users as user}
+					<option value={user.id}>{user.name}</option>
+				{/each}
+			{:else if error}
+				Could not load users: {JSON.stringify(error)}
+			{/if}
+		{/await}
+	</select>
+</div>
 
 <h3 class='text-xl md-2'>{id ? 'Updating ' + $Form.name : 'Create new user'}</h3>
 

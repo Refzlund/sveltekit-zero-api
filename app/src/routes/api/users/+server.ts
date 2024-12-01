@@ -1,5 +1,5 @@
 import { Created, OK } from 'sveltekit-zero-api/http'
-import { endpoint } from 'sveltekit-zero-api/server'
+import { endpoint, functions, type KitEvent } from 'sveltekit-zero-api/server'
 import { User, users } from '.'
 import { zod } from '$lib/zod'
 
@@ -18,3 +18,9 @@ export const POST = endpoint(
 		return new Created({ message: 'User created.' })
 	}
 )
+
+export const PATCH = functions({
+	search: (event: KitEvent, name: string) => {
+		return new OK(users.filter(user => user.name.includes(name)))
+	}
+})

@@ -14,3 +14,4 @@ export type ServerType<T extends { GET?; POST?; PUT?; PATCH?; DELETE?; HEAD?; OP
 
 
 export { createAPIProxy, url } from './api-proxy'
+export { statefulAPI } from './statefulapi.svelte'
