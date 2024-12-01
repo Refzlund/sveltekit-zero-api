@@ -12,3 +12,4 @@ export { parseFormData } from './parsers/parse-formdata'
 export { type KitEvent, FakeKitEvent, ParseKitEvent } from './kitevent'
 
 export { SSE } from './sse'
+export { stream } from './stream'

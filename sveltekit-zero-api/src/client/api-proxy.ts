@@ -3,8 +3,9 @@ import { createEndpointProxy } from '../endpoint-proxy'
 import { parseResponse } from '../utils/parse-response'
 import { proxyCrawl } from '../utils/proxy-crawl'
 import { complexSlug } from '../utils/slugs'
+import { SSE } from './sse.svelte'
 
-interface APIProxyOptions {
+export interface APIProxyOptions {
 	/**
 	 * Where to fetch from. When `undefined`; the current site.
 	 * @default undefined
@@ -92,11 +93,25 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 			// * Both functions and normal API calls requests a response.
 
 			const xhr = key === 'xhr' ? new XMLHttpRequest() : undefined
-
-			let searchParams: URLSearchParams | undefined | false
 			const route = xhr ? state.keys.slice(0, -1).join('/') : state.keys.join('/')
 
+			/** Is method (endpoints) or function (funcitons) */
 			let isMethod = xhr || methods.includes(key)
+			
+			let requestInit: RequestInit & { query?: Record<string, any> } = isMethod
+				? state.args[1] || {}
+				: {}
+			
+			let searchParams: URLSearchParams | undefined | false =
+				'query' in requestInit && new URLSearchParams(requestInit.query)			
+
+			const url =
+				options.url?.toString() ||
+				'/' + route + (searchParams ? '?' + searchParams.toString() : '')
+
+			if(key === 'SSE') {
+				return SSE(url)
+			}
 
 			let method = isMethod ? (xhr ? state.keys[state.keys.length - 1].toString() : key) : 'PATCH' // functions always use PATCH
 			if (!methods.includes(method)) {
@@ -109,8 +124,6 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 				: state.args.length === 1
 				? state.args[0]
 				: state.args
-
-			let requestInit: RequestInit & { query?: Record<string, any> } = isMethod ? state.args[1] || {} : {}
 
 			let headers = new Headers(requestInit?.headers)
 			headers.append('x-requested-with', 'sveltekit-zero-api')
@@ -140,14 +153,9 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 				}
 			}
 
-			if (isMethod) {
-				searchParams = 'query' in requestInit && new URLSearchParams(requestInit.query)
-			} else {
+			if (!isMethod) {
 				headers.append('x-function', key)
 			}
-
-			const url =
-				options.url?.toString() || '/' + route + (searchParams ? '?' + searchParams.toString() : '')
 
 			const abortController = xhr ? undefined : new AbortController()
 			const abort = () => xhr ? xhr.abort() : abortController!.abort('Aborted request.')

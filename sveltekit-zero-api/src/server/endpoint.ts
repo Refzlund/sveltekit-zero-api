@@ -54,11 +54,14 @@ export type KitSSE<T extends { event: string, data: any }> = {
 	on: {
 		[Key in T as Key['event']]: (cb: (event: Key['data']) => void) => KitSSE<T>
 	}
-	onMessage(cb: (event: MessageEvent) => void): KitSSE<T>
 	onClose(cb: () => void): KitSSE<T>
 	onOpen(cb: (event: Event) => void): KitSSE<T>
+	/** When connection to EventSource fails to be opened */
 	onError(cb: (event: Event) => void): KitSSE<T>
-	close(): KitSSE<T>
+	isClosed: boolean
+	isOpen: boolean
+	isConnecting: boolean
+	close(): void
 }
 
 type EndpointResponseResult<
@@ -205,6 +208,17 @@ function endpoint(
 			let result: EndpointCallbackResult | void
 			for (const callback of callbacks) {
 				try {
+					if(callback instanceof SSE) {
+						const stream = callback.createStream(event)
+						throw new OK(stream, {
+							headers: {
+								'Content-Type': 'text/event-stream',
+								'Cache-Control': 'no-cache, no-transform',
+								Connection: 'keep-alive'
+							}
+						})
+					}
+
 					if(callback instanceof ParseKitEvent) {
 						let parse
 						try {

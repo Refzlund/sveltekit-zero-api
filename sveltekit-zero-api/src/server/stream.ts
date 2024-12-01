@@ -28,7 +28,7 @@ export function stream<T>(fn: () => Generator<T> | AsyncGenerator<T>) {
 					}
 				}
 			}
-		}
+		},
 	})
 
 	return stream

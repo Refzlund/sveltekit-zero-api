@@ -1,6 +1,6 @@
 import { InternalServerError, OK } from 'sveltekit-zero-api/http'
 import { endpoint, functions, SSE, type KitEvent } from 'sveltekit-zero-api/server'
-import { stream } from 'sveltekit-zero-api/stream'
+import { stream } from 'sveltekit-zero-api/server'
 
 function someFunction(event: KitEvent, n: number = Math.random()) {
 	if (n > 0.5) {
@@ -31,7 +31,7 @@ export const PUT = endpoint(
 
 export const GET = endpoint(
 	new SSE(async function*(event) {
-		let message = 'I want to tell the world, that I love my wife, my Shiba-boo'.split(' ')
+		let message = 'I want to tell the world, that I love my wife, my Shiba-boo.'.split(' ')
 		for(let item of message) {
 			if(Math.random() > 0.5) {
 				yield SSE.event('event1', { data: item })
