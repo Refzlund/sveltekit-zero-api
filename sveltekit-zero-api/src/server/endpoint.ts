@@ -6,6 +6,7 @@ import type { EndpointProxy } from '../endpoint-proxy.type'
 import { Generic } from './generic'
 import { convertResponse } from './convert-response'
 import { parseResponse } from '../utils/parse-response'
+import { SSE } from './sse'
 
 /**
  * The "result" of an `endpoint` paramters `callback`
@@ -38,20 +39,37 @@ export type EndpointFunction<
 		query?: any
 	} = any,
 	Result extends KitResponse<any, any> = KitResponse<any, any>
-> = ((body?: Input['body'], options?: { query?: Input['query'] } & RequestInit) => EndpointProxy<Result>) & {
+> = ((body?: Input['body'], options?: { query?: Input['query'] } & Omit<RequestInit, 'body'>) => EndpointProxy<Result>) & {
 	xhr: (
 		body?: Input['body'],
-		options?: { query?: Input['query'] } & RequestInit
+		options?: { query?: Input['query'] } & Omit<RequestInit, 'body'>
 	) => EndpointProxy<Result, never, true>
+}
+
+export type EndpointSSE<T extends SSE> = (
+	options?: { query?: any } & Omit<RequestInit, 'body'>
+) => T extends SSE<infer _, infer K> ? KitSSE<K> : never
+
+export type KitSSE<T extends { event: string, data: any }> = {
+	on: {
+		[Key in T as Key['event']]: (cb: (event: Key['data']) => void) => KitSSE<T>
+	}
+	onMessage(cb: (event: MessageEvent) => void): KitSSE<T>
+	onClose(cb: () => void): KitSSE<T>
+	onOpen(cb: (event: Event) => void): KitSSE<T>
+	onError(cb: (event: Event) => void): KitSSE<T>
+	close(): KitSSE<T>
 }
 
 type EndpointResponseResult<
 	Responses extends KitResponse,
 	P extends ParseKitEvent,
+	Tsse extends SSE,
 	TGenericResult extends null | GenericCallback = null
 > = Promise<Responses> & {
 	use: null extends TGenericResult
-		? EndpointFunction<EndpointInput<P>, Responses | Extract<Awaited<ReturnType<P['fn']>>, KitResponse<any, any>>>
+		? [Tsse] extends [never] ? EndpointFunction<EndpointInput<P>, Responses | Extract<Awaited<ReturnType<P['fn']>>, KitResponse<any, any>>>
+		: EndpointSSE<Tsse>
 		: TGenericResult extends Generic<infer Input>
 		? Input
 		: never
@@ -61,11 +79,12 @@ type EndpointResponseResult<
  * The return-type for an `endpoint`.
  */
 export interface EndpointResponse<
-	Results extends Callback | ParseKitEvent | GenericCallback
+	Results extends Callback | ParseKitEvent | GenericCallback | SSE
 > {
 	(event: KitEvent): EndpointResponseResult<
-		Extract<ReturnType<Exclude<Results, ParseKitEvent | GenericCallback>>, KitResponse>,
+		Extract<ReturnType<Exclude<Results, ParseKitEvent | GenericCallback | SSE>>, KitResponse>,
 		Extract<Results, ParseKitEvent>,
+		Extract<Results, SSE>,
 		// @ts-expect-error works
 		Results extends (event: KitEvent) => MaybePromise<GenericCallback> ? Awaited<ReturnType<Results>> : null
 	>
@@ -76,7 +95,7 @@ export interface EndpointResponse<
 // #region endpoint overloads
 
 function endpoint<
-	B1 extends (event: KitEvent) => MaybePromise<GenericCallback | KitResponse>
+	B1 extends ((event: KitEvent) => MaybePromise<GenericCallback | KitResponse>) | SSE<KitEvent, any>
 >(
 	/** When creating a `Generic` endpoint, the body WILL be parsed as JSON. */
 	callback1: B1
@@ -84,7 +103,7 @@ function endpoint<
 
 function endpoint<
 	B1 extends Callback<KitEvent> | ParseKitEvent<{}>, 
-	B2 extends Callback<KitEventFn<B1>, KitResponse>
+	B2 extends Callback<KitEventFn<B1>, KitResponse> | SSE<KitEvent, any>
 >(
 	callback1: B1,
 	callback2: B2
@@ -93,7 +112,7 @@ function endpoint<
 function endpoint<
 	B1 extends Callback<KitEvent> | ParseKitEvent<{}>,
 	B2 extends Callback<KitEventFn<B1>> | ParseKitEvent<{}>,
-	B3 extends Callback<KitEventFn<B1, B2>, KitResponse>
+	B3 extends Callback<KitEventFn<B1, B2>, KitResponse> | SSE<KitEvent, any>
 >(
 	callback1: B1,
 	callback2: B2,
@@ -104,7 +123,7 @@ function endpoint<
 	B1 extends Callback<KitEvent> | ParseKitEvent<{}>,
 	B2 extends Callback<KitEventFn<B1>> | ParseKitEvent<{}>,
 	B3 extends Callback<KitEventFn<B1, B2>> | ParseKitEvent<{}>,
-	B4 extends Callback<KitEventFn<B1, B2, B3>, KitResponse>
+	B4 extends Callback<KitEventFn<B1, B2, B3>, KitResponse> | SSE<KitEvent, any>
 >(
 	callback1: B1,
 	callback2: B2,
@@ -117,7 +136,7 @@ function endpoint<
 	B2 extends Callback<KitEventFn<B1>> | ParseKitEvent<{}>,
 	B3 extends Callback<KitEventFn<B1, B2>> | ParseKitEvent<{}>,
 	B4 extends Callback<KitEventFn<B1, B2, B3>> | ParseKitEvent<{}>,
-	B5 extends Callback<KitEventFn<B1, B2, B3, B4>, KitResponse>
+	B5 extends Callback<KitEventFn<B1, B2, B3, B4>, KitResponse> | SSE<KitEvent, any>
 >(
 	callback1: B1,
 	callback2: B2,
@@ -132,7 +151,7 @@ function endpoint<
 	B3 extends Callback<KitEventFn<B1, B2>> | ParseKitEvent<{}>,
 	B4 extends Callback<KitEventFn<B1, B2, B3>> | ParseKitEvent<{}>,
 	B5 extends Callback<KitEventFn<B1, B2, B3, B4>> | ParseKitEvent<{}>,
-	B6 extends Callback<KitEventFn<B1, B2, B3, B4, B5>, KitResponse>
+	B6 extends Callback<KitEventFn<B1, B2, B3, B4, B5>, KitResponse> | SSE<KitEvent, any>
 >(
 	callback1: B1,
 	callback2: B2,
@@ -142,7 +161,6 @@ function endpoint<
 	callback6: B6
 ): EndpointResponse<B1 | B2 | B3 | B4 | B5 | B6>
 
-
 function endpoint<
 	B1 extends Callback<KitEvent> | ParseKitEvent<{}>,
 	B2 extends Callback<KitEventFn<B1>> | ParseKitEvent<{}>,
@@ -150,7 +168,7 @@ function endpoint<
 	B4 extends Callback<KitEventFn<B1, B2, B3>> | ParseKitEvent<{}>,
 	B5 extends Callback<KitEventFn<B1, B2, B3, B4>> | ParseKitEvent<{}>,
 	B6 extends Callback<KitEventFn<B1, B2, B3, B4, B5>> | ParseKitEvent<{}>,
-	B7 extends Callback<KitEventFn<B1, B2, B3, B4, B5, B6>, KitResponse>
+	B7 extends Callback<KitEventFn<B1, B2, B3, B4, B5, B6>, KitResponse> | SSE<KitEvent, any>
 >(
 	callback1: B1,
 	callback2: B2,

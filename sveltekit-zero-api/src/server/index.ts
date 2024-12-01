@@ -10,3 +10,5 @@ export { parseJSON } from './parsers/parse-json'
 export { parseFormData } from './parsers/parse-formdata'
 
 export { type KitEvent, FakeKitEvent, ParseKitEvent } from './kitevent'
+
+export { SSE } from './sse'
