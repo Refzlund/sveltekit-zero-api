@@ -22,8 +22,8 @@ export function SSE(url: string) {
 		state.isConnecting = false
 		state.isOpen = false
 		state.isClosed = true
-		evtSource = null as any
 		evtSource.dispatchEvent(new CustomEvent('close'))
+		evtSource = null as any
 	}
 
 	let state = $state({
