@@ -2,8 +2,8 @@ import { InternalServerError, OK } from 'sveltekit-zero-api/http'
 import { functions, type KitEvent } from 'sveltekit-zero-api/server'
 import { stream } from 'sveltekit-zero-api/stream'
 
-function someFunction() {
-	if (Math.random() > 0.5) {
+function someFunction(event: KitEvent, n: number = Math.random()) {
+	if (n > 0.5) {
 		throw new InternalServerError({
 			code: 'unlucky_call',
 			error: 'Unlucky'
