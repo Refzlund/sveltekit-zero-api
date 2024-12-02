@@ -19,8 +19,10 @@ export type IsUnknown<T> = IsAny<T> extends never ? (unknown extends T ? true : 
 
 /** Turn any type into a promise, if not already */
 export type Promisify<T, Catch = never> = Omit<T extends Promise<infer U> ? T : Promise<T>, 'catch'> & {
-	catch: <R>(onrejected: (error: [Catch] extends [never] ? unknown : Catch) => R) => Promisify<Awaited<T> | R>
+	catch: <R = never>(onrejected: (error: [Catch] extends [never] ? unknown : Catch) => R | PromiseLike<R>) => Promise<Awaited<T> | R>
 }
+
+type T = Simplify<Promise<123>>['catch']
 
 export type AwaitAll<T extends 
 	| (Promise<unknown> | unknown)[]

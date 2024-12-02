@@ -9,7 +9,7 @@ type StatefulAPI = {
 }
 
 export function statefulAPI<Args extends any[], Result>(
-	cb: (...args: Args) => Promise<Result> | Promisify<Result>,
+	cb: (...args: Args) => Promise<Result> | Result,
 	options: StatefulAPI
 ) {
 	const { cooldown, warmup } = options as { cooldown?: number, warmup?: number}

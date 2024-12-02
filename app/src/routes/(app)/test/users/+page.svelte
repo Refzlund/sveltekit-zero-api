@@ -21,11 +21,11 @@
 <!---------------------------------------------------->
 
 <div class='flex gap-2 items-center mb-8'>
-	<input use:searchFloat.ref bind:value={search.args[0]} class='!m-0' type='search' placeholder="Search users">
+	<input use:searchFloat.ref bind:value={search.args[0]} class='!m-0 w-56' type='search' placeholder="Search users">
 	{#if search.args[0] && search.result}
-		<div use:searchFloat class='bg-gray-950 z-50 rounded flex flex-col gap-2 p-1'>
+		<div use:searchFloat class='bg-gray-950 z-50 rounded flex flex-col gap-2 p-1 w-56 max-h-80 overflow-y-auto'>
 			{#each search.result as user}
-				<button class='!bg-transparent !hover:bg-gray-800 w-full' onclick={() => { id = user.id; search.result = undefined; search.args[0] = '' }}>{user.name}</button>
+				<button class='!bg-transparent hover:!bg-gray-900 ' onclick={() => { id = user.id; search.result = undefined; search.args[0] = '' }}>{user.name}</button>
 			{/each}
 		</div>
 	{/if}
