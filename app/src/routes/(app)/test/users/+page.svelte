@@ -5,14 +5,15 @@
 	import type z from 'zod'
 	import { statefulAPI } from 'sveltekit-zero-api/client'
 	import { floatingUI } from '$lib/floating-ui.svelte'
+	import { scale } from 'svelte/transition'
 
 	let Form = formAPI<z.output<typeof User>>(api.users)
 
 	let id = $state() as string | undefined
 
 	let search = statefulAPI(
-		(name: string) => api.users.search(name),
-		{ cooldown: 500 }
+		(name: string) => name ? api.users.search(name) : undefined,
+		{ warmup: 500 }
 	)
 
 	const searchFloat = floatingUI({})
@@ -20,7 +21,10 @@
 </script>
 <!---------------------------------------------------->
 
-<div class='flex gap-2 items-center mb-8'>
+<div class='flex gap-2 items-center mb-8 relative'>
+	{#if search.isLoading && search.args[0]}
+		<loading transition:scale class='top-1/2 -translate-y-1/2 -left-6 absolute'> <icon class='animate-spin iconify fluent--spinner-ios-20-filled'></icon> </loading>
+	{/if}
 	<input use:searchFloat.ref bind:value={search.args[0]} class='!m-0 w-56' type='search' placeholder="Search users">
 	{#if search.args[0] && search.result}
 		<div use:searchFloat class='bg-gray-950 z-50 rounded flex flex-col gap-2 p-1 w-56 max-h-80 overflow-y-auto'>
