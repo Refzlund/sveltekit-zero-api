@@ -27,21 +27,22 @@ export function statefulAPI<Args extends any[], Result>(
 		state.fetch(...state.args)
 	})
 
+	const fetch = async () => {
+		const result = await cb(...state.args)
+		state.result = result
+		resolve(result)
+		promise = undefined
+		state.isLoading = false
+	}
+
 	const state = $state({
 		args: [] as any as Args,
 		result: undefined as undefined | Result,
 		isLoading: false,
 		fetch: async (...args: Args) => {
 			state.isLoading = true
+			state.args = args
 			
-			const run = async () => {
-				const result = await cb(...args)
-				state.result = result
-				resolve(result)
-				promise = undefined
-				state.isLoading = false
-			}
-
 			if (cooldown && promise) {
 				return promise
 			} else if (cooldown) {
@@ -55,11 +56,11 @@ export function statefulAPI<Args extends any[], Result>(
 				if(!promise) {
 					newPromise()
 				}
-				timer = setTimeout(run, warmup)
+				timer = setTimeout(fetch, warmup)
 				return promise
 			}
 
-			await run()
+			await fetch()
 			return state.result
 		}
 	})

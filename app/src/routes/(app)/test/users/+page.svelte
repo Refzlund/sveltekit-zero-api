@@ -12,7 +12,7 @@
 
 	let search = statefulAPI(
 		(name: string) => api.users.search(name),
-		{ warmup: 400 }
+		{ cooldown: 500 }
 	)
 
 	const searchFloat = floatingUI({})
