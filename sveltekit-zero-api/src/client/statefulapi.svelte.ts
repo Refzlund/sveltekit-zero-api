@@ -1,10 +1,16 @@
-import { Promisify } from '../utils/types'
-
 type StatefulAPI = {
-	/** In `ms` - time until being able to fetch again */
+	/** 
+	 * In `ms` - time until being able to fetch again
+	 * 
+	 * Ex. whenever the user input changes, it will fetch as soon as possible at a rate limit.
+	*/
 	cooldown: number
 } | {
-	/** In `ms` - time it takes to fetch (resets when a new fetch is called) */
+	/**
+	 * In `ms` - time it takes to fetch (resets when a new fetch is called)
+	 * 
+	 * Ex. when user input stops, the countdown begins.
+	*/
 	warmup: number
 }
 
