@@ -41,7 +41,9 @@ export function statefulAPI<Args extends any[], Result>(
 		isLoading: false,
 		fetch: async (...args: Args) => {
 			state.isLoading = true
-			state.args = args
+			if(!state.args.every((a, i) => a === args[i])) {
+				state.args = args
+			}
 			
 			if (cooldown && promise) {
 				return promise
