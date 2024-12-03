@@ -28,6 +28,8 @@ A complete rewrite of SvelteKit-zero-API
   - StatefulAPI: An async task process that runs an API based off a cooldown or a warmup
   - RunesAPI: A client data management layer using Runes.
   - `npx sveltekit-zero-api`: Include it into your project effortless
+  - Testing: You can leverage `new FakeKitEvent()` to create a KitEvent, for testing endpoints.
+  - Call endpoints on server/in tests; you can do `let [promise] = GET(event).use(body, { query: {...} }).OK(...).$.success(...)` on the server/in tests.
 
 It's a massive update. I'll include a website for documentation, for a more pleasing dev experience in this update.
 
