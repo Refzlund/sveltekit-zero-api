@@ -17,11 +17,14 @@
 	)
 
 	const searchFloat = floatingUI({})
-
-	let r = runesAPI({
+	
+	let data = runesAPI({
 		users: {
 			api: api.users,
-			discriminator: body => body.id
+			discriminator: body => body.id,
+			groups: {
+				seniors: (v) => v.filter(v => v.age > 50).sort((a,b) => a.age - b.age)
+			}
 		},
 		articles: {
 			api: api.articles,
@@ -29,9 +32,30 @@
 		}
 	})
 
-	const paginator = new r.articles.Paginator()
-	r.articles.list
+	data.articles.get()
 	
+	data.users.groups.seniors
+
+	data.users.test
+
+	const a1 = data.articles.modify('Article:0')
+	a1.$.patch()
+	a1.$.isModified
+	a1.$.validate()
+	a1.$.validate('nested.name')
+
+	const a2 = data.articles.create()
+
+	data.articles.list
+	
+
+	const paginator = new data.articles.Paginator(10)
+	paginator.current
+	paginator.list
+	paginator.total
+	paginator.next()
+	paginator.prev()
+
 
 </script>
 <!---------------------------------------------------->
