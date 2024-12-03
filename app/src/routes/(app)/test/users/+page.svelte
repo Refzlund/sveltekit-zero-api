@@ -3,7 +3,7 @@
 	import { formAPI } from 'sveltekit-zero-api/formapi.svelte'
 	import type { User } from '../../../api/users'
 	import type z from 'zod'
-	import { statefulAPI } from 'sveltekit-zero-api/client'
+	import { runesAPI, statefulAPI } from 'sveltekit-zero-api/client'
 	import { floatingUI } from '$lib/floating-ui.svelte'
 	import { scale } from 'svelte/transition'
 
@@ -17,6 +17,21 @@
 	)
 
 	const searchFloat = floatingUI({})
+
+	let r = runesAPI({
+		users: {
+			api: api.users,
+			discriminator: body => body.id
+		},
+		articles: {
+			api: api.articles,
+			discriminator: body => body.id
+		}
+	})
+
+	const paginator = new r.articles.Paginator()
+	r.articles.list
+	
 
 </script>
 <!---------------------------------------------------->
@@ -55,6 +70,10 @@
 	<label>
 		Name
 		<input required name='name'>
+		<!--
+		
+		
+		-->
 		<error hidden={!Form.errors.name?.code}>{Form.errors.name?.error}</error>
 	</label>
 	<label>
