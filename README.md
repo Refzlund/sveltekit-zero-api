@@ -16,17 +16,17 @@ A complete rewrite of SvelteKit-zero-API
   - The client API call chains are now independent from one another, can throw errors inside them independently, and .$. returns an array of promises.
   - Better classes to see if a function is a proxy of sveltekit-zero-api (ex. `req instanceof KitRequest`)
   - Complex slugs are now supported
-  - Endpoints with bring-your-own validation
+  - Endpoints with bring-your-own (BYO) validation
   - Responses being instanceof `Error` to allow `throw new OK(...)` in Vite and outside of Vite
 
 - New functionality
   - A `hooks.server.ts` zero-api options: Ex. run a function (like waiting for db connection) before reaching endpoints
   - Support XHR, SSE (Server-side events), ReadableStream, FormData, streamed data
   - Use backend validation for frontend validation
-  - Endpoint functions: Call endpoints like they're a function
-  - FormAPI: Manage forms using runes and sveltekit-zero-api API
+  - Endpoint functions: Call endpoints like they're a normal function; `let result = await api.someFn('a', 123).catch(...)`
+  - FormAPI: Forms made stupidly simple, powered by runes, sveltekit-zero-api API and validation of your choosing (BYO)
   - StatefulAPI: An async task process that runs an API based off a cooldown or a warmup
-  - RunesAPI: A client data management layer using Runes.
+  - RunesAPI: A client data management layer powered by Svelte 5 Runes and sveltekit-zero-api.
   - `npx sveltekit-zero-api`: Include it into your project effortless
   - Testing: You can leverage `new FakeKitEvent()` to create a KitEvent, for testing endpoints.
   - Call endpoints on server/in tests; you can do `let [promise] = GET(event).use(body, { query: {...} }).OK(...).$.success(...)` on the server/in tests.
