@@ -33,8 +33,21 @@
 	})
 
 	data.articles.get()
+	let post = data.articles.post({
+		id: 'Article:5',
+		title: 'Title',
+		content: 'Content'
+	})
+	if('errors' in post) {
+		console.error(post.errors)
+	}
+	else {
+		post.success(() => console.log('Article created!'))
+	}
 	
 	data.users.groups.seniors
+
+	
 
 	data.users.test
 
@@ -73,7 +86,7 @@
 		</div>
 	{/if}
 
-	<select bind:value={id} class='bg-gray-950 border-gray-800 rounded-md m-0 text-primary'>
+	<!-- <select bind:value={id} class='bg-gray-950 border-gray-800 rounded-md m-0 text-primary'>
 		<option value={undefined}>None</option>
 		{#await api.users.GET().$.OK(({body}) => body).serverError(({body}) => body) then [users, error]}
 			{#if users}
@@ -84,6 +97,12 @@
 				Could not load users: {JSON.stringify(error)}
 			{/if}
 		{/await}
+	</select> -->
+	<select bind:value={id} class='bg-gray-950 border-gray-800 rounded-md m-0 text-primary'>
+		<option value={undefined}>None</option>
+		{#each data.users.list as user}
+			<option value={user.id}>{user.name}</option>
+		{/each}
 	</select>
 </div>
 
@@ -94,11 +113,11 @@
 	<label>
 		Name
 		<input required name='name'>
-		<!--
-		
-		
-		-->
-		<error hidden={!Form.errors.name?.code}>{Form.errors.name?.error}</error>
+		<!-- Better syntax? -->
+		<!-- Yes; an array of errors based on a path. Solves unncessary complexity. -->
+		<!-- {#each Form.errors('name') as { code, error }}
+			<error>{error}</error>
+		{/each} -->
 	</label>
 	<label>
 		E-mail

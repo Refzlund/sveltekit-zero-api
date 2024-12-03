@@ -3,6 +3,7 @@ import { KitRequestXHR } from '../../endpoint-proxy'
 import type { EndpointFunction } from '../../server/endpoint'
 import type { KitResponse } from '../../server/http'
 import { KitValidationError } from '../errors'
+import { Promisify } from '../../utils/types'
 
 type API<T> = {
 	GET: EndpointFunction<
@@ -44,19 +45,35 @@ class Paginator<T> {
 	constructor(count?: number) {}
 }
 
-type RuneAPI<T, G> = {
-	get(): API<T>
+type RuneAPI<T, G, A> = {
+	/** Calls GET */
+	get(): Promise<T[]>
+	/** Calls id$(...).GET */
+	get(id: string): Promise<T>
+
 	list: T[]
 	Paginator: new (count?: number) => Paginator<T>
+
+	// These, use T from body, and only include if they are in the API (A)
+	post(data: T): { errors: KitValidationError[] } | KitRequestXHR // | error KitResponse
+	put(id: string, data: T): { errors: KitValidationError[] } | KitRequestXHR // | error KitResponse
+	patch(id: string, data: Partial<T>): { errors: KitValidationError[] } | KitRequestXHR // | error KitResponse
+
+	// Only include if A.id$.put or A.id$.patch
 	modify(id: string): T & {
 		$: {
-			validate(path?: string): KitValidationError[]
+			validate(
+				path?: (string | number) | (string | number)[]
+			): KitValidationError[]
 			put(): void
 			patch(): void
 			isModified: boolean
-			errors(path: string): Partial<KitValidationError>
+			errors(
+				path?: (string | number) | (string | number)[]
+			): KitValidationError[]
 		}
 	}
+	// Only include if A.post
 	create(): T & {
 		$: {
 			validate(): KitValidationError[]
@@ -66,8 +83,8 @@ type RuneAPI<T, G> = {
 		}
 	}
 } & (G extends Record<string, any> ? { groups: Record<keyof G, T[]> } : {}) & {
-	[key: string]: T
-}
+		[key: string]: T
+	}
 
 type KeyOf<T, Key> = Key extends keyof T ? T[Key] : never
 
@@ -75,7 +92,7 @@ export function runesAPI<A, T, G>(
 	instances: { [K in keyof T | keyof G | keyof A]: RunesDataInstance<KeyOf<A, K>, KeyOf<T, K>, KeyOf<G, K>> }
 ) {
 	const map = {} as {
-		[K in keyof T | keyof G | keyof A]: RuneAPI<KeyOf<T, K>, KeyOf<G, K>> & { test: KeyOf<A, K> }
+		[K in keyof T | keyof G | keyof A]: RuneAPI<KeyOf<T, K>, KeyOf<G, K>, KeyOf<A, K>>
 	}
 
 	for (const key in instances) {
