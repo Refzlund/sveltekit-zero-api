@@ -6,10 +6,14 @@ A complete rewrite of SvelteKit-zero-API
   - Typed endpoints
   - Generic endpoints
   - Slugs
+  - QuerySpread
+  - Endpoint "pipe"
 
 - Upgrades to V1 features
+  - QuerySpread now accessed immediately via `event.query`
+  - The term "endpoint pipe functions" should be considered "endpoint middlewares", as that's what they are. Massive iomprovement upon this concept.
   - Improvements to how to create generic endpoints
-  - Promises from api chains on client
+  - The client API call chains are now independent from one another, can throw errors inside them independently, and .$. returns an array of promises.
   - Better classes to see if a function is a proxy of sveltekit-zero-api (ex. `req instanceof KitRequest`)
   - Complex slugs are now supported
   - Endpoints with bring-your-own validation
