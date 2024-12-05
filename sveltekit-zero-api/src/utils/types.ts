@@ -17,7 +17,7 @@ export type IsAny<T> = IfAny<T, true, never>
 
 export type IsUnknown<T> = IsAny<T> extends never ? (unknown extends T ? true : never) : never
 
-/** Turn any type into a promise, if not already */
+/** Turn type into a promise, if not already — and type catch */
 export type Promisify<T, Catch = never> = Omit<T extends Promise<infer U> ? T : Promise<T>, 'catch'> & {
 	catch: <R = never>(onrejected: (error: [Catch] extends [never] ? unknown : Catch) => R | PromiseLike<R>) => Promise<Awaited<T> | R>
 }
@@ -39,3 +39,5 @@ export type MapDeepTo<T, U, Ignore = Date> = {
 } 
 
 export type MaybePromise<T> = T | Promise<T>
+
+export type KeyOf<T, Key> = Key extends keyof T ? T[Key] : never

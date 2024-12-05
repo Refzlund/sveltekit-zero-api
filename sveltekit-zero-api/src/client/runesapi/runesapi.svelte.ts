@@ -1,17 +1,24 @@
-import { Readable } from 'svelte/store'
 import { KitRequestXHR } from '../../endpoint-proxy'
 import type { EndpointFunction } from '../../server/endpoint'
 import type { KitResponse } from '../../server/http'
-import { KitValidationError } from '../errors'
-import { Promisify } from '../../utils/types'
+import { Slugged } from '../../utils/slugs'
+import { KeyOf } from '../../utils/types'
+import { RuneAPI } from './runeapi.type'
 
 type API<T> = {
 	GET: EndpointFunction<
 		any,
-		| KitResponse<any, any, T | T[], true>
-		| KitResponse<any, any, any, false>
+		KitResponse<any, any, T | T[], true> | KitResponse<any, any, any, false>
 	>
-}
+	POST?
+} & Partial<
+	Slugged<{
+		GET?
+		PUT?
+		PATCH?
+		DELETE?
+	}>
+>
 
 type Grouping<T> = {
 	sort(...args: Parameters<T[]['sort']>): Grouping<T>
@@ -36,7 +43,7 @@ interface RunesDataInstance<A, T, G> {
 	groups?: G & Record<string, (list: Grouping<T>) => Grouping<T>>
 }
 
-class Paginator<T> {
+export class Paginator<T> {
 	list: T[] = []
 	current: number = 0
 	total: number = 0
@@ -45,48 +52,6 @@ class Paginator<T> {
 	constructor(count?: number) {}
 }
 
-type RuneAPI<T, G, A> = {
-	/** Calls GET */
-	get(): Promise<T[]>
-	/** Calls id$(...).GET */
-	get(id: string): Promise<T>
-
-	list: T[]
-	Paginator: new (count?: number) => Paginator<T>
-
-	// These, use T from body, and only include if they are in the API (A)
-	post(data: T): { errors: KitValidationError[] } | KitRequestXHR // | error KitResponse
-	put(id: string, data: T): { errors: KitValidationError[] } | KitRequestXHR // | error KitResponse
-	patch(id: string, data: Partial<T>): { errors: KitValidationError[] } | KitRequestXHR // | error KitResponse
-
-	// Only include if A.id$.put or A.id$.patch
-	modify(id: string): T & {
-		$: {
-			validate(
-				path?: (string | number) | (string | number)[]
-			): KitValidationError[]
-			put(): void
-			patch(): void
-			isModified: boolean
-			errors(
-				path?: (string | number) | (string | number)[]
-			): KitValidationError[]
-		}
-	}
-	// Only include if A.post
-	create(): T & {
-		$: {
-			validate(): KitValidationError[]
-			post(): void
-			isModified: boolean
-			errors(path: string): Partial<KitValidationError>
-		}
-	}
-} & (G extends Record<string, any> ? { groups: Record<keyof G, T[]> } : {}) & {
-		[key: string]: T
-	}
-
-type KeyOf<T, Key> = Key extends keyof T ? T[Key] : never
 
 export function runesAPI<A, T, G>(
 	instances: { [K in keyof T | keyof G | keyof A]: RunesDataInstance<KeyOf<A, K>, KeyOf<T, K>, KeyOf<G, K>> }

@@ -34,16 +34,12 @@
 
 	data.articles.get()
 	let post = data.articles.post({
-		id: 'Article:5',
 		title: 'Title',
 		content: 'Content'
 	})
-	if('errors' in post) {
-		console.error(post.errors)
-	}
-	else {
-		post.success(() => console.log('Article created!'))
-	}
+	post.catch(err => err)
+	post.then(v => v)
+	post.success(() => console.log('Article created!'))
 	
 	data.users.groups.seniors
 
