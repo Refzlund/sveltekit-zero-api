@@ -18,12 +18,27 @@
 
 	const searchFloat = floatingUI({})
 	
+	let indexed = runesAPI(api, {
+		users: {
+			discriminator: body => body.id,
+			groups: {
+				seniors: v => v.filter(v => v.age > 50).sort((a,b) => a.age - b.age)
+			}
+		},
+		articles: {
+			discriminator: body => body.id
+		}
+	}, {
+		indexedDB: { id: 'main' },
+		query: o => ({ since: o.lastGetRequestAt })
+	})
+
 	let data = runesAPI({
 		users: {
 			api: api.users,
 			discriminator: body => body.id,
 			groups: {
-				seniors: (v) => v.filter(v => v.age > 50).sort((a,b) => a.age - b.age)
+				seniors: v => v.filter(v => v.age > 50).sort((a,b) => a.age - b.age)
 			}
 		},
 		articles: {
@@ -42,8 +57,6 @@
 	post.success(() => console.log('Article created!'))
 	
 	data.users.groups.seniors
-
-	
 
 	data.users.test
 
@@ -82,7 +95,7 @@
 		</div>
 	{/if}
 
-	<!-- <select bind:value={id} class='bg-gray-950 border-gray-800 rounded-md m-0 text-primary'>
+	<select bind:value={id} class='bg-gray-950 border-gray-800 rounded-md m-0 text-primary'>
 		<option value={undefined}>None</option>
 		{#await api.users.GET().$.OK(({body}) => body).serverError(({body}) => body) then [users, error]}
 			{#if users}
@@ -93,13 +106,13 @@
 				Could not load users: {JSON.stringify(error)}
 			{/if}
 		{/await}
-	</select> -->
-	<select bind:value={id} class='bg-gray-950 border-gray-800 rounded-md m-0 text-primary'>
+	</select>
+	<!-- <select bind:value={id} class='bg-gray-950 border-gray-800 rounded-md m-0 text-primary'>
 		<option value={undefined}>None</option>
 		{#each data.users.list as user}
 			<option value={user.id}>{user.name}</option>
 		{/each}
-	</select>
+	</select> -->
 </div>
 
 <h3 class='text-xl md-2'>{id ? 'Updating ' + $Form.name : 'Create new user'}</h3>
@@ -108,34 +121,38 @@
 
 	<label>
 		Name
-		<input required name='name'>
-		<!-- Better syntax? -->
-		<!-- Yes; an array of errors based on a path. Solves unncessary complexity. -->
-		<!-- {#each Form.errors('name') as { code, error }}
+		<input name='name'>
+		{#each Form.errors('name') as { error }}
 			<error>{error}</error>
-		{/each} -->
+		{/each}
 	</label>
 	<label>
 		E-mail
 		<input name='email' type='email'>
-		<error hidden={!Form.errors.email?.code}>{Form.errors.email?.error}</error>
+		{#each Form.errors('email') as { error }}
+			<error>{error}</error>
+		{/each}
 	</label>
 	<label>
 		Birth
 		<input name='birth' type='date'>
-		<error hidden={!Form.errors.birth?.code}>{Form.errors.birth?.error}</error>
+		{#each Form.errors('birth') as { error }}
+			<error>{error}</error>
+		{/each}
 	</label>
 	<label>
 		Age
 		<input name='age' type='number'>
-		<error hidden={!Form.errors.age?.code}>{Form.errors.age?.error}</error>
+		{#each Form.errors('age') as { error }}
+			<error>{error}</error>
+		{/each}
 	</label>
 
-	<error hidden={!Form.error.code}>
-		{Form.error.error}
+	<error hidden={!Form.error?.code}>
+		{Form.error?.error}
 	</error>
 
-	<button class='mt-4 mr-4' disabled={!!Form.error.count}>{id === undefined ? 'Create User' : 'Update User'}</button>
+	<button class='mt-4 mr-4' disabled={!!Form.errors.length}>{id === undefined ? 'Create User' : 'Update User'}</button>
 	<button type='reset'>Reset</button>
 </Form>
 

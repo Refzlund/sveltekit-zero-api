@@ -2,9 +2,7 @@
 	import Code from '$lib/Code/Code.svelte'
 	import LogoText from '$lib/LogoText.svelte'
 	import { onMount } from 'svelte'
-	import { tweened } from 'svelte/motion'
-
-	import { SvelteDate } from 'svelte/reactivity'
+	import { Tween } from 'svelte/motion'
 
 	const code = {
 		'functions.ts': `
@@ -40,10 +38,9 @@
 		`
 	}
 
-	let tween = tweened(0, { duration: 30000 })
-	
+	let tween = new Tween(0, { duration: 30000 })
 	onMount(() => {
-		tween.set(100)
+		tween.target = 100
 	})
 
 </script>
@@ -52,7 +49,7 @@
 	<h1 class='!mb-0'>Less code, more types</h1>
 	<button 
 		id=next
-		style='--tw-gradient-from-position: {$tween}%; --tw-gradient-to-position: {$tween}%;'
+		style='--tw-gradient-from-position: {tween.current}%; --tw-gradient-to-position: {tween.current}%;'
 	>
 		<span>Next up</span><span>Endpoint middlewares</span>
 	</button>

@@ -33,7 +33,7 @@ export const PUT = endpoint(
 		let { title, content } = event.body
 		
 		articles[index] = { 
-			id: event.params.id!,
+			id: event.params.id! as `Article:`,
 			title, content
 		}
 		

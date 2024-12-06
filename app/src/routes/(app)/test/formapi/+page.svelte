@@ -2,7 +2,7 @@
 	import Code from '$lib/Code/Code.svelte'
 	import { formAPI } from 'sveltekit-zero-api/formapi.svelte'
 	import api from '$lib/../api'
-	import { tweened } from 'svelte/motion'
+	import { Spring } from 'svelte/motion'
 
 	interface Person {
 		name: string
@@ -14,16 +14,16 @@
 	}
 	
 	const userForm = formAPI<Person & {bind: string}>(api.formdata)
-	let progress = tweened(0)
+	let progress = new Spring(0)
 	$effect(() => {
-		progress.set(userForm.request.progress)
+		progress.target = userForm.request.progress
 	})
 </script>
 
 <!---------------------------------------------------->
 
 <bar
-	style='--tw-gradient-from-position: {$progress*100}%; --tw-gradient-to-position: {$progress*100}%;'
+	style='--tw-gradient-from-position: {progress.current*100}%; --tw-gradient-to-position: {progress.current*100}%;'
 	class='w-60 bg-green-400 h-4 bg-gradient-to-r to-white from-green-600 duration-150 rounded outline-gray-400 my-2'
 ></bar>
 

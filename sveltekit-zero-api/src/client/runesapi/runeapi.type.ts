@@ -1,7 +1,7 @@
 import { EndpointFunction } from '../../server/endpoint'
 import { Slugged } from '../../utils/slugs'
-import { KitValidationError, ValidatedKitRequestXHR } from '../errors'
-import { Paginator } from './runesapi.svelte'
+import { ErrorPath, KitValidationError, ValidatedKitRequestXHR } from '../errors'
+import { Paginator } from './paginator.svelte'
 
 type Input<P extends EndpointFunction> = P extends EndpointFunction<infer Input> ? Input : never
 
@@ -14,7 +14,9 @@ interface Create<T, P extends EndpointFunction> {
 			): KitValidationError[]
 			post(): ValidatedKitRequestXHR
 			isModified: boolean
-			errors(path: string): KitValidationError[]
+			errors: {
+				(path?: ErrorPath): KitValidationError[]
+			} & KitValidationError[]
 		}
 	}
 }
@@ -37,12 +39,10 @@ type Modify<T, Put extends EndpointFunction, Patch extends EndpointFunction> =
 					validate(
 						path?: (string | number) | (string | number)[]
 					): KitValidationError[]
-					// put(): ValidatedKitRequestXHR
-					// patch(): ValidatedKitRequestXHR
 					isModified: boolean
-					errors(
-						path?: (string | number) | (string | number)[]
-					): KitValidationError[]
+					errors: {
+						(path?: ErrorPath): KitValidationError[]
+					} & KitValidationError[]
 				} & ([Put] extends [never] ? {} : {
 					put(): ValidatedKitRequestXHR<ReturnType<Put['xhr']>>
 				}) & ([Patch] extends [never] ? {} : {
@@ -56,12 +56,13 @@ type Modify<T, Put extends EndpointFunction, Patch extends EndpointFunction> =
 		})
 
 export type RuneAPI<T, G, A> = {
-	/** Calls GET */
-	get(): Promise<T[]>
-
 	list: T[]
 	Paginator: new (count?: number) => Paginator<T>
-} 
+}
+& (A extends { GET: EndpointFunction } ? {
+	/** Calls GET */
+	get(): Promise<T[]>
+} : {})
 & (A extends { POST: EndpointFunction } ? Create<T, A['POST']> : {}) 
 & (A extends Slugged<{ GET: infer P }>
 	? P extends EndpointFunction
@@ -72,7 +73,7 @@ export type RuneAPI<T, G, A> = {
 		: {}
 	: {}) 
 & Modify<T, GetSluggedEndpointFn<A, 'PUT'>, GetSluggedEndpointFn<A, 'PATCH'>> 
-& (G extends Record<string, any> ? { groups: Record<keyof G, T[]> } : {}) 
+& ([G] extends [never] ? {} : G extends Record<string, any> ? { groups: Record<keyof G, T[]> } : {}) 
 & {
 	[key: string]: T
 }

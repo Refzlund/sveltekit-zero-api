@@ -12,6 +12,7 @@ import { parseObjectToKeys } from '../../utils/parse-keys'
 import { APIProxy } from '../api-proxy'
 import { objectDifference } from '../../utils/object-difference'
 import { getContext } from 'svelte'
+import { ErrorPath, KitValidationError, matchPath } from '../errors'
 
 export const getFormAPI = () => getContext('formapi') as FormAPI | undefined
 
@@ -47,59 +48,65 @@ interface FormAPIOptions {
 	enhance?: boolean | Parameters<typeof svelteEnhance>[1]
 }
 
-interface FormAPIError {
-	code?: string
-	error?: string
-}
-
 type FormAPIAction = (node: HTMLInputElement) => void
 
 const dateRegex =
 	/(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))/
 
-type FormAPI<T extends Record<PropertyKey, any> = Record<PropertyKey, any>> = 
-	& typeof Form
-	& Writable<T> 
-	& {
-		action: (node: HTMLFormElement, options?: FormAPIActionOptions<T>) => void
-		$: MapDeepTo<T, FormAPIAction>
-		errors: MapDeepTo<T, FormAPIError>
-		/** Error response from API */
-		error: FormAPIError & {
-			/** Amount of errors in form */
-			count: number
+type FormAPI<T extends Record<PropertyKey, any> = Record<PropertyKey, any>> =
+	typeof Form &
+		Writable<T> & {
+			action: (node: HTMLFormElement, options?: FormAPIActionOptions<T>) => void
+			$: MapDeepTo<T, FormAPIAction>
+			
+			errors: {
+				(path?: ErrorPath): KitValidationError[]
+			} & KitValidationError[]
+
+			/** Error response from API */
+			error?: KitValidationError
+
+			submit: () => Promise<Response>
+			reset: () => void
+			/** Abort any ongoing request `formAPI` is making */
+			abort: () => void
+			/** Form bound to this Form Rune */
+			form: HTMLFormElement
+			request: {
+				progress: number
+				status: 'none' | 'pending' | 'error' | 'sending' | 'cancelled' | 'done'
+				uploaded: number
+				totalSize: number
+			}
 		}
-		submit: () => Promise<Response>
-		reset: () => void
-		/** Abort any ongoing request `formAPI` is making */
-		abort: () => void
-		/** Form bound to this Form Rune */
-		form: HTMLFormElement
-		request: {
-			progress: number
-			status: 'none' | 'pending' | 'error' | 'sending' | 'cancelled' | 'done'
-			uploaded: number
-			totalSize: number
-		}
-	}
 
 
 export function formAPI<T extends Record<PropertyKey, any>>(
 	options: FormAPIOptions | NonNullable<FormAPIOptions['api']>
-) {
-	let opts: FormAPIOptions = options instanceof APIProxy ? {} : <FormAPIOptions>options
-	let full = (options instanceof APIProxy ? options : (<FormAPIOptions>options).api) as FormAPIOptions['api']	
+): FormAPI<T> {
+	let opts: FormAPIOptions =
+		options instanceof APIProxy ? {} : <FormAPIOptions>options
+	let full = (
+		options instanceof APIProxy ? options : (<FormAPIOptions>options).api
+	) as FormAPIOptions['api']
 
 	let apis = {
-		GET: ('get' in opts ? opts.get : (id: string, options: RequestInit | undefined) => full?.slug$(id)?.GET?.xhr(null, options)!)!,
+		GET: ('get' in opts
+			? opts.get
+			: (id: string, options: RequestInit | undefined) =>
+					full?.slug$(id)?.GET?.xhr(null, options)!)!,
 		PUT: ('put' in opts
 			? opts.put
-			: (id: string, formData: any, options: RequestInit | undefined) => full?.slug$(id)?.PUT?.xhr(formData, options)!)!,
-		POST: ('post' in opts ? opts.post : (formData: any, options: RequestInit | undefined) => full?.POST?.xhr(formData, options)!)!,
-		PATCH: opts.patch
+			: (id: string, formData: any, options: RequestInit | undefined) =>
+					full?.slug$(id)?.PUT?.xhr(formData, options)!)!,
+		POST: ('post' in opts
+			? opts.post
+			: (formData: any, options: RequestInit | undefined) =>
+					full?.POST?.xhr(formData, options)!)!,
+		PATCH: opts.patch,
 	}
 
-	if(opts.validation) {
+	if (opts.validation) {
 		// opts.validation = ajv.compile(opts.validation)
 	}
 
@@ -107,7 +114,7 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 	let validationSchemas = {
 		PUT: undefined as undefined | false,
 		POST: undefined as undefined | false,
-		PATCH: undefined as undefined | false
+		PATCH: undefined as undefined | false,
 	}
 
 	/** current id of form content */
@@ -116,9 +123,9 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 	let value = $state({} as Record<PropertyKey, any>)
 	/** Stores the initial content */
 	let resetValue = {} as Record<PropertyKey, any>
-	let errors = $state({})
+	let errors = $state([] as KitValidationError[])
 	let error = $state({
-		count: 0
+		count: 0,
 	})
 
 	const store = toStore(
@@ -130,7 +137,7 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 		progress: 0,
 		status: 'none',
 		uploaded: 0,
-		totalSize: 0
+		totalSize: 0,
 	})
 
 	let form = $state() as HTMLFormElement
@@ -162,31 +169,44 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 		return parent
 	}
 
-	function nodeDate(v: { toString(): string, toISOString(): string }, type: 'date' | 'datetime' | 'time' | 'datetime-local') {
-		if(!(v instanceof Date)) {
-			if(typeof v === 'string' && dateRegex.test(v))
-				v = new Date(v)
-			else
-				return v.toString()
+	function nodeDate(
+		v: { toString(): string; toISOString(): string },
+		type: 'date' | 'datetime' | 'time' | 'datetime-local'
+	) {
+		if (!(v instanceof Date)) {
+			if (typeof v === 'string' && dateRegex.test(v)) v = new Date(v)
+			else return v.toString()
 		}
 		switch (type) {
-			case 'date': return v.toISOString().split('T')[0]
-			case 'datetime': return v.toISOString()
-			case 'time': return v.toISOString().split('T')[1].split('.')[0]
-			case 'datetime-local': return v.toISOString().split('.')[0]
+			case 'date':
+				return v.toISOString().split('T')[0]
+			case 'datetime':
+				return v.toISOString()
+			case 'time':
+				return v.toISOString().split('T')[1].split('.')[0]
+			case 'datetime-local':
+				return v.toISOString().split('.')[0]
 		}
 	}
 
 	function updateNode(node: HTMLInputElement, v: any) {
 		switch (node.type) {
-			case 'checkbox': return node.checked = v ?? null
-			case 'radio': return node.checked = v ?? null
-			case 'file': return node.files = v ?? null
-			case 'date': return node.value = v ? nodeDate(v, 'date') : null!
-			case 'datetime': return node.value = v ? nodeDate(v, 'datetime') : null!
-			case 'time': return node.value = v ? nodeDate(v, 'time') : null!
-			case 'datetime-local': return node.value = v ? nodeDate(v, 'datetime-local') : null!
-			default: return node.value = v ?? null
+			case 'checkbox':
+				return (node.checked = v ?? null)
+			case 'radio':
+				return (node.checked = v ?? null)
+			case 'file':
+				return (node.files = v ?? null)
+			case 'date':
+				return (node.value = v ? nodeDate(v, 'date') : null!)
+			case 'datetime':
+				return (node.value = v ? nodeDate(v, 'datetime') : null!)
+			case 'time':
+				return (node.value = v ? nodeDate(v, 'time') : null!)
+			case 'datetime-local':
+				return (node.value = v ? nodeDate(v, 'datetime-local') : null!)
+			default:
+				return (node.value = v ?? null)
 		}
 	}
 
@@ -230,16 +250,38 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 			set.add(node)
 
 			function getValue() {
-				return node.type === 'checkbox' ? node.checked 
-					: node.type === 'file' ? node.files 
-					: node.type === 'radio' ? node.checked
-					: node.type === 'number' ? node.value ? parseFloat(node.value) : undefined
-					: node.type === 'range' ? node.value ? parseFloat(node.value) : undefined
-					: node.type === 'date' ? node.value ? new SvelteDate(node.value) : undefined
-					: node.type === 'time' ? node.value ? new SvelteDate(node.value) : undefined
-					: node.type === 'datetime' ? node.value ? new SvelteDate(node.value) : undefined
-					: node.type === 'datetime-local' ? node.value ? new SvelteDate(node.value) : undefined
-					: node.value !== null && node.value !== '' ? node.value 
+				return node.type === 'checkbox'
+					? node.checked
+					: node.type === 'file'
+					? node.files
+					: node.type === 'radio'
+					? node.checked
+					: node.type === 'number'
+					? node.value
+						? parseFloat(node.value)
+						: undefined
+					: node.type === 'range'
+					? node.value
+						? parseFloat(node.value)
+						: undefined
+					: node.type === 'date'
+					? node.value
+						? new SvelteDate(node.value)
+						: undefined
+					: node.type === 'time'
+					? node.value
+						? new SvelteDate(node.value)
+						: undefined
+					: node.type === 'datetime'
+					? node.value
+						? new SvelteDate(node.value)
+						: undefined
+					: node.type === 'datetime-local'
+					? node.value
+						? new SvelteDate(node.value)
+						: undefined
+					: node.value !== null && node.value !== ''
+					? node.value
 					: undefined
 			}
 
@@ -270,7 +312,10 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 		},
 	})
 
-	const formEnhance = ((node: HTMLFormElement, actionOptions: FormAPIActionOptions<T> = {}) => {
+	const formEnhance = (
+		node: HTMLFormElement,
+		actionOptions: FormAPIActionOptions<T> = {}
+	) => {
 		let { id: _id, value: _value } = actionOptions
 
 		if (_value) {
@@ -297,9 +342,10 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 			},
 			{ capture: true }
 		)
-		
+
 		form.addEventListener(
-			'reset', (e) => {
+			'reset',
+			(e) => {
 				e.preventDefault()
 				e.stopPropagation()
 				e.stopImmediatePropagation()
@@ -333,10 +379,12 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 		applyCrawl(inputs as any)
 		resetValue = $state.snapshot(value)
 
-		const observer = new MutationObserver((mutations) => mutations.map((v) => applyCrawl(v.addedNodes as any)))
+		const observer = new MutationObserver((mutations) =>
+			mutations.map((v) => applyCrawl(v.addedNodes as any))
+		)
 		observer.observe(node, {
 			childList: true,
-			subtree: true
+			subtree: true,
 		})
 
 		return {
@@ -349,16 +397,16 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 					Object.assign(value, _value)
 				}
 				id = _id
-			}
+			},
 		} as any
-	})
+	}
 
 	let currentRequest: KitRequestXHR | undefined
 
 	let _id
 	$effect(() => {
-		if(id === null || id === undefined) {
-			if(!(_id === null || _id === undefined)) {
+		if (id === null || id === undefined) {
+			if (!(_id === null || _id === undefined)) {
 				value = {}
 				_id = null
 			}
@@ -369,28 +417,37 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 
 		const req = apis.GET!(id, undefined)
 		currentRequest = req
-		
-		req.any(() => {
-			if(currentRequest == req) {
-				currentRequest = undefined
-			}
-		})
-		.success(({body}) => {
-			resetValue = body
-			reset()
-		})
+
+		req
+			.any(() => {
+				if (currentRequest == req) {
+					currentRequest = undefined
+				}
+			})
+			.success(({ body }) => {
+				resetValue = body
+				reset()
+			})
 	})
 
-	let getMethod = () => id === undefined || id === null ? 'POST' as const : apis.PATCH ? 'PATCH' as const : 'PUT' as const
+	let getMethod = () =>
+		id === undefined || id === null
+			? ('POST' as const)
+			: apis.PATCH
+			? ('PATCH' as const)
+			: ('PUT' as const)
 	async function submit() {
-		if(!await validate()) return
+		if (!(await validate())) return
 
 		abort()
 		const method = getMethod()
 
 		let data = new FormData()
 
-		let body = method === 'PATCH' ? objectDifference(resetValue, $state.snapshot(value)) ?? {} : $state.snapshot(value)
+		let body =
+			method === 'PATCH'
+				? objectDifference(resetValue, $state.snapshot(value)) ?? {}
+				: $state.snapshot(value)
 
 		for (const [key, val] of parseObjectToKeys(body)) {
 			if (val instanceof FileList) {
@@ -404,11 +461,11 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 
 		if ('onSubmit' in opts) {
 			let result = opts.onSubmit!(method, data)
-			if(result)
-				data = result
+			if (result) data = result
 		}
 
-		const args: [any, any, any] = method === 'POST' ? [data,,,] : [id, data,,]
+		const args: [any, any, any] =
+			method === 'POST' ? [data, , ,] : [id, data, ,]
 		const req = apis[method]!(...args)
 
 		currentRequest = req
@@ -417,29 +474,30 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 			opts.onRequest!(req)
 		}
 
-		return req.xhrInit(
-			() =>
-				(request = {
-					progress: 0,
-					status: 'pending',
-					totalSize: 0,
-					uploaded: 0
-				})
-		)
+		return req
+			.xhrInit(
+				() =>
+					(request = {
+						progress: 0,
+						status: 'pending',
+						totalSize: 0,
+						uploaded: 0,
+					})
+			)
 			.uploadProgress(
 				(e) =>
 					(request = {
 						progress: e.loaded / e.total,
 						status: 'sending',
 						totalSize: e.total,
-						uploaded: e.loaded
+						uploaded: e.loaded,
 					})
 			)
 			.xhrError(() => (request.status = 'error'))
 			.success(() => (request.status = 'done'))
 			.error((res) => (error = res.body))
 			.any(() => {
-				if(currentRequest == req) {
+				if (currentRequest == req) {
 					currentRequest = undefined
 				}
 			})
@@ -456,8 +514,7 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 
 	let validationSchemaPromise: Promise<any> | undefined
 	async function getValidationSchema() {
-		if (validationSchemaPromise)
-			return await validationSchemaPromise
+		if (validationSchemaPromise) return await validationSchemaPromise
 
 		let method = getMethod()
 
@@ -471,7 +528,7 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 			let args: [any, any, any] =
 				method === 'POST' ? [undefined, opts, ,] : ['-', undefined, opts]
 			let [req] = apis[method]!(...args)
-				.any(() => validationSchemaPromise = undefined)
+				.any(() => (validationSchemaPromise = undefined))
 				.clientError(({ body }) => {
 					if (body.code === 'no_json_schema') {
 						validationSchemas[method] = false
@@ -513,8 +570,7 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 
 	/** return `true` if valid (or no validation schema), `false` if invalid */
 	async function validate(path: PropertyKey | PropertyKey[] = []) {
-		if(opts.validation === false)
-			return true
+		if (opts.validation === false) return true
 
 		const schema = await getValidationSchema()
 
@@ -528,27 +584,54 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 		return true
 	}
 
-	let proxy = new Proxy(function(){} as any, {
+	const errorProxy = new Proxy(function () {} as any, {
+		get(target, key) {
+			if(key in errors)
+				return errors[key]
+			return target[key]
+		},
+		apply(_, __, [path]: [ErrorPath | undefined]) {
+			if (!path) return errors
+			let property = Array.isArray(path) ? path.join('.') : path.toString()
+			const errs = $derived(errors.filter(err => matchPath(err, property)))
+			return errs
+		},
+	})
+
+	let proxy = new Proxy(function () {} as any, {
 		set(_, key, newValue, receiver) {
 			switch (key) {
-				case 'value': return value = newValue
+				case 'value':
+					return (value = newValue)
 			}
 			return Reflect.set(Form, key, newValue, receiver)
 		},
 		get(_, key, receiver) {
 			switch (key) {
-				case 'action': return formEnhance
-				case 'value': return value
-				case '$': return crawl
-				case 'errors': return errors
-				case 'error': return error
-				case 'submit': return submit
-				case 'reset': return reset
-				case 'form': return form
-				case 'request': return request
-				case 'subscribe': return store.subscribe
-				case 'set': return store.set
-				case 'update': return store.update
+				case 'action':
+					return formEnhance
+				case 'value':
+					return value
+				case '$':
+					return crawl
+				case 'errors':
+					return errorProxy
+				case 'error':
+					return error
+				case 'submit':
+					return submit
+				case 'reset':
+					return reset
+				case 'form':
+					return form
+				case 'request':
+					return request
+				case 'subscribe':
+					return store.subscribe
+				case 'set':
+					return store.set
+				case 'update':
+					return store.update
 			}
 			return Reflect.get(Form, key, receiver)
 		},
@@ -556,8 +639,8 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 			// * Form `<UserForm ...>`
 			attributes.__formApi = proxy
 			return Form(target, attributes)
-		}
-	}) as FormAPI<T>
-	
-	return proxy
+		},
+	})
+
+	return proxy as any
 }

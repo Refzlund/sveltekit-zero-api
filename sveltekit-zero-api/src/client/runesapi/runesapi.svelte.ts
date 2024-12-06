@@ -25,8 +25,8 @@ type Grouping<T> = {
 	filter(...args: Parameters<T[]['filter']>): Grouping<T>
 }
 
-interface RunesDataInstance<A, T, G> {
-	api: A & API<T>
+interface RunesDataInstance<T> {
+	api: API<T>
 	discriminator: (body: T) => string | false
 	live?: (body: T | T[]) => void
 	paginator?: {
@@ -40,30 +40,66 @@ interface RunesDataInstance<A, T, G> {
 		total?: () => Promise<number>
 	}
 	/** The groups filtering/sorting first happens when accessed */
-	groups?: G & Record<string, (list: Grouping<T>) => Grouping<T>>
+	groups?: Record<string, (list: Grouping<T>) => Grouping<T>>
 }
 
-export class Paginator<T> {
-	list: T[] = []
-	current: number = 0
-	total: number = 0
-	async next() {}
-	async prev() {}
-	constructor(count?: number) {}
-}
-
-
-export function runesAPI<A, T, G>(
-	instances: { [K in keyof T | keyof G | keyof A]: RunesDataInstance<KeyOf<A, K>, KeyOf<T, K>, KeyOf<G, K>> }
-) {
-	const map = {} as {
-		[K in keyof T | keyof G | keyof A]: RuneAPI<KeyOf<T, K>, KeyOf<G, K>, KeyOf<A, K>>
+interface RunesAPIOptions<T> {
+	/** Include this query on `api.GET` */
+	query?: (state: {
+		/** When was the last api.GET request sent? (milliseconds elapsed since midnight, January 1, 1970 — UTC) */
+		lastGetRequestAt: number
+	}) => Record<string, unknown>
+	indexedDB?: {
+		/** The ID associated with this runesAPI */
+		id: string
 	}
+	live?: (cb: (data: T) => void) => void
+}
+
+export function runesAPI<TItems, TType>(
+	instances: TItems & {
+		[K in keyof TType]: RunesDataInstance<KeyOf<TType, K>>
+	}
+): {
+	[K in keyof TItems]: RuneAPI<
+		KeyOf<TType, K>,
+		KeyOf<KeyOf<TItems, K>, 'groups'>,
+		KeyOf<KeyOf<TItems, K>, 'api'>
+	>
+}
+
+export function runesAPI<TAPI, TItems, TData extends Record<string, any[]>>(
+	api: TAPI & {
+		GET: EndpointFunction<
+			any,
+			KitResponse<any, any, TData, true> | KitResponse<any, any, any, false>
+		>
+	},
+	items: TItems & {
+		[Key in keyof TData]?: Pick<
+			RunesDataInstance<KeyOf<TData, Key>[number]>,
+			'discriminator' | 'groups'
+		>
+	},
+	options?: RunesAPIOptions<TData>
+): {
+	[K in keyof TItems]: RuneAPI<
+		KeyOf<TData, K>[number],
+		KeyOf<KeyOf<TItems, K>, 'groups'>,
+		KeyOf<TAPI, K>
+	>
+}
+
+export function runesAPI(
+	instances?: any
+) {
+	const map = {} as Record<any, any>
 
 	for (const key in instances) {
-
-		map[key] = new Proxy({}, {
-
+		map[key] = new Proxy(function() {}, {
+			get() { return map[key] },
+			apply() { return map[key] },
+			construct() { return map[key] }
 		}) as any
 	}
 
