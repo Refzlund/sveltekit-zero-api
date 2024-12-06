@@ -1,12 +1,12 @@
 import { KitRequestXHR } from '../../endpoint-proxy'
-import type { EndpointFunction } from '../../server/endpoint'
+import type { Endpoint } from '../../server/endpoint'
 import type { KitResponse } from '../../server/http'
 import { Slugged } from '../../utils/slugs'
 import { KeyOf } from '../../utils/types'
 import { RuneAPI } from './runeapi.type'
 
 type API<T> = {
-	GET: EndpointFunction<
+	GET: Endpoint<
 		any,
 		KitResponse<any, any, T | T[], true> | KitResponse<any, any, any, false>
 	>
@@ -29,16 +29,18 @@ interface RunesDataInstance<T> {
 	api: API<T>
 	discriminator: (body: T) => string | false
 	live?: (body: T | T[]) => void
-	paginator?: {
-		limit: string
-		skip: string
-		count: number
-		api: (query: Record<string, string>) => KitRequestXHR
-		total?: () => Promise<number>
-	} | {
-		api: (page: number) => KitRequestXHR
-		total?: () => Promise<number>
-	}
+	paginator?:
+		| {
+				limit: string
+				skip: string
+				count: number
+				api: (query: Record<string, string>) => KitRequestXHR
+				total?: () => Promise<number>
+		  }
+		| {
+				api: (page: number) => KitRequestXHR
+				total?: () => Promise<number>
+		  }
 	/** The groups filtering/sorting first happens when accessed */
 	groups?: Record<string, (list: Grouping<T>) => Grouping<T>>
 }
@@ -70,7 +72,7 @@ export function runesAPI<TItems, TType>(
 
 export function runesAPI<TAPI, TItems, TData extends Record<string, any[]>>(
 	api: TAPI & {
-		GET: EndpointFunction<
+		GET: Endpoint<
 			any,
 			KitResponse<any, any, TData, true> | KitResponse<any, any, any, false>
 		>
@@ -90,16 +92,20 @@ export function runesAPI<TAPI, TItems, TData extends Record<string, any[]>>(
 	>
 }
 
-export function runesAPI(
-	instances?: any
-) {
+export function runesAPI(instances?: any) {
 	const map = {} as Record<any, any>
 
 	for (const key in instances) {
-		map[key] = new Proxy(function() {}, {
-			get() { return map[key] },
-			apply() { return map[key] },
-			construct() { return map[key] }
+		map[key] = new Proxy(function () {}, {
+			get() {
+				return map[key]
+			},
+			apply() {
+				return map[key]
+			},
+			construct() {
+				return map[key]
+			},
 		}) as any
 	}
 

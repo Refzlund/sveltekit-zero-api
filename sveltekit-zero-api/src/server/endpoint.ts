@@ -16,30 +16,48 @@ export type EndpointCallbackResult = Record<PropertyKey, any> | KitResponse
 /**
  * A callback function for an `endpoint` parameter.
  */
-export type Callback<Event extends KitEvent<any, any> = KitEvent<any,any>, Result extends EndpointCallbackResult = EndpointCallbackResult> = 
-	| ((event: Event) => Promise<Result> | Result | void)
+export type Callback<
+	Event extends KitEvent<any, any> = KitEvent<any, any>,
+	Result extends EndpointCallbackResult = EndpointCallbackResult
+> = (event: Event) => Promise<Result> | Result | void
 
 /**
  * The input for an endpoint.
  */
-type EndpointInput<P extends ParseKitEvent> = P extends ParseKitEvent<infer T> ? Simplify<
-	FixKeys<Exclude<T, KitResponse<any, any>>>
-> : never
+type EndpointInput<P extends ParseKitEvent> = P extends ParseKitEvent<infer T>
+	? Simplify<FixKeys<Exclude<T, KitResponse<any, any>>>>
+	: never
 
 type GenericCallback = Generic<
 	| ((body: any) => EndpointProxy<KitResponse<any, any, any>>)
 	/** When `body` is not available. E.g. `GET`, `HEAD`, `TRACE` */
 	| ((options: { query: any }) => EndpointProxy<KitResponse<any, any, any>>)
-	| ((body: any, options: { query: any }) => EndpointProxy<KitResponse<any, any, any>>)
+	| ((
+			body: any,
+			options: { query: any }
+	  ) => EndpointProxy<KitResponse<any, any, any>>)
 >
 
-export type EndpointFunction<
+/**
+ * An `Endpoint`-type is the function type that is used to call an endpoint.
+ * 
+ * `api.users.GET` is an `Endpoint`
+ * 
+ * It my contain information about required body-type or query paramters.
+ * 
+ * For instance `api.users.POST` may be  
+ * `Endpoint<{ body: User }, Created<{ message: 'User was created!' }> | BadRequest<{ code: 'name_taken', error: 'Username has already been taken.' }>>`
+*/
+export type Endpoint<
 	Input extends {
 		body?: any
 		query?: any
 	} = any,
 	Result extends KitResponse<any, any> = KitResponse<any, any>
-> = ((body?: Input['body'], options?: { query?: Input['query'] } & Omit<RequestInit, 'body'>) => EndpointProxy<Result>) & {
+> = ((
+	body?: Input['body'],
+	options?: { query?: Input['query'] } & Omit<RequestInit, 'body'>
+) => EndpointProxy<Result>) & {
 	xhr: (
 		body?: Input['body'],
 		options?: { query?: Input['query'] } & Omit<RequestInit, 'body'>
@@ -50,7 +68,7 @@ export type EndpointSSE<T extends SSE> = (
 	options?: { query?: any } & Omit<RequestInit, 'body'>
 ) => T extends SSE<infer _, infer K> ? KitSSE<K> : never
 
-export type KitSSE<T extends { event: string, data: any }> = {
+export type KitSSE<T extends { event: string; data: any }> = {
 	on: {
 		[Key in T as Key['event']]: (cb: (event: Key['data']) => void) => KitSSE<T>
 	}
@@ -71,8 +89,13 @@ type EndpointResponseResult<
 	TGenericResult extends null | GenericCallback = null
 > = Promise<Responses> & {
 	use: null extends TGenericResult
-		? [Tsse] extends [never] ? EndpointFunction<EndpointInput<P>, Responses | Extract<Awaited<ReturnType<P['fn']>>, KitResponse<any, any>>>
-		: EndpointSSE<Tsse>
+		? [Tsse] extends [never]
+			? Endpoint<
+					EndpointInput<P>,
+					| Responses
+					| Extract<Awaited<ReturnType<P['fn']>>, KitResponse<any, any>>
+			  >
+			: EndpointSSE<Tsse>
 		: TGenericResult extends Generic<infer Input>
 		? Input
 		: never
@@ -85,11 +108,16 @@ export interface EndpointResponse<
 	Results extends Callback | ParseKitEvent | GenericCallback | SSE
 > {
 	(event: KitEvent): EndpointResponseResult<
-		Extract<ReturnType<Exclude<Results, ParseKitEvent | GenericCallback | SSE>>, KitResponse>,
+		Extract<
+			ReturnType<Exclude<Results, ParseKitEvent | GenericCallback | SSE>>,
+			KitResponse
+		>,
 		Extract<Results, ParseKitEvent>,
 		Extract<Results, SSE>,
 		// @ts-expect-error works
-		Results extends (event: KitEvent) => MaybePromise<GenericCallback> ? Awaited<ReturnType<Results>> : null
+		Results extends (event: KitEvent) => MaybePromise<GenericCallback>
+			? Awaited<ReturnType<Results>>
+			: null
 	>
 }
 
@@ -98,29 +126,24 @@ export interface EndpointResponse<
 // #region endpoint overloads
 
 function endpoint<
-	B1 extends ((event: KitEvent) => MaybePromise<GenericCallback | KitResponse>) | SSE<KitEvent, any>
+	B1 extends
+		| ((event: KitEvent) => MaybePromise<GenericCallback | KitResponse>)
+		| SSE<KitEvent, any>
 >(
 	/** When creating a `Generic` endpoint, the body WILL be parsed as JSON. */
 	callback1: B1
 ): EndpointResponse<B1>
 
 function endpoint<
-	B1 extends Callback<KitEvent> | ParseKitEvent<{}>, 
+	B1 extends Callback<KitEvent> | ParseKitEvent<{}>,
 	B2 extends Callback<KitEventFn<B1>, KitResponse> | SSE<KitEvent, any>
->(
-	callback1: B1,
-	callback2: B2
-): EndpointResponse<B1 | B2>
+>(callback1: B1, callback2: B2): EndpointResponse<B1 | B2>
 
 function endpoint<
 	B1 extends Callback<KitEvent> | ParseKitEvent<{}>,
 	B2 extends Callback<KitEventFn<B1>> | ParseKitEvent<{}>,
 	B3 extends Callback<KitEventFn<B1, B2>, KitResponse> | SSE<KitEvent, any>
->(
-	callback1: B1,
-	callback2: B2,
-	callback3: B3
-): EndpointResponse<B1 | B2 | B3>
+>(callback1: B1, callback2: B2, callback3: B3): EndpointResponse<B1 | B2 | B3>
 
 function endpoint<
 	B1 extends Callback<KitEvent> | ParseKitEvent<{}>,
@@ -139,7 +162,9 @@ function endpoint<
 	B2 extends Callback<KitEventFn<B1>> | ParseKitEvent<{}>,
 	B3 extends Callback<KitEventFn<B1, B2>> | ParseKitEvent<{}>,
 	B4 extends Callback<KitEventFn<B1, B2, B3>> | ParseKitEvent<{}>,
-	B5 extends Callback<KitEventFn<B1, B2, B3, B4>, KitResponse> | SSE<KitEvent, any>
+	B5 extends
+		| Callback<KitEventFn<B1, B2, B3, B4>, KitResponse>
+		| SSE<KitEvent, any>
 >(
 	callback1: B1,
 	callback2: B2,
@@ -154,7 +179,9 @@ function endpoint<
 	B3 extends Callback<KitEventFn<B1, B2>> | ParseKitEvent<{}>,
 	B4 extends Callback<KitEventFn<B1, B2, B3>> | ParseKitEvent<{}>,
 	B5 extends Callback<KitEventFn<B1, B2, B3, B4>> | ParseKitEvent<{}>,
-	B6 extends Callback<KitEventFn<B1, B2, B3, B4, B5>, KitResponse> | SSE<KitEvent, any>
+	B6 extends
+		| Callback<KitEventFn<B1, B2, B3, B4, B5>, KitResponse>
+		| SSE<KitEvent, any>
 >(
 	callback1: B1,
 	callback2: B2,
@@ -171,7 +198,9 @@ function endpoint<
 	B4 extends Callback<KitEventFn<B1, B2, B3>> | ParseKitEvent<{}>,
 	B5 extends Callback<KitEventFn<B1, B2, B3, B4>> | ParseKitEvent<{}>,
 	B6 extends Callback<KitEventFn<B1, B2, B3, B4, B5>> | ParseKitEvent<{}>,
-	B7 extends Callback<KitEventFn<B1, B2, B3, B4, B5, B6>, KitResponse> | SSE<KitEvent, any>
+	B7 extends
+		| Callback<KitEventFn<B1, B2, B3, B4, B5, B6>, KitResponse>
+		| SSE<KitEvent, any>
 >(
 	callback1: B1,
 	callback2: B2,
@@ -185,7 +214,7 @@ function endpoint<
 // #endregion
 
 function endpoint(
-	...callbacks: (Callback<any, any> | ParseKitEvent<{body?,query?}>)[]
+	...callbacks: (Callback<any, any> | ParseKitEvent<{ body?; query? }>)[]
 ) {
 	return (event: KitEvent) => {
 		let useProxy: ReturnType<typeof createEndpointProxy> | null = null
@@ -195,10 +224,9 @@ function endpoint(
 
 			event.results ??= {}
 
-			if (event.request.headers.has('x-json-schema') ) {
-				let cb = callbacks.find(v => v instanceof ParseKitEvent)
-				if (cb && cb.jsonSchema)
-					throw new Accepted(cb.jsonSchema)
+			if (event.request.headers.has('x-json-schema')) {
+				let cb = callbacks.find((v) => v instanceof ParseKitEvent)
+				if (cb && cb.jsonSchema) throw new Accepted(cb.jsonSchema)
 				throw new NotFound({
 					code: 'no_json_schema',
 					error: 'No JSON Schema is associated with this endpoint.',
@@ -208,18 +236,18 @@ function endpoint(
 			let result: EndpointCallbackResult | void
 			for (const callback of callbacks) {
 				try {
-					if(callback instanceof SSE) {
+					if (callback instanceof SSE) {
 						const stream = callback.createStream(event)
 						throw new OK(stream, {
 							headers: {
 								'Content-Type': 'text/event-stream',
 								'Cache-Control': 'no-cache, no-transform',
-								Connection: 'keep-alive'
-							}
+								Connection: 'keep-alive',
+							},
 						})
 					}
 
-					if(callback instanceof ParseKitEvent) {
+					if (callback instanceof ParseKitEvent) {
 						let parse
 						try {
 							parse = await callback.fn(event)
@@ -228,7 +256,7 @@ function endpoint(
 								return error
 							throw error
 						}
-						if(parse instanceof KitResponse || parse instanceof Response)
+						if (parse instanceof KitResponse || parse instanceof Response)
 							return parse
 
 						event.body = parse.body
@@ -245,7 +273,7 @@ function endpoint(
 							throw new BadRequest({
 								code: 'invalid_json',
 								error: 'A generic endpoint must receive JSON',
-								details: error
+								details: error,
 							})
 						}
 						result = await result.function()
@@ -295,7 +323,7 @@ function endpoint(
 					...event.request,
 					method,
 					headers,
-					body
+					body,
 				})
 
 				event.query ??= {}
@@ -308,14 +336,15 @@ function endpoint(
 							return res as Response
 						})
 						.then(parseResponse),
-					() => {throw new Error('Can\'t abort on server.')}
+					() => {
+						throw new Error("Can't abort on server.")
+					}
 				)
 				return useProxy
-			}
+			},
 		})
 
 		return promise
-			
 	}
 }
 

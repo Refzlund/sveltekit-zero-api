@@ -4,7 +4,7 @@ import { SvelteMap, SvelteSet, SvelteDate } from 'svelte/reactivity'
 
 import { proxyCrawl } from '../../utils/proxy-crawl'
 import { MapDeepTo } from '../../utils/types'
-import { EndpointFunction } from '../../server/endpoint'
+import { Endpoint } from '../../server/endpoint'
 import { KitRequestXHR } from '../../endpoint-proxy'
 
 import Form from './Form.svelte'
@@ -25,19 +25,27 @@ export interface FormAPIActionOptions<T extends Record<PropertyKey, any>> {
 
 interface FormAPIOptions {
 	get?: (id: string, options: RequestInit | undefined) => KitRequestXHR
-	put?: (id: string, formData: any, options: RequestInit | undefined) => KitRequestXHR
+	put?: (
+		id: string,
+		formData: any,
+		options: RequestInit | undefined
+	) => KitRequestXHR
 	post?: (formData: any, options: RequestInit | undefined) => KitRequestXHR
 	/** If provided, will use `PATCH` instead of `PUT` and only send changed data from `GET`. */
-	patch?: (id: string, formData: any, options: RequestInit | undefined) => KitRequestXHR
+	patch?: (
+		id: string,
+		formData: any,
+		options: RequestInit | undefined
+	) => KitRequestXHR
 	/** .POST, .[id]/GET .[id]/PUT */
 	api?: {
-		POST: EndpointFunction
+		POST: Endpoint
 		[slug: `${string}$`]: (id: string) =>
 			| undefined
 			| {
-					GET?: EndpointFunction
+					GET?: Endpoint
 					/** Will use `PUT` over `PATCH` */
-					PUT?: EndpointFunction
+					PUT?: Endpoint
 			  }
 	}
 	onSubmit?(method: 'POST' | 'PUT' | 'PATCH', data: FormData): FormData | void
@@ -58,7 +66,7 @@ type FormAPI<T extends Record<PropertyKey, any> = Record<PropertyKey, any>> =
 		Writable<T> & {
 			action: (node: HTMLFormElement, options?: FormAPIActionOptions<T>) => void
 			$: MapDeepTo<T, FormAPIAction>
-			
+
 			errors: {
 				(path?: ErrorPath): KitValidationError[]
 			} & KitValidationError[]
@@ -79,7 +87,6 @@ type FormAPI<T extends Record<PropertyKey, any> = Record<PropertyKey, any>> =
 				totalSize: number
 			}
 		}
-
 
 export function formAPI<T extends Record<PropertyKey, any>>(
 	options: FormAPIOptions | NonNullable<FormAPIOptions['api']>
@@ -586,14 +593,13 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 
 	const errorProxy = new Proxy(function () {} as any, {
 		get(target, key) {
-			if(key in errors)
-				return errors[key]
+			if (key in errors) return errors[key]
 			return target[key]
 		},
 		apply(_, __, [path]: [ErrorPath | undefined]) {
 			if (!path) return errors
 			let property = Array.isArray(path) ? path.join('.') : path.toString()
-			const errs = $derived(errors.filter(err => matchPath(err, property)))
+			const errs = $derived(errors.filter((err) => matchPath(err, property)))
 			return errs
 		},
 	})
