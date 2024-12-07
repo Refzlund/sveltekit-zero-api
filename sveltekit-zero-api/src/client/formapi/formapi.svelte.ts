@@ -199,21 +199,21 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 	function updateNode(node: HTMLInputElement, v: any) {
 		switch (node.type) {
 			case 'checkbox':
-				return (node.checked = v ?? null)
+				return Object.assign(node, { checked: v ?? null })
 			case 'radio':
-				return (node.checked = v ?? null)
+				return Object.assign(node, { checked: v ?? null })
 			case 'file':
-				return (node.files = v ?? null)
+				return Object.assign(node, { files: v ?? null })
 			case 'date':
-				return (node.value = v ? nodeDate(v, 'date') : null!)
+				return Object.assign(node, { value: v ? nodeDate(v, 'date') : null! })
 			case 'datetime':
-				return (node.value = v ? nodeDate(v, 'datetime') : null!)
+				return Object.assign(node, { value: v ? nodeDate(v, 'datetime') : null! })
 			case 'time':
-				return (node.value = v ? nodeDate(v, 'time') : null!)
+				return Object.assign(node, { value: v ? nodeDate(v, 'time') : null! })
 			case 'datetime-local':
-				return (node.value = v ? nodeDate(v, 'datetime-local') : null!)
+				return Object.assign(node, { value: v ? nodeDate(v, 'datetime-local') : null! })
 			default:
-				return (node.value = v ?? null)
+				return Object.assign(node, { value: v ?? null })
 		}
 	}
 

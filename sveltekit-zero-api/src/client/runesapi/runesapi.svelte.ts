@@ -8,7 +8,7 @@ import { APIProxy } from '../api-proxy'
 import { RuneAPI } from './runeapi.type'
 import { RuneAPI as _RuneAPI } from '.'
 import { Paginator } from './paginator.svelte'
-import { runedObjectStorage, runedStorage } from '../runed-storage.svelte'
+import { runedObjectStorage, runedSessionObjectStorage, runedStorage } from '../runed-storage.svelte'
 
 type API<T> = {
 	GET: Endpoint<
@@ -51,15 +51,14 @@ interface RunesDataInstance<T> {
 }
 
 interface RunesAPIOptions<T> {
+	/** The ID associated with this runesAPI */
+	id: string
 	/** Include this query on `api.GET` */
 	query?: (state: {
 		/** When was the last api.GET request sent? (milliseconds elapsed since midnight, January 1, 1970 — UTC) */
 		lastGetRequestAt: number
 	}) => Record<string, unknown>
-	indexedDB?: {
-		/** The ID associated with this runesAPI */
-		id: string
-	}
+	indexedDB?: {}
 	live?: (cb: (data: T) => void) => void
 }
 
@@ -114,8 +113,14 @@ export function runesAPI(...args: any[]) {
 	const proxies = {} as Record<string, {}>
 	const setters = {} as Record<string, (data: any) => void>
 
+	const id = options?.id ?? Math.random().toString(36).slice(2)
+
 	const defaultMeta = { lastGetRequestAt: 0 }
-	const meta = getAPI ? runedObjectStorage(`runesapi-${options?.indexedDB?.id}`, defaultMeta) : defaultMeta
+	const meta = getAPI 
+		? options?.id 
+			? runedSessionObjectStorage(`runesapi-${id}`, defaultMeta) 
+			: runedObjectStorage(`runesapi-${id}`, defaultMeta)
+		: defaultMeta
 
 	function refresh() {
 		if (getAPI) {
