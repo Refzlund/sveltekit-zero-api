@@ -1,5 +1,8 @@
 import { browser } from '$app/environment'
+import { ServerType } from '.'
 import { createEndpointProxy } from '../endpoint-proxy'
+import { Endpoint } from '../server/endpoint'
+import { Functions } from '../server/functions.type'
 import { parseResponse } from '../utils/parse-response'
 import { proxyCrawl } from '../utils/proxy-crawl'
 import { complexSlug } from '../utils/slugs'
@@ -13,7 +16,8 @@ export interface APIProxyOptions {
 	url?: string | URL
 }
 
-const methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']
+const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']
+const URL_SYMBOL = Symbol('sveltekit-zero-api.url')
 
 export class APIProxy {
 	constructor() {
@@ -21,14 +25,17 @@ export class APIProxy {
 	}
 }
 
-const urlSymbol = Symbol('sveltekit-zero-api.url')
-
-
-export function url(path: APIProxy) {
-	return path[urlSymbol]()
+export interface APIProxy {
+	[key: string]: APIProxy | ((...args: any[]) => APIProxy) | ServerType<any>
 }
 
-export function createAPIProxy<T>(options: APIProxyOptions = {}) {
+export function url(path: APIProxy) {
+	// @ts-expect-error
+	return path[URL_SYMBOL]()
+}
+
+/** api.some.route.GET() */
+export function createAPIProxy<T extends APIProxy>(options: APIProxyOptions = {}) {
 	return proxyCrawl({
 		getPrototypeOf() {
 			return APIProxy.prototype
@@ -37,7 +44,6 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 			if (state.key === 'toString' || state.key === Symbol.toPrimitive) {
 				return 'APIProxy'
 			}
-
 
 			let key = state.key.toString()
 			if (key.endsWith('$')) {
@@ -103,7 +109,7 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 				: state.keys.join('/')
 
 			/** Is method (endpoints) or function (funcitons) */
-			let isMethod = xhr || methods.includes(key)
+			let isMethod = xhr || METHODS.includes(key)
 
 			let requestInit: RequestInit & { query?: Record<string, any> } = isMethod
 				? state.args[1] || {}
@@ -119,7 +125,7 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 			// * ---------
 
 
-			if (state.key === urlSymbol) {
+			if (state.key === URL_SYMBOL) {
 				return url
 			}
 
@@ -141,7 +147,7 @@ export function createAPIProxy<T>(options: APIProxyOptions = {}) {
 					? state.keys[state.keys.length - 1].toString()
 					: key
 				: 'PATCH' // functions always use PATCH
-			if (!methods.includes(method)) {
+			if (!METHODS.includes(method)) {
 				throw new Error('Invalid method: ' + method, { cause: state })
 			}
 

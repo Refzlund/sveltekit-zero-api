@@ -66,10 +66,7 @@
 	a1.$.validate()
 	a1.$.validate('nested.name')
 
-	const a2 = data.articles.create()
-
-	data.articles.list
-	
+	const a2 = data.articles.create()	
 
 	const paginator = new data.articles.Paginator(10)
 	paginator.current
@@ -109,7 +106,7 @@
 	</select>
 	<!-- <select bind:value={id} class='bg-gray-950 border-gray-800 rounded-md m-0 text-primary'>
 		<option value={undefined}>None</option>
-		{#each data.users.list as user}
+		{#each data.users as user}
 			<option value={user.id}>{user.name}</option>
 		{/each}
 	</select> -->

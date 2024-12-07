@@ -60,3 +60,19 @@ export const PATCH = endpoint(
 		return new OK({ message: 'Article patched.' })
 	}
 )
+
+export const DELETE = endpoint(
+	(event) => {
+		let index = articles.findIndex(article => article.id === event.params.id)
+		if(index < 0) {
+			return new NotFound({
+				code: 'no_article',
+				error: 'Article not found.',
+			})
+		}
+
+		articles.splice(index, 1)
+		
+		return new OK({ message: 'Article deleted.' })
+	}
+)

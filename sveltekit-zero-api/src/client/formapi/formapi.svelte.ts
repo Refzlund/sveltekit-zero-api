@@ -601,7 +601,7 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 			let property = Array.isArray(path) ? path.join('.') : path.toString()
 			const errs = $derived(errors.filter((err) => matchPath(err, property)))
 			return errs
-		},
+		}
 	})
 
 	let proxy = new Proxy(function () {} as any, {

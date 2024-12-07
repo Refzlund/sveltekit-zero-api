@@ -1,9 +1,13 @@
+import { SvelteMap } from 'svelte/reactivity'
 import { KitRequestXHR } from '../../endpoint-proxy'
 import type { Endpoint } from '../../server/endpoint'
 import type { KitResponse } from '../../server/http'
 import { Slugged } from '../../utils/slugs'
 import { KeyOf } from '../../utils/types'
+import { APIProxy } from '../api-proxy'
 import { RuneAPI } from './runeapi.type'
+import { RuneAPI as _RuneAPI } from '.'
+import { Paginator } from './paginator.svelte'
 
 type API<T> = {
 	GET: Endpoint<
@@ -92,22 +96,94 @@ export function runesAPI<TAPI, TItems, TData extends Record<string, any[]>>(
 	>
 }
 
-export function runesAPI(instances?: any) {
-	const map = {} as Record<any, any>
-
-	for (const key in instances) {
-		map[key] = new Proxy(function () {}, {
-			get() {
-				return map[key]
-			},
-			apply() {
-				return map[key]
-			},
-			construct() {
-				return map[key]
-			},
-		}) as any
+export function runesAPI(...args: any[]) {
+	let instances: Partial<Record<string, RunesDataInstance<unknown>>>
+	let getAPI: APIProxy | undefined
+	if(args[0] instanceof APIProxy) {
+		getAPI = args[0]
+		instances = args[1]
+	}
+	else {
+		instances = args[0]
 	}
 
-	return map
+	const proxies = {} as Record<string, {}>
+	const setters = {} as Record<string, (key: PropertyKey, data: any) => void>
+
+	for (const key in instances) {
+		const map = new SvelteMap<PropertyKey, any>()
+		const item = $state(new _RuneAPI())
+
+		let api: API<unknown> = getAPI ? getAPI[key] as API<unknown> : instances[key]!.api
+
+		function remove(key: PropertyKey) {
+			map.delete(key)
+			delete item[key]
+		}
+		function set(key: PropertyKey, value: any) {
+			if(value === undefined || value === null) {
+				return remove(key)
+			}
+
+			map.set(key, value)
+			item[key] = value
+		}
+		setters[key] = set
+
+		// CRUD
+		function get(key?: PropertyKey) {
+			
+		}
+		function post(data: unknown) {
+			
+		}
+		function put(key: PropertyKey) {
+			
+		}
+		function patch(key: PropertyKey) {
+			
+		}
+		function delete_(key: PropertyKey) {
+			
+		}
+
+		proxies[key] = new Proxy(item, {
+			get(_, property) {
+				switch(property) {
+					case Symbol.iterator: return () => map.values()
+					case 'entries': return () => map.entries()
+					case 'keys': return () => map.keys()
+					case 'length': return map.size
+					case 'has': return (key: PropertyKey) => map.has(key)
+
+					// CRUD
+					case 'get': return get
+					case 'post': return post
+					case 'put': return put
+					case 'patch': return patch
+					case 'delete': return delete_
+
+					// Proxied objects
+					case 'modify': return
+					case 'create': return
+
+					// Data
+					case 'groups': return
+					case 'Paginator': return Paginator
+
+					// Validation
+					case 'validate': return
+					
+					// Return list-item based on discriminator
+					default: return map.get(property)
+				}
+			}
+		})
+	}
+
+	if (getAPI) {
+		getAPI
+	}
+
+	return proxies
 }
