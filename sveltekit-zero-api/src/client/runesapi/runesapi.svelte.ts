@@ -8,6 +8,7 @@ import { APIProxy } from '../api-proxy'
 import { RuneAPI } from './runeapi.type'
 import { RuneAPI as _RuneAPI } from '.'
 import { Paginator } from './paginator.svelte'
+import { runedObjectStorage, runedStorage } from '../runed-storage.svelte'
 
 type API<T> = {
 	GET: Endpoint<
@@ -97,22 +98,48 @@ export function runesAPI<TAPI, TItems, TData extends Record<string, any[]>>(
 }
 
 export function runesAPI(...args: any[]) {
-	let instances: Partial<Record<string, RunesDataInstance<unknown>>>
 	let getAPI: APIProxy | undefined
+	let instances: Partial<Record<string, RunesDataInstance<unknown>>>
+	let options: RunesAPIOptions<unknown> | undefined
+
 	if(args[0] instanceof APIProxy) {
 		getAPI = args[0]
 		instances = args[1]
+		options = args[2]
 	}
 	else {
 		instances = args[0]
 	}
 
 	const proxies = {} as Record<string, {}>
-	const setters = {} as Record<string, (key: PropertyKey, data: any) => void>
+	const setters = {} as Record<string, (data: any) => void>
+
+	const defaultMeta = { lastGetRequestAt: 0 }
+	const meta = getAPI ? runedObjectStorage(`runesapi-${options?.indexedDB?.id}`, defaultMeta) : defaultMeta
+
+	function refresh() {
+		if (getAPI) {
+			const GET = getAPI.GET as Endpoint
+			const opts = (options || {}) as RunesAPIOptions<unknown>
+
+			GET(null, { query: opts.query?.(meta) }).success(({ body }) => {
+				for (const key in body) {
+					const set = setters[key]
+					for (const data of body[key]) {
+						set(data)
+					}
+				}
+			})
+
+			meta.lastGetRequestAt = Date.now()
+		}
+	}
 
 	for (const key in instances) {
 		const map = new SvelteMap<PropertyKey, any>()
-		const item = $state(new _RuneAPI())
+		const item = $state({})
+		
+		const discriminator = instances[key]!.discriminator
 
 		let api: API<unknown> = getAPI ? getAPI[key] as API<unknown> : instances[key]!.api
 
@@ -120,7 +147,16 @@ export function runesAPI(...args: any[]) {
 			map.delete(key)
 			delete item[key]
 		}
-		function set(key: PropertyKey, value: any) {
+		function set(value: unknown | unknown[]) {
+			if(Array.isArray(value)) {
+				return value.forEach(set)
+			}
+
+			const key = discriminator(value)
+			if(key === undefined || key === false || key === null) {
+				return
+			}
+
 			if(value === undefined || value === null) {
 				return remove(key)
 			}
@@ -132,23 +168,51 @@ export function runesAPI(...args: any[]) {
 
 		// CRUD
 		function get(key?: PropertyKey) {
-			
+			if(typeof key !== 'undefined') {
+				const endpoint = api.id$!(key).GET as Endpoint
+				return endpoint().success(({ body }) => set(body))
+			}
+			return api.GET().success(({ body }) => set(body))
 		}
 		function post(data: unknown) {
-			
+			const endpoint = api.POST as Endpoint
+			endpoint(data).success(({ body }) => set(body))
 		}
-		function put(key: PropertyKey) {
-			
+		function put(key: PropertyKey, data: unknown) {
+			const endpoint = api.id$!(key).PUT as Endpoint
+			endpoint(data).success(({ body }) => set(body))
 		}
-		function patch(key: PropertyKey) {
-			
+		function patch(key: PropertyKey, data: unknown) {
+			const endpoint = api.id$!(key).PATCH as Endpoint
+			endpoint(data).success(({ body }) => set(body))
 		}
 		function delete_(key: PropertyKey) {
-			
+			const endpoint = api.id$!(key).DELETE as Endpoint
+			endpoint().success(() => remove(key))
 		}
-
+		
+		let lastUpdate = 0
 		proxies[key] = new Proxy(item, {
+			getPrototypeOf() {
+				return _RuneAPI.prototype
+			},
 			get(_, property) {
+				const update = 
+					lastUpdate === 0 
+					&& !getAPI 
+					&& (
+					   property === Symbol.iterator
+					|| property === 'entries'
+					|| property === 'keys'
+					|| property === 'length'
+					|| property === 'has'
+				)
+
+				if(update) {
+					lastUpdate = Date.now()
+					get()
+				}
+
 				switch(property) {
 					case Symbol.iterator: return () => map.values()
 					case 'entries': return () => map.entries()
@@ -173,17 +237,20 @@ export function runesAPI(...args: any[]) {
 
 					// Validation
 					case 'validate': return
+
+					case 'toJSON': return () => Array.from(map.values())
+					case 'toString': return () => JSON.stringify(Array.from(map.values()))
 					
 					// Return list-item based on discriminator
-					default: return map.get(property)
+					default: 
+						get(property)
+						return map.get(property)
 				}
 			}
 		})
 	}
 
-	if (getAPI) {
-		getAPI
-	}
+	refresh()
 
 	return proxies
 }

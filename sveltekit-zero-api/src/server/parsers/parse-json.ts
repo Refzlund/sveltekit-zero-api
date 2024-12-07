@@ -65,10 +65,13 @@ export const parseJSON = new ParseKitEvent(async (event) => {
 		const dateRegex =
 			/(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))/
 
-		function parser(item) {
+		function parser(item: unknown) {
+			if(item === undefined || item === null) {
+				return item
+			}
 			if(typeof item !== 'object') {
 				try {
-					return isFormData && numberRegex.test(item) ? +item : dateRegex.test(item) ? new Date(item) : item
+					return isFormData && numberRegex.test(item as string) ? +item : typeof item === 'string' && dateRegex.test(item) ? new Date(item) : item
 				} catch (error) {
 					return item
 				}
@@ -78,7 +81,7 @@ export const parseJSON = new ParseKitEvent(async (event) => {
 			}
 			return item
 		}
-		json = parser(json)
+		json = parser(json) as typeof json
 	}
 
 	return { body: json }

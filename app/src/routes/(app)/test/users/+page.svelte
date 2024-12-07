@@ -18,20 +18,20 @@
 
 	const searchFloat = floatingUI({})
 	
-	let indexed = runesAPI(api, {
-		users: {
-			discriminator: body => body.id,
-			groups: {
-				seniors: v => v.filter(v => v.age > 50).sort((a,b) => a.age - b.age)
-			}
-		},
-		articles: {
-			discriminator: body => body.id
-		}
-	}, {
-		indexedDB: { id: 'main' },
-		query: o => ({ since: o.lastGetRequestAt })
-	})
+	// let indexed = runesAPI(api, {
+	// 	users: {
+	// 		discriminator: body => body.id,
+	// 		groups: {
+	// 			seniors: v => v.filter(v => v.age > 50).sort((a,b) => a.age - b.age)
+	// 		}
+	// 	},
+	// 	articles: {
+	// 		discriminator: body => body.id
+	// 	}
+	// }, {
+	// 	indexedDB: { id: 'main' },
+	// 	query: o => ({ since: o.lastGetRequestAt })
+	// })
 
 	let data = runesAPI({
 		users: {
@@ -47,6 +47,7 @@
 		}
 	})
 
+	/*
 	data.articles.get()
 	let post = data.articles.post({
 		title: 'Title',
@@ -74,7 +75,7 @@
 	paginator.total
 	paginator.next()
 	paginator.prev()
-
+	*/
 
 </script>
 <!---------------------------------------------------->
@@ -91,25 +92,13 @@
 			{/each}
 		</div>
 	{/if}
-
+	
 	<select bind:value={id} class='bg-gray-950 border-gray-800 rounded-md m-0 text-primary'>
-		<option value={undefined}>None</option>
-		{#await api.users.GET().$.OK(({body}) => body).serverError(({body}) => body) then [users, error]}
-			{#if users}
-				{#each users as user}
-					<option value={user.id}>{user.name}</option>
-				{/each}
-			{:else if error}
-				Could not load users: {JSON.stringify(error)}
-			{/if}
-		{/await}
-	</select>
-	<!-- <select bind:value={id} class='bg-gray-950 border-gray-800 rounded-md m-0 text-primary'>
 		<option value={undefined}>None</option>
 		{#each data.users as user}
 			<option value={user.id}>{user.name}</option>
 		{/each}
-	</select> -->
+	</select>
 </div>
 
 <h3 class='text-xl md-2'>{id ? 'Updating ' + $Form.name : 'Create new user'}</h3>
