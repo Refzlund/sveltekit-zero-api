@@ -10,6 +10,7 @@ import { RuneAPI as _RuneAPI } from '.'
 import { Paginator } from './paginator.svelte'
 import { runedObjectStorage, runedSessionObjectStorage, runedStorage } from '../runed-storage.svelte'
 import { insertSorted } from '../../utils/sort-merge'
+import { KitRequestProxy, KitRequestProxyXHR } from '../../endpoint-proxy.type'
 
 type API<T> = {
 	GET?: Endpoint<
@@ -47,11 +48,17 @@ interface RunesDataInstance<T> {
 				limit: string
 				skip: string
 				count: number
-				api: (query: Record<string, string>) => KitRequestXHR
+				api: (query: Record<string, string>) => 
+					| Promise<T[]> 
+					| KitRequestProxy<KitResponse<any, any, T[], true> | KitResponse<any, any, any, false>>
+					| KitRequestProxyXHR<KitResponse<any, any, T[], true> | KitResponse<any, any, any, false>>
 				total?: () => Promise<number>
 		  }
 		| {
-				api: (page: number) => KitRequestXHR
+				api: (page: number) => 
+					| Promise<T[]> 
+					| KitRequestProxy<KitResponse<any, any, T[], true> | KitResponse<any, any, any, false>>
+					| KitRequestProxyXHR<KitResponse<any, any, T[], true> | KitResponse<any, any, any, false>>
 				total?: () => Promise<number>
 		  }
 	/** The groups filtering/sorting first happens when accessed */
@@ -269,8 +276,8 @@ export function runesAPI(...args: any[]) {
 								}
 							}
 						})
-						on('remove', (_, value) => {
-							const index = groupArray.indexOf(value)
+						on('remove', (key) => {
+							const index = groupArray.findIndex(v => discriminator(v) === key)
 							if (index !== -1) {
 								groupArray.splice(index, 1)
 							}
@@ -286,8 +293,8 @@ export function runesAPI(...args: any[]) {
 		const cooldown = typeof instance.fetch === 'number' ? instance.fetch : 0
 		
 		// getAPI will get all items
-		let nextUpdate = getAPI ? Date.now() + cooldown : 0
 		let updatedAt = 0
+		let itemUpdatedAt: Record<PropertyKey, number> = {}
 
 		proxies[key] = new Proxy(item, {
 			getPrototypeOf() {
@@ -296,7 +303,7 @@ export function runesAPI(...args: any[]) {
 			get(_, property) {
 				const update = (
 					(instance.fetch === true && updatedAt === 0)
-					|| (typeof instance.fetch === 'number' && Date.now() > nextUpdate)
+					|| (typeof instance.fetch === 'number' && Date.now() > updatedAt + cooldown)
 				)
 					&& (
 						property === Symbol.iterator
@@ -309,7 +316,6 @@ export function runesAPI(...args: any[]) {
 
 				if(update) {
 					updatedAt = Date.now()
-					nextUpdate = updatedAt + cooldown
 					GET()
 				}
 
@@ -343,9 +349,18 @@ export function runesAPI(...args: any[]) {
 					
 					// Return list-item based on discriminator
 					default:
-						if(instance.fetch === true || typeof instance.fetch === 'number') {
+						if (typeof property === 'symbol')
+							return instanceMap[property]
+
+						const shouldUpdate = 
+							instance.fetch === true && !instanceMap.has(property)
+							|| (cooldown > 0 && Date.now() > Math.max(itemUpdatedAt[property] || 0, updatedAt) + cooldown)
+
+						if (shouldUpdate) {
+							itemUpdatedAt[property] = updatedAt
 							GET(property)
 						}
+
 						return instanceMap.get(property)
 				}
 			}

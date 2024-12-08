@@ -3,7 +3,7 @@ import { proxyCrawl, type StateApply, type StateGet } from './utils/proxy-crawl'
 import type { KitRequestProxy } from './endpoint-proxy.type'
 
 /**
- * A proxied request — A shortcut to `KitRequestProxy<..., never, true>` and can be used in code as `value instanceof KitRequest`
+ * A proxied request — A shortcut to `KitRequestProxy<..., never, false>` and can be used in code as `value instanceof KitRequest`
  */
 export class KitRequest {
 	constructor() {
@@ -13,7 +13,7 @@ export class KitRequest {
 export interface KitRequest extends KitRequestProxy<KitResponse<any, any, any, boolean>, never, false> { }
 
 /**
- * A proxied request — A shortcut to `KitRequestProxy<..., never, false>` and can be used in code as `value instanceof KitRequestXHR`
+ * A proxied request — A shortcut to `KitRequestProxy<..., never, true>` and can be used in code as `value instanceof KitRequestXHR`
  */
 export class KitRequestXHR extends KitRequest {}
 export interface KitRequestXHR extends KitRequestProxy<KitResponse<any, any, any, boolean>, never, true> { }

@@ -34,7 +34,7 @@ type GetSluggedEndpointFn<T, Key extends string> = T extends {
 	: never
 	: never
 
-type Modify<T, Put extends Endpoint, Patch extends Endpoint> = [
+type Modify<T, Put extends Endpoint, Patch extends Endpoint, Delete extends Endpoint> = [
 	Put,
 	Patch
 ] extends [never, never] ? {} :
@@ -51,6 +51,7 @@ type Modify<T, Put extends Endpoint, Patch extends Endpoint> = [
 			}
 			& ([Put] extends [never] ? {} : { put(): ValidatedKitRequestXHR<ReturnType<Put['xhr']>> })
 			& ([Patch] extends [never] ? {} : { patch(): ValidatedKitRequestXHR<ReturnType<Patch['xhr']>> })
+			& ([Delete] extends [never] ? {} : { delete(): ReturnType<Delete['xhr']> })
 		}
 	}
 	& ([Put] extends [never] ? {} : {
@@ -97,7 +98,7 @@ export type RuneAPI<T, G, A> =
 			} 
 			: {} 
 		: {})
-	& Modify<T, GetSluggedEndpointFn<A, 'PUT'>, GetSluggedEndpointFn<A, 'PATCH'>> 
+	& Modify<T, GetSluggedEndpointFn<A, 'PUT'>, GetSluggedEndpointFn<A, 'PATCH'>, GetSluggedEndpointFn<A, 'DELETE'>> 
 	& ([G] extends [never]
 		? {}
 		: G extends Record<string, any>
