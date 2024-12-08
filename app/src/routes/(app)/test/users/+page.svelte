@@ -37,13 +37,15 @@
 		users: {
 			api: api.users,
 			discriminator: body => body.id,
+			fetch: true,
 			groups: {
 				seniors: v => v.filter(v => v.age > 50).sort((a,b) => a.age - b.age)
 			}
 		},
 		articles: {
 			api: api.articles,
-			discriminator: body => body.id
+			discriminator: body => body.id,
+			fetch: true
 		}
 	})
 

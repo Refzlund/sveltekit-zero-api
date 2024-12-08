@@ -103,7 +103,7 @@ export function createAPIProxy<T extends APIProxy>(options: APIProxyOptions = {}
 
 			// * -- Request Information --
 
-			const xhr = key === 'xhr' ? new XMLHttpRequest() : undefined
+			const xhr = key === 'xhr' && browser ? new XMLHttpRequest() : undefined
 			const route = xhr
 				? state.keys.slice(0, -1).join('/')
 				: state.keys.join('/')

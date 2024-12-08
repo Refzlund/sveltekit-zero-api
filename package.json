@@ -1,6 +1,7 @@
 {
 	"scripts": {
-		"app": "cd ./sveltekit-zero-api && bun ./build.ts && cd ../app && bun dev"
+		"app": "cd ./sveltekit-zero-api && bun ./build.ts && cd ../app && bun dev",
+		"app:dev": "cd ./app && bun dev"
 	},
 	"workspaces": [
 		"./app",

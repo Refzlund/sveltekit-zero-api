@@ -9,9 +9,10 @@ import { RuneAPI } from './runeapi.type'
 import { RuneAPI as _RuneAPI } from '.'
 import { Paginator } from './paginator.svelte'
 import { runedObjectStorage, runedSessionObjectStorage, runedStorage } from '../runed-storage.svelte'
+import { insertSorted } from '../../utils/sort-merge'
 
 type API<T> = {
-	GET: Endpoint<
+	GET?: Endpoint<
 		any,
 		KitResponse<any, any, T | T[], true> | KitResponse<any, any, any, false>
 	>
@@ -25,14 +26,21 @@ type API<T> = {
 	}>
 >
 
-type Grouping<T> = {
-	sort(...args: Parameters<T[]['sort']>): Grouping<T>
+type Grouping<T, Sortable extends boolean = true> = {
 	filter(...args: Parameters<T[]['filter']>): Grouping<T>
-}
+} & (Sortable extends true ? { sort(...args: Parameters<T[]['sort']>): Grouping<T, false> } : {})
 
 interface RunesDataInstance<T> {
 	api: API<T>
 	discriminator: (body: T) => string | false
+	/**
+	 * If `fetch` is `true` the list will get fetched when referenced the first time.
+	 * 
+	 * If it's a `number` (milliseconds), it will wait until that amount of time has passed, until it fetches again.
+	 * 
+	 * This is true for both when retrieving values like iteration; `{#each data.users as user}` and single items; `data.users[id]`
+	*/
+	fetch?: boolean | number
 	live?: (body: T | T[]) => void
 	paginator?:
 		| {
@@ -47,7 +55,7 @@ interface RunesDataInstance<T> {
 				total?: () => Promise<number>
 		  }
 	/** The groups filtering/sorting first happens when accessed */
-	groups?: Record<string, (list: Grouping<T>) => Grouping<T>>
+	groups?: Record<string, (list: Grouping<T>) => Grouping<T, boolean>>
 }
 
 interface RunesAPIOptions<T> {
@@ -130,6 +138,7 @@ export function runesAPI(...args: any[]) {
 			GET(null, { query: opts.query?.(meta) }).success(({ body }) => {
 				for (const key in body) {
 					const set = setters[key]
+					if(!set) continue
 					for (const data of body[key]) {
 						set(data)
 					}
@@ -141,20 +150,36 @@ export function runesAPI(...args: any[]) {
 	}
 
 	for (const key in instances) {
-		const map = new SvelteMap<PropertyKey, any>()
+		const instance = instances[key]!
+
+		const instanceMap = new SvelteMap<PropertyKey, any>()
 		const item = $state({})
 		
-		const discriminator = instances[key]!.discriminator
+		const discriminator = instance.discriminator
 
-		let api: API<unknown> = getAPI ? getAPI[key] as API<unknown> : instances[key]!.api
+		let api: API<unknown> = getAPI ? instance.api ?? getAPI[key] as API<unknown> : instance.api
+
+		const listeners = {
+			set: [] as Function[],
+			remove: [] as Function[]
+		}
+		function on(
+			event: 'set' | 'remove',
+			cb: (key: string, values: unknown) => void
+		) {
+			listeners[event].push(cb)
+		}
 
 		function remove(key: PropertyKey) {
-			map.delete(key)
+			const item = instanceMap.get(key)
+			instanceMap.delete(key)
 			delete item[key]
+			listeners.remove.forEach((cb) => cb(key, item))
 		}
 		function set(value: unknown | unknown[]) {
 			if(Array.isArray(value)) {
-				return value.forEach(set)
+				value.forEach(set)
+				return
 			}
 
 			const key = discriminator(value)
@@ -166,90 +191,162 @@ export function runesAPI(...args: any[]) {
 				return remove(key)
 			}
 
-			map.set(key, value)
+			instanceMap.set(key, value)
 			item[key] = value
+			listeners.set.forEach((cb) => cb(key, value))
 		}
 		setters[key] = set
 
 		// CRUD
-		function get(key?: PropertyKey) {
+		function GET(key?: PropertyKey) {
 			if(typeof key !== 'undefined') {
 				const endpoint = api.id$!(key).GET as Endpoint
-				return endpoint().success(({ body }) => set(body))
+				return endpoint.xhr().success(({ body }) => set(body))
 			}
-			return api.GET().success(({ body }) => set(body))
+			return api.GET?.xhr().success(({ body }) => set(body))
 		}
-		function post(data: unknown) {
+		function POST(data: unknown) {
 			const endpoint = api.POST as Endpoint
-			endpoint(data).success(({ body }) => set(body))
+			endpoint.xhr(data).success(({ body }) => set(body))
 		}
-		function put(key: PropertyKey, data: unknown) {
+		function PUT(key: PropertyKey, data: unknown) {
 			const endpoint = api.id$!(key).PUT as Endpoint
-			endpoint(data).success(({ body }) => set(body))
+			endpoint.xhr(data).success(({ body }) => set(body))
 		}
-		function patch(key: PropertyKey, data: unknown) {
+		function PATCH(key: PropertyKey, data: unknown) {
 			const endpoint = api.id$!(key).PATCH as Endpoint
-			endpoint(data).success(({ body }) => set(body))
+			endpoint.xhr(data).success(({ body }) => set(body))
 		}
-		function delete_(key: PropertyKey) {
+		function DELETE(key: PropertyKey) {
 			const endpoint = api.id$!(key).DELETE as Endpoint
-			endpoint().success(() => remove(key))
+			endpoint.xhr().success(() => remove(key))
+		}
+
+		let groups: Record<string, any>
+		if('groups' in instance) {
+			const group: Record<string, unknown[]> = {}
+			groups = new Proxy(instance.groups!, {
+				get(target, property) {
+					if (typeof property === 'string' && property in instance.groups!) {
+						const g = group[property]
+						if (g) {
+							return g
+						}
+
+						// * Initiate the group maintainence logic
+
+						const groupArray = $state([]) as unknown[]
+						group[property] = groupArray
+
+						let filters = [] as Parameters<Grouping<unknown>['filter']>[0][]
+						let sort: Parameters<Grouping<unknown>['sort']>[0] | undefined
+
+						const proxy = {
+							filter: (fn) => {
+								filters.push(fn)
+								return proxy
+							},
+							sort: (fn) => {
+								sort = fn
+								return proxy
+							}
+						} as Grouping<unknown>
+						target[property](proxy)
+
+						Array.from(instanceMap.values()).forEach((value, index) => {
+							if (filters.every((fn) => fn(value, index, groupArray))) {
+								groupArray.push(value)
+							}
+						})
+						if(sort) groupArray.sort(sort)
+
+						on('set', (_, value) => {
+							if (filters.every((fn) => fn(value, groupArray.length, groupArray))) {
+								if(sort) {
+									insertSorted(groupArray, value, sort)
+								} else {
+									groupArray.push(value)
+								}
+							}
+						})
+						on('remove', (_, value) => {
+							const index = groupArray.indexOf(value)
+							if (index !== -1) {
+								groupArray.splice(index, 1)
+							}
+						})
+
+						return groupArray
+					}
+
+				}
+			})
 		}
 		
-		let lastUpdate = 0
+		const cooldown = typeof instance.fetch === 'number' ? instance.fetch : 0
+		
+		// getAPI will get all items
+		let nextUpdate = getAPI ? Date.now() + cooldown : 0
+		let updatedAt = 0
+
 		proxies[key] = new Proxy(item, {
 			getPrototypeOf() {
 				return _RuneAPI.prototype
 			},
 			get(_, property) {
-				const update = 
-					lastUpdate === 0 
-					&& !getAPI 
-					&& (
-					   property === Symbol.iterator
-					|| property === 'entries'
-					|| property === 'keys'
-					|| property === 'length'
-					|| property === 'has'
+				const update = (
+					(instance.fetch === true && updatedAt === 0)
+					|| (typeof instance.fetch === 'number' && Date.now() > nextUpdate)
 				)
+					&& (
+						property === Symbol.iterator
+						|| property === 'entries'
+						|| property === 'keys'
+						|| property === 'length'
+						|| property === 'has'
+						|| property === 'groups'
+					)
 
 				if(update) {
-					lastUpdate = Date.now()
-					get()
+					updatedAt = Date.now()
+					nextUpdate = updatedAt + cooldown
+					GET()
 				}
 
 				switch(property) {
-					case Symbol.iterator: return () => map.values()
-					case 'entries': return () => map.entries()
-					case 'keys': return () => map.keys()
-					case 'length': return map.size
-					case 'has': return (key: PropertyKey) => map.has(key)
+					case Symbol.iterator: return () => instanceMap.values()
+					case 'entries': return () => instanceMap.entries()
+					case 'keys': return () => instanceMap.keys()
+					case 'length': return instanceMap.size
+					case 'has': return (key: PropertyKey) => instanceMap.has(key)
 
 					// CRUD
-					case 'get': return get
-					case 'post': return post
-					case 'put': return put
-					case 'patch': return patch
-					case 'delete': return delete_
+					case 'get': return GET
+					case 'post': return POST
+					case 'put': return PUT
+					case 'patch': return PATCH
+					case 'delete': return DELETE
 
 					// Proxied objects
 					case 'modify': return
 					case 'create': return
 
 					// Data
-					case 'groups': return
+					case 'groups': return groups
 					case 'Paginator': return Paginator
 
 					// Validation
 					case 'validate': return
 
-					case 'toJSON': return () => Array.from(map.values())
-					case 'toString': return () => JSON.stringify(Array.from(map.values()))
+					case 'toJSON': return () => Array.from(instanceMap.values())
+					case 'toString': return () => JSON.stringify(Array.from(instanceMap.values()))
 					
 					// Return list-item based on discriminator
-					default: 
-						get(property)
-						return map.get(property)
+					default:
+						if(instance.fetch === true || typeof instance.fetch === 'number') {
+							GET(property)
+						}
+						return instanceMap.get(property)
 				}
 			}
 		})
