@@ -1,19 +1,22 @@
 import type { KitResponse } from './server/http'
 import { proxyCrawl, type StateApply, type StateGet } from './utils/proxy-crawl'
-import type { EndpointProxy as EndpointProxyType } from './endpoint-proxy.type'
+import type { KitRequestProxy } from './endpoint-proxy.type'
 
 /**
- * e.g. Responses from endpoints
+ * A proxied request — A shortcut to `KitRequestProxy<..., never, true>` and can be used in code as `value instanceof KitRequest`
  */
 export class KitRequest {
 	constructor() {
 		throw new Error('Cannot construct EndpointProxy. Please use `createEndpointProxy` instead.')
 	}
 }
-export interface KitRequest extends EndpointProxyType<KitResponse<any, any, any, boolean>, never> {}
+export interface KitRequest extends KitRequestProxy<KitResponse<any, any, any, boolean>, never, false> { }
 
+/**
+ * A proxied request — A shortcut to `KitRequestProxy<..., never, false>` and can be used in code as `value instanceof KitRequestXHR`
+ */
 export class KitRequestXHR extends KitRequest {}
-export interface KitRequestXHR extends EndpointProxyType<KitResponse<any, any, any, boolean>, never, true> {}
+export interface KitRequestXHR extends KitRequestProxy<KitResponse<any, any, any, boolean>, never, true> { }
 
 /**
  * An EndpointProxy that has marked a `.$.` to return an array of promised callbacks.
@@ -25,11 +28,11 @@ export class ReturnedKitRequest {
 		)
 	}
 }
-export interface ReturnedKitRequest extends EndpointProxyType<KitResponse<any, any, any, boolean>, any[]> {}
+export interface ReturnedKitRequest extends KitRequestProxy<KitResponse<any, any, any, boolean>, any[]> { }
 
-export class ReturnedKitRequestXHR extends ReturnedKitRequest {}
+export class ReturnedKitRequestXHR extends ReturnedKitRequest { }
 export interface ReturnedKitRequestXHR
-	extends EndpointProxyType<KitResponse<any, any, any, boolean>, any[], true> {}
+	extends KitRequestProxy<KitResponse<any, any, any, boolean>, any[], true> { }
 
 type ResponseType = KitResponse | Response
 
@@ -38,7 +41,7 @@ export function createEndpointProxy<T extends KitResponse>(
 	pureResponse: Promise<T | Response>,
 	abort?: () => void,
 	xhr?: XMLHttpRequest,
-): EndpointProxyType<T, never> {
+): KitRequestProxy<T, never> {
 	// Proxy
 	// ex. `let [result] = GET(event, { body: { ... }}).error(...).$.OK(...)`
 
@@ -151,7 +154,7 @@ export function createEndpointProxy<T extends KitResponse>(
 					let results = Array($promises.length).fill(undefined)
 					let error: unknown = false
 					let resolved = 0
-					for (let i = 0; i < $promises.length; i++) {
+					for (let i = 0;i < $promises.length;i++) {
 						const promise = $promises[i][1]
 						promise
 							.then((v) => {

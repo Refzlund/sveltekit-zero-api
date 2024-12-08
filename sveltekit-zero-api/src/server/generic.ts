@@ -1,4 +1,4 @@
-import type { EndpointProxy } from '../endpoint-proxy.type'
+import type { KitRequestProxy } from '../endpoint-proxy.type'
 import type { Promisify } from '../utils/types'
 import type { InternalServerError, KitResponse, StatusCode } from './http'
 /**
@@ -46,13 +46,13 @@ export class Generic<T extends Function> {
 			Extract<T, KitResponse<StatusCode['Success']>>['body'],
 			| Exclude<Extract<T, KitResponse>, KitResponse<StatusCode['Success']>>
 			| InternalServerError<{
-					code: 'function_failed'
-					error: 'An unexpected error occurred when running the function.'
-			  }>
+				code: 'function_failed'
+				error: 'An unexpected error occurred when running the function.'
+			}>
 		>
 	}
 
 	static endpoint<T extends KitResponse>(response: T) {
-		return response as unknown as EndpointProxy<T>
+		return response as unknown as KitRequestProxy<T>
 	}
 }

@@ -1,2 +1,2 @@
 export type { Endpoint as EndpointFunction } from './server/endpoint'
-export type { EndpointProxy } from './endpoint-proxy.type'
+export type { KitRequestProxy as EndpointProxy } from './endpoint-proxy.type'
