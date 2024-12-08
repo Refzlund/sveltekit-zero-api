@@ -18,7 +18,12 @@ export const POST = endpoint(
 )
 
 export const PATCH = functions({
-	search: (event: KitEvent, name: string) => {
-		return new OK(articles.filter((articles) => articles.title.includes(name)))
+	paginate(_, index: number) {
+		return new OK(
+			articles.slice(index, index + 12)
+		)
+	},
+	total() {
+		return new OK(Math.ceil(articles.length / 12))
 	}
 })

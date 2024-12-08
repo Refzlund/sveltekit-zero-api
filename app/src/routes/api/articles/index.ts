@@ -7,7 +7,7 @@ export const Article = z.object({
 	content: z.string().trim()
 })
 
-export const articles: z.output<typeof Article>[] = Array(100).fill(null).map((_, i) => {
+export const articles: z.output<typeof Article>[] = Array(1000).fill(null).map((_, i) => {
 	return {
 		id: `Article:${i}`,
 		title: faker.lorem.words(3),

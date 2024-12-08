@@ -39,30 +39,20 @@
 			discriminator: (body) => body.id,
 			fetch: true,
 			groups: {
-				seniors: (v) =>
-					v.filter((v) => v.age > 50).sort((a, b) => a.age - b.age),
-			},
+				seniors: (v) => v.filter((v) => v.age > 50).sort((a, b) => a.age - b.age)
+			}
 		},
 		articles: {
 			api: api.articles,
 			discriminator: (body) => body.id,
-			fetch: true,
-		},
+			paginator: {
+				page: (index) => api.articles.paginate(index),
+				total: () => api.articles.total()
+			}
+		}
 	})
 
-	// $inspect(data.users.groups.seniors)
-
-	// setTimeout(() => {
-	// 	data.users.post({
-	// 		name: 'John Doe',
-	// 		age: 69,
-	// 		birth: new Date(
-	// 			Date.now() - new Date(1000 * 60 * 60 * 24 * 365 * 69).valueOf(),
-	// 		),
-	// 		email: 'yasss@example.com',
-	// 	})
-	// }, 5000)
-
+	
 	/*
 	data.articles.get()
 	let post = data.articles.post({

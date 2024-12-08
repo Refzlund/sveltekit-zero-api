@@ -77,17 +77,18 @@ interface RunesDataInstance<T> {
 		limit: string
 		skip: string
 		count: number
-		api: (query: Record<string, string>) =>
-			| Promise<T[]>
-			| KitRequestProxy<KitResponse<any, any, T[], true> | KitResponse<any, any, any, false>>
-			| KitRequestProxyXHR<KitResponse<any, any, T[], true> | KitResponse<any, any, any, false>>
+		/** Start at `skip`, then `limit` that to `skip`+`count`  */
+		range: (query: Record<string, string>) =>
+			| Promise<T | T[]>
+			| KitRequestProxy<KitResponse<any, any, T | T[], true> | KitResponse<any, any, any, false>>
+			| KitRequestProxyXHR<KitResponse<any, any, T | T[], true> | KitResponse<any, any, any, false>>
 		total?: () => Promise<number>
 	}
 	| {
-		api: (page: number) =>
-			| Promise<T[]>
-			| KitRequestProxy<KitResponse<any, any, T[], true> | KitResponse<any, any, any, false>>
-			| KitRequestProxyXHR<KitResponse<any, any, T[], true> | KitResponse<any, any, any, false>>
+		page: (index: number) =>
+			| Promise<T | T[]>
+			| KitRequestProxy<KitResponse<any, any, T | T[], true> | KitResponse<any, any, any, false>>
+			| KitRequestProxyXHR<KitResponse<any, any, T | T[], true> | KitResponse<any, any, any, false>>
 		total?: () => Promise<number>
 	}
 	/** The groups filtering/sorting first happens when accessed */
@@ -189,6 +190,7 @@ export function runesAPI(...args: any[]) {
 		const instance = instances[key]!
 
 		const instanceMap = new SvelteMap<PropertyKey, any>()
+		const instanceList = $state([]) as unknown[]
 		const item = $state({})
 
 		const discriminator = typeof instance.discriminator === 'function' ? instance.discriminator : instance.discriminator.get
@@ -210,6 +212,8 @@ export function runesAPI(...args: any[]) {
 			const item = instanceMap.get(key)
 			instanceMap.delete(key)
 			delete item[key]
+			const index = instanceList.indexOf(item)
+			instanceList.splice(index, 1)
 			listeners.remove.forEach((cb) => cb(key, item))
 
 			/** Revert */
@@ -239,6 +243,7 @@ export function runesAPI(...args: any[]) {
 			let pre = $state.snapshot(instanceMap.get(key))
 			const state = $state(value)
 
+			instanceList.push(state)
 			item[key] = state
 			instanceMap.set(key, state)
 			listeners.set.forEach((cb) => cb(key, value))
@@ -378,6 +383,7 @@ export function runesAPI(...args: any[]) {
 				)
 					&& (
 						property === Symbol.iterator
+						|| property === 'list'
 						|| property === 'entries'
 						|| property === 'keys'
 						|| property === 'length'
@@ -391,7 +397,8 @@ export function runesAPI(...args: any[]) {
 				}
 
 				switch (property) {
-					case Symbol.iterator: return () => instanceMap.values()
+					case Symbol.iterator: return () => instanceList[Symbol.iterator]()
+					case 'list': return instanceList
 					case 'entries': return () => instanceMap.entries()
 					case 'keys': return () => instanceMap.keys()
 					case 'length': return instanceMap.size

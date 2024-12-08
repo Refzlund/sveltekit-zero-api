@@ -69,7 +69,8 @@ type Modify<T, Put extends Endpoint, Patch extends Endpoint, Delete extends Endp
 
 export type RuneAPI<T, G, A> = 
 	& {
-		[Symbol.iterator](): MapIterator<T>
+		[Symbol.iterator](): ArrayIterator<T>
+		list: T[]
 		entries: [string, T][]
 		keys: string[]
 		length: number
