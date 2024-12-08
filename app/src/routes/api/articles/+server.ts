@@ -13,7 +13,7 @@ export const POST = endpoint(
 		
 		articles.push({ id: `Article:${articles.length}`, title, content })
 		
-		return new Created({ message: 'Article created.' })
+		return new Created(articles[articles.length - 1])
 	}
 )
 

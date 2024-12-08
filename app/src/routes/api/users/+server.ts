@@ -13,9 +13,9 @@ export const POST = endpoint(
 	(event) => {
 		let { name, email, age, birth } = event.body
 		
-		users.push({ id: 'User:' + users.length, name, email, age, birth })
+		users.push({ id: `User:${users.length}`, name, email, age, birth })
 		
-		return new Created({ message: 'User created.' })
+		return new Created(users[users.length - 1])
 	}
 )
 
