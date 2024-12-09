@@ -24,6 +24,7 @@ export type Grouping<T, Sortable extends boolean = true> = {
 
 export interface RunesDataInstance<T> {
 	api: InstanceAPI<T>
+	/** If `discriminator` is provided, then elements can be accessed via the that. Ex. `data.users[id]` instead of the index in the list; `data.users[4]` */
 	discriminator: ((body: T) => string | false) | {
 		/** Get the discriminator from within a value */
 		get: (body: T) => string | false

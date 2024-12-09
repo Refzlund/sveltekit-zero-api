@@ -1,6 +1,6 @@
 import type { KitResponse, StatusCode, Statuses, StatusTextType } from './server/http'
 import { StatusCodeType } from './server/http'
-import type { AwaitAll, IfAny, IsAny, Promisify } from './utils/types'
+import type { AwaitAll, IfAny, IsAny, Promisify, AnyAsUnknownAll } from './utils/types'
 
 /**
 IfAny<Results, {}, {
@@ -63,11 +63,11 @@ export type KitRequestProxyXHR<Results extends KitResponse> = KitRequestProxy<Re
  */
 export type KitRequestProxy<
 	Results extends KitResponse,
-	Returned extends Promisify<any>[] = never,
+	Returned extends Promise<any>[] = never,
 	XHR extends boolean = false
 > =
 	// Promise<KitResponse>     $:  Promise<[...any[]]>
-	Promise<[Returned] extends [never] ? Results : AwaitAll<Returned>> &
+	Promise<[Returned] extends [never] ? Results : AnyAsUnknownAll<AwaitAll<Returned>>> &
 	// $:  [...Promise<any>[]]
 	([Returned] extends [never] ? {} : Returned) &
 	// Callback chain of Response types (.OK, .BadRequest ...)
@@ -85,7 +85,7 @@ export type KitRequestProxy<
 			) => A
 		) => KitRequestProxy<
 			Results,
-			[Returned] extends [never] ? never : [...Returned, Promisify<A | undefined>]
+			[Returned] extends [never] ? never : [...Returned, Promise<A | undefined>]
 		>
 	} & {
 		/** Send AbortSignal */

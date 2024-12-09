@@ -3,7 +3,7 @@
 	import { formAPI } from 'sveltekit-zero-api/formapi.svelte'
 	import type { User } from '../../../api/users'
 	import type z from 'zod'
-	import { runesAPI, statefulAPI } from 'sveltekit-zero-api/client'
+	import { fromUrl, runesAPI, statefulAPI, getUrl, getMethod } from 'sveltekit-zero-api/client'
 	import { floatingUI } from '$lib/floating-ui.svelte'
 	import { scale } from 'svelte/transition'
 
@@ -86,7 +86,7 @@
 
 <!---------------------------------------------------->
 
-elders: {data.users.groups.seniors.length}
+<!-- elders: {data.users.groups.seniors.length} -->
 
 <div class="flex gap-2 items-center mb-8 relative">
 	{#if search.isLoading && search.args[0]}

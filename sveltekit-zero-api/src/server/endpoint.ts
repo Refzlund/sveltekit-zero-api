@@ -224,12 +224,12 @@ function endpoint(
 
 			event.results ??= {}
 
-			if (event.request.headers.has('x-json-schema')) {
+			if (event.request.headers.has('x-validation-schema')) {
 				let cb = callbacks.find((v) => v instanceof ParseKitEvent)
-				if (cb && cb.jsonSchema) throw new Accepted(cb.jsonSchema)
+				if (cb && cb.schema) throw new Accepted(cb.schema)
 				throw new NotFound({
-					code: 'no_json_schema',
-					error: 'No JSON Schema is associated with this endpoint.',
+					code: 'no_validation_schema',
+					error: 'No validation schema is associated with this endpoint.',
 				})
 			}
 

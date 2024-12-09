@@ -34,6 +34,8 @@ export class RuneAPIInstance<T = unknown> {
 		this.discriminator = {} as typeof this.discriminator
 
 		const discriminator = typeof options.discriminator === 'function' ? { get: options.discriminator } : options.discriminator
+		this.discriminator.get = discriminator.get
+
 		if('temp' in discriminator) {
 			this.discriminator.temp = (body: unknown) => this.set(discriminator.temp(body))
 		}
@@ -85,7 +87,7 @@ export class RuneAPIInstance<T = unknown> {
 				fns.forEach((fn) => fn())
 			}
 		}
-
+		
 		const key = this.discriminator.get(value)
 		if (key === undefined || key === false || key === null) {
 			return () => { }

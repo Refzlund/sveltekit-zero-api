@@ -1,7 +1,7 @@
 import { browser } from '$app/environment'
 import { ServerType } from '.'
 import { createEndpointProxy } from '../endpoint-proxy'
-import { Endpoint } from '../server/endpoint'
+import { Endpoint as _Endpoint } from '../server/endpoint'
 import { Functions } from '../server/functions.type'
 import { parseResponse } from '../utils/parse-response'
 import { proxyCrawl } from '../utils/proxy-crawl'
@@ -16,33 +16,79 @@ export interface APIProxyOptions {
 	url?: string | URL
 }
 
-const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']
+const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'] as const
 const URL_SYMBOL = Symbol('sveltekit-zero-api.url')
+const METHOD_SYMBOL = Symbol('sveltekit-zero-api.method')
+const FROM_URL_SYMBOL = Symbol('sveltekit-zero-api.from-url')
 
+/** api... instanceof APIProxy */
 export class APIProxy {
 	constructor() {
 		throw new Error('Please use `createAPIProxy` instead.')
 	}
 }
-
 export interface APIProxy {
 	[key: string]: APIProxy | ((...args: any[]) => APIProxy) | ServerType<any>
 }
 
-export function url(path: APIProxy) {
-	// @ts-expect-error
+/** api...GET instanceof Endpoint */
+export class Endpoint { }
+export interface Endpoint extends _Endpoint { }
+
+
+/** api...GET.xhr instanceof EndpointXHR */
+export class EndpointXHR extends Endpoint { }
+type TEndpointXHR = _Endpoint['xhr']
+export interface EndpointXHR extends TEndpointXHR { }
+
+
+export function getUrl(path: APIProxy | Endpoint) {
 	return path[URL_SYMBOL]()
+}
+
+export function getMethod(path: Endpoint) {
+	return path(METHOD_SYMBOL)
+}
+
+export const genericAPI = createAPIProxy()
+
+export function fromUrl(api: APIProxy, url: string | URL): Record<typeof METHODS[number], Endpoint>
+export function fromUrl(url: string | URL): Record<typeof METHODS[number], Endpoint>
+export function fromUrl(api: APIProxy | string | URL, url?: string | URL) {
+	if (typeof api === 'string' || api instanceof URL) {
+		// Use generic
+		url = api
+		api = genericAPI
+	}
+	else if (typeof url !== 'string' && !(url instanceof URL)) {
+		throw new Error('`url` must be a string, got: ' + url)
+	}
+
+	const _api = api as any
+	return _api[FROM_URL_SYMBOL](url) as Record<typeof METHODS[number], _Endpoint>
 }
 
 /** api.some.route.GET() */
 export function createAPIProxy<T extends APIProxy>(options: APIProxyOptions = {}) {
 	return proxyCrawl({
-		getPrototypeOf() {
+		getPrototypeOf(state) {
+			const last = state.keys[state.keys.length - 1]
+			if (METHODS.includes(last as any))
+				return Endpoint.prototype
+
+			const secondLast = state.keys[state.keys.length - 2]
+			if (last === 'xhr' && METHODS.includes(secondLast as any))
+				return EndpointXHR.prototype
+
 			return APIProxy.prototype
 		},
 		apply(state) {
 			if (state.key === 'toString' || state.key === Symbol.toPrimitive) {
 				return 'APIProxy'
+			}
+
+			if (state.key === FROM_URL_SYMBOL) {
+				return state.crawl([FROM_URL_SYMBOL, ...state.args])
 			}
 
 			let key = state.key.toString()
@@ -104,31 +150,48 @@ export function createAPIProxy<T extends APIProxy>(options: APIProxyOptions = {}
 			// * -- Request Information --
 
 			const xhr = key === 'xhr' && browser ? new XMLHttpRequest() : undefined
-			const route = xhr
-				? state.keys.slice(0, -1).join('/')
-				: state.keys.join('/')
 
 			/** Is method (endpoints) or function (funcitons) */
-			let isMethod = xhr || METHODS.includes(key)
+			const isMethod = xhr || METHODS.includes(key as any)
 
-			let requestInit: RequestInit & { query?: Record<string, any> } = isMethod
+			const requestInit: RequestInit & { query?: Record<string, any> } = isMethod
 				? state.args[1] || {}
 				: {}
 
-			let searchParams: URLSearchParams | undefined | false =
+			const searchParams: URLSearchParams | undefined | false =
 				'query' in requestInit && new URLSearchParams(requestInit.query)
 
-			const url =
+			const route = state.keys[0] === FROM_URL_SYMBOL
+				? undefined
+				: xhr
+					? state.keys.slice(0, -1).join('/')
+					: state.keys.join('/')
+
+			const url = state.keys[0] === FROM_URL_SYMBOL ? state.keys[1].toString() :
 				options.url?.toString() ||
 				'/' + route + (searchParams ? '?' + searchParams.toString() : '')
 
-			// * ---------
+			const method = (
+				isMethod
+					? xhr
+						? state.keys[state.keys.length - 1].toString()
+						: key
+					: 'PATCH'
+			) as typeof METHODS[number] // functions always use PATCH
 
+			if (!METHODS.includes(method)) {
+				throw new Error('Invalid method: ' + method, { cause: state })
+			}
+
+			// * ---------
 
 			if (state.key === URL_SYMBOL) {
 				return url
 			}
 
+			if (state.args[0] === METHOD_SYMBOL) {
+				return method
+			}
 
 			if (!browser) {
 				// Only browser/client can make fetch requests.
@@ -142,14 +205,7 @@ export function createAPIProxy<T extends APIProxy>(options: APIProxyOptions = {}
 				return SSE(url)
 			}
 
-			let method = isMethod
-				? xhr
-					? state.keys[state.keys.length - 1].toString()
-					: key
-				: 'PATCH' // functions always use PATCH
-			if (!METHODS.includes(method)) {
-				throw new Error('Invalid method: ' + method, { cause: state })
-			}
+			
 
 			type BodyType =
 				| null
@@ -158,10 +214,10 @@ export function createAPIProxy<T extends APIProxy>(options: APIProxyOptions = {}
 				| FormData
 				| object
 				| string
-			
-			let body: BodyType | Array<unknown> = 
-				isMethod ? state.args[0] 
-				: state.args[0] instanceof FormData || state.args[0] instanceof ReadableStream ? state.args[0] : state.args
+
+			let body: BodyType | Array<unknown> =
+				isMethod ? state.args[0]
+					: state.args[0] instanceof FormData || state.args[0] instanceof ReadableStream ? state.args[0] : state.args
 
 			let headers = new Headers(requestInit?.headers)
 			headers.append('x-requested-with', 'sveltekit-zero-api')
@@ -175,7 +231,7 @@ export function createAPIProxy<T extends APIProxy>(options: APIProxyOptions = {}
 					// headers.set('content-type', 'application/octet-stream')
 					throw new Error(
 						'Streaming data is largely unsupported in browsers, as Request Duplex is required. See ' +
-							'https://caniuse.com/mdn-api_request_duplex'
+						'https://caniuse.com/mdn-api_request_duplex'
 					)
 				} else if (body instanceof FormData) {
 					// https://stackoverflow.com/a/49510941 - fetch sets content-type automatically incl. form boundary
@@ -210,12 +266,12 @@ export function createAPIProxy<T extends APIProxy>(options: APIProxyOptions = {}
 							? { signal: abortController.signal }
 							: undefined
 						: {
-								...requestInit,
-								body: (body === null ? undefined : body) as BodyInit,
-								headers,
-								method,
-								signal: abortController ? abortController.signal : undefined,
-						  }
+							...requestInit,
+							body: (body === null ? undefined : body) as BodyInit,
+							headers,
+							method,
+							signal: abortController ? abortController.signal : undefined,
+						}
 				)
 
 			if (isMethod && xhr) {

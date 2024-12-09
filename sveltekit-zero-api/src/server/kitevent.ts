@@ -21,7 +21,7 @@ export interface KitEvent<
 	zeroAPIOptions: ZeroAPIServerOptions
 }
 
-type T = Awaited<ReturnType<ParseKitEvent<{body?,query?}>['fn']>>
+type T = Awaited<ReturnType<ParseKitEvent<{ body?, query?}>['fn']>>
 
 /**
  * A helper function to create a KitEvent from the results
@@ -40,7 +40,7 @@ export type KitEventFn<
 		ReturnType<
 			Extract<R1 | R2 | R3 | R4 | R5 | R6 | R7, ParseKitEvent<any>>['fn']
 		>
-	>, KitResponse<any,any>>,
+	>, KitResponse<any, any>>,
 	UnionToIntersection<Awaited<ReturnType<Exclude<R1 | R2 | R3 | R4 | R5 | R6 | R7, ParseKitEvent<any> | KitResponse<any, any>>>>>
 > extends KitEvent<infer A, infer B>
 	? KitEvent<A, B>
@@ -98,31 +98,31 @@ function zod({ body, query }) {
 
 ```
 */
-export class ParseKitEvent<Result extends { body?: any, query?: any } | KitResponse<any,any> = {}> {
+export class ParseKitEvent<Result extends { body?: any, query?: any } | KitResponse<any, any> = {}> {
 	fn: (event: KitEvent) => MaybePromise<Result>
-	/** The `jsonSchema` is sent to frontend so they can validate. */
-	jsonSchema?: Record<string, any>
+	/** The `schema` is sent to frontend to be reconstructed as a validator. */
+	schema?: Record<string, any>
 
 	constructor(
 		fn: (event: KitEvent) => MaybePromise<Result>,
-		jsonSchema?: typeof this.jsonSchema
+		jsonSchema?: typeof this.schema
 	) {
 		this.fn = fn
-		this.jsonSchema = jsonSchema
+		this.schema = jsonSchema
 	}
 
-	extend<ExtendeResult extends { body?: any, query?: any } | KitResponse<any,any>>(
-		fn: (body: Exclude<Result, KitResponse<any,any>>['body'], query: Exclude<Result, KitResponse<any,any>>['query']) => MaybePromise<ExtendeResult>,
-		jsonSchema?: typeof this.jsonSchema
+	extend<ExtendeResult extends { body?: any, query?: any } | KitResponse<any, any>>(
+		fn: (body: Exclude<Result, KitResponse<any, any>>['body'], query: Exclude<Result, KitResponse<any, any>>['query']) => MaybePromise<ExtendeResult>,
+		schema?: typeof this.schema
 	) {
-		type R = Extract<Result, KitResponse<any,any>>
+		type R = Extract<Result, KitResponse<any, any>>
 		return new ParseKitEvent<
 			ExtendeResult | R
 		>(async (event) => {
 			let result = await this.fn(event)
 			if (result instanceof KitResponse) return result
 			return fn(result.body!, result.query ?? event.query) as any
-		}, jsonSchema || this.jsonSchema)
+		}, schema || this.schema)
 	}
 }
 
