@@ -13,9 +13,11 @@ export function createInstanceCRUD(instance: RuneAPIInstance) {
 		async POST(data: unknown) {
 			const endpoint = instance.api.POST as Endpoint
 			const revert =
-				instance.discriminator.temp || instance.discriminator.set
-					? instance.discriminator.temp?.(data) || instance.discriminator.set!(data)
-					: instance.set(data)
+				instance.discriminator.temp
+				? instance.discriminator.temp?.(data)
+				: instance.discriminator.set 
+				? instance.discriminator.set!(data)
+				: instance.set(data)
 
 			return endpoint.xhr(data).error(revert).success(({ body }) => {
 				if (instance.discriminator.temp) {
