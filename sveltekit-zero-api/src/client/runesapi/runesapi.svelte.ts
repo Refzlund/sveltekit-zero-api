@@ -76,19 +76,19 @@ export function runesAPI(...args: any[]) {
 
 	const id = options?.id ?? Math.random().toString(36).slice(2)
 
-	const defaultMeta = { lastGetRequestAt: 0 }
-	const meta = getAPI
-		? options?.id
-			? runedSessionObjectStorage(`runesapi-${id}`, defaultMeta)
-			: runedObjectStorage(`runesapi-${id}`, defaultMeta)
-		: defaultMeta
+	const defaultSession = { lastGetRequestAt: 0 }
+	const session = getAPI
+		? options?.indexedDB
+			? runedObjectStorage(`runesapi-${id}`, defaultSession) 
+			: runedSessionObjectStorage(`runesapi-${id}`, defaultSession)
+		: defaultSession
 
 	function refresh() {
 		if (getAPI) {
 			const GET = getAPI.GET as Endpoint
 			const opts = (options || {}) as RunesAPIOptions<unknown>
 
-			GET(null, { query: opts.query?.(meta) }).success(({ body }) => {
+			GET(null, { query: opts.query?.(session) }).success(({ body }) => {
 				for (const key in body) {
 					const set = setters[key]
 					if (!set) continue
@@ -98,7 +98,7 @@ export function runesAPI(...args: any[]) {
 				}
 			})
 
-			meta.lastGetRequestAt = Date.now()
+			session.lastGetRequestAt = Date.now()
 		}
 	}
 

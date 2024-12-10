@@ -22,11 +22,11 @@ export function matchPath(obj: KitValidationError, str: string) {
 }
 
 
-/** Validates an data body for an endpoint, based the schema associated with the endpoint. */
+/** Validates body for an endpoint, based the schema associated with the endpoint. */
 export class EndpointValidator {
 	static #validationConstructor?: Parameters<typeof EndpointValidator['validationConstructor']>[0]
 	
-	/** ex `endpointValidators.get(url(api.users.id$('-').PUT))` */
+	/** ex. `POST /some/url` */
 	static #endpointValidators = new Map<string, EndpointValidator | false>()
 
 	schema?: Record<string, unknown>
