@@ -21,9 +21,18 @@ for(const path of [paths.npm, paths.dist, paths.sveltekit]) {
 		fs.rmSync(path, { recursive: true, force: true })
 }
 
-Bun.spawnSync({
-	cmd: ['svelte-package']
+const result = Bun.spawnSync({
+    cmd: ['svelte-package']
 })
+
+if (result.stderr.length > 0) {
+    console.error('svelte-package error:', result.stderr.toString())
+}
+
+if (!fs.existsSync(paths.dist)) {
+    console.error('Error: dist directory was not created.')
+    process.exit(1)
+}
 
 fs.mkdirSync(paths.npm)
 
@@ -40,6 +49,7 @@ for (const path of [paths.dist]) {
 		try {
 			fs.renameSync(path, target)
 		} catch (error) {
+			console.error(`Attempt ${i + 1} failed:`, error)
 			continue
 		}
 		break
@@ -68,5 +78,9 @@ for(let [key, path] of Object.entries(json.exports) as [string,string][]) {
 }
 
 fs.writeFileSync(packagePath, JSON.stringify(json, null, 4))
+
+Bun.spawnSync({
+    cmd: ['bun', 'run', 'fix-imports']
+})
 
 console.log('Done.')
