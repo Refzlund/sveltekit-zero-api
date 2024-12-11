@@ -166,9 +166,6 @@ export function runesAPI(...args: any[]) {
 					case 'groups': return instance.groups
 					case 'Paginator': return Paginator
 
-					// Validation
-					case 'validate': return
-
 					case 'toJSON': return () => instance.list
 					case 'toString': return () => JSON.stringify(instance.list)
 				}

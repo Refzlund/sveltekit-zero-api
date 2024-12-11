@@ -1,8 +1,9 @@
 import { Endpoint } from '../../server/endpoint'
+import { EndpointValidator, ErrorPath, KitValidationError } from '../errors'
 import { RuneAPIInstance } from './instance.svelte'
 
 export function createInstanceCRUD(instance: RuneAPIInstance) {
-	return {
+	const crud = {
 		async GET(key?: string) {
 			if (typeof key !== 'undefined') {
 				const endpoint = instance.api.id$!(key).GET as Endpoint
@@ -33,6 +34,7 @@ export function createInstanceCRUD(instance: RuneAPIInstance) {
 		},
 		async PATCH(key: string | number, data: unknown) {
 			const endpoint = instance.api.id$!(key).PATCH as Endpoint
+			
 			// TODO Merge instead of set
 			const revert = instance.set(data)
 			return endpoint.xhr(data).error(revert)
@@ -42,5 +44,33 @@ export function createInstanceCRUD(instance: RuneAPIInstance) {
 			const revert = instance.remove(key)
 			return endpoint.xhr().error(revert)
 		}
+	} as const
+
+	Object.assign(crud.POST, {
+		async validate(data: unknown, path?: ErrorPath) {
+			const v = await EndpointValidator.fromEndpoint(instance.api.POST)
+			if (!v) return []
+			v.validate(data, path)
+		}
+	})
+	Object.assign(crud.PUT, {
+		async validate(data: unknown, path?: ErrorPath) {
+			const v = await EndpointValidator.fromEndpoint(instance.api.id$!('-').PUT)
+			if (!v) return []
+			v.validate(data, path)
+		}
+	})
+	Object.assign(crud.PATCH, {
+		async validate(data: unknown, path?: ErrorPath) {
+			const v = await EndpointValidator.fromEndpoint(instance.api.id$!('-').PATCH)
+			if (!v) return []
+			v.validate(data, path)
+		}
+	})
+
+	return crud as typeof crud & {
+		POST: { validate(data: unknown, path?: ErrorPath): Promise<KitValidationError[]> },
+		PUT: { validate(data: unknown, path?: ErrorPath): Promise<KitValidationError[]> },
+		PATCH: { validate(data: unknown, path?: ErrorPath): Promise<KitValidationError[]> }
 	}
 }

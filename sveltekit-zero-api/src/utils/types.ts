@@ -46,3 +46,7 @@ export type MapDeepTo<T, U, Ignore = Date> = {
 export type MaybePromise<T> = T | Promise<T>
 
 export type KeyOf<T, Key> = Key extends keyof T ? T[Key] : never
+
+export type DeepPartial<T> = T extends Record<PropertyKey, any> ? {
+	[K in keyof T]?: DeepPartial<T[K]>
+} : T

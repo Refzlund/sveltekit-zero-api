@@ -12,7 +12,7 @@ export interface KitValidationError {
 }
 
 export type ValidatedKitRequestXHR<T extends KitRequestXHR = KitRequestXHR> =
-	Promisify<T, KitValidationError[]>
+	T & Promisify<Awaited<T>, KitValidationError[]>
 
 const path = Symbol('formapi.path')
 /** Matches and "caches" path seperated by . */
@@ -41,8 +41,8 @@ export class EndpointValidator {
 		this.#validate = EndpointValidator.#validationConstructor(this.schema).validate
 	}
 
-	validate(path?: ErrorPath) {
-		return this.#validate(path)
+	validate(data: unknown, path?: ErrorPath) {
+		return this.#validate(data, path)
 	}
 
 	/** Caches validators from same endpoints, so they don't need to be created again */
@@ -100,8 +100,8 @@ export class EndpointValidator {
 		const validator = this
 		let errors = $state([] as KitValidationError[])
 		return {
-			validate(path?: ErrorPath) {
-				errors = validator.validate(path)
+			validate(data: unknown, path?: ErrorPath) {
+				errors = validator.validate(data, path)
 				return errors
 			},
 			errors(path?: ErrorPath) {
@@ -122,7 +122,7 @@ export class EndpointValidator {
 
 	static validationConstructor(
 		validationConstructor: (schema: Record<string, unknown>) => {
-			validate: (path?: ErrorPath) => KitValidationError[]
+			validate: (data: unknown, path?: ErrorPath) => KitValidationError[]
 		}
 	) {
 		this.#validationConstructor = validationConstructor

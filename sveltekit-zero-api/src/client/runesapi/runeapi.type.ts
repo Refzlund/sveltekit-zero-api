@@ -1,5 +1,6 @@
 import { Endpoint } from '../../server/endpoint'
 import { Slugged } from '../../utils/slugs'
+import { DeepPartial } from '../../utils/types'
 import {
 	ErrorPath,
 	KitValidationError,
@@ -10,19 +11,21 @@ import { Paginator } from './paginator.svelte'
 type Input<P extends Endpoint> = P extends Endpoint<infer Input> ? Input : never
 
 interface Create<T, P extends Endpoint> {
-	post(data: Input<P>['body']): ValidatedKitRequestXHR<ReturnType<P['xhr']>>
+	post: {
+		(data: Input<P>['body']): ValidatedKitRequestXHR<ReturnType<P['xhr']>>
+		validate(data: unknown, path?: ErrorPath): Promise<KitValidationError[]>
+	}
 	create(): T & {
 		$: {
 			/** Do NOT bind to this, as it won't track changes. */
 			readonly item: T
 			readonly isModified: boolean
 			/** The modifications to the item */
-			readonly modified: Partial<T>
-			validate(
-				path?: (string | number) | (string | number)[]
-			): Promise<KitValidationError[]>
-			post(): ValidatedKitRequestXHR<ReturnType<P['xhr']>>
-			errors(path?: ErrorPath): KitValidationError[]
+			readonly modifications: DeepPartial<T>
+			post: {
+				(): ValidatedKitRequestXHR<ReturnType<P['xhr']>>
+				validate(path?: ErrorPath): Promise<KitValidationError[]>
+			}
 		}
 	}
 }
@@ -47,28 +50,30 @@ type Modify<T, Put extends Endpoint, Patch extends Endpoint, Delete extends Endp
 				readonly item: T
 				readonly isModified: boolean
 				/** The modifications to the item */
-				readonly modified: Partial<T>
-				validate(
-					path?: (string | number) | (string | number)[]
-				): Promise<KitValidationError[]>
-				errors(path?: ErrorPath): KitValidationError[]
+				readonly modifications: DeepPartial<T>
 			}
-			& ([Put] extends [never] ? {} : { put(): ValidatedKitRequestXHR<ReturnType<Put['xhr']>> })
-			& ([Patch] extends [never] ? {} : { patch(): ValidatedKitRequestXHR<ReturnType<Patch['xhr']>> })
+			& ([Put] extends [never] ? {} : { put: {
+				(): ValidatedKitRequestXHR<ReturnType<Put['xhr']>>
+				validate(path?: ErrorPath): Promise<KitValidationError[]>
+			} })
+			& ([Patch] extends [never] ? {} : { patch: {
+				(): ValidatedKitRequestXHR<ReturnType<Patch['xhr']>>
+				validate(path?: ErrorPath): Promise<KitValidationError[]>
+			} })
 			& ([Delete] extends [never] ? {} : { delete(): ReturnType<Delete['xhr']> })
 		}
 	}
 	& ([Put] extends [never] ? {} : {
-		put(
-			id: string | number,
-			data: Input<Put>['body']
-		): ValidatedKitRequestXHR<ReturnType<Put['xhr']>>
+		put: {
+			(id: string | number, data: Input<Put>['body']): ValidatedKitRequestXHR<ReturnType<Put['xhr']>>
+			validate(data: unknown, path?: ErrorPath): Promise<KitValidationError[]>
+		}
 	})
 	& ([Patch] extends [never] ? {} : {
-		patch(
-			id: string | number,
-			data: Input<Patch>['body']
-		): ValidatedKitRequestXHR<ReturnType<Patch['xhr']>>
+		patch: {
+			(id: string | number, data: Input<Patch>['body']): ValidatedKitRequestXHR<ReturnType<Patch['xhr']>>
+			validate(data: unknown, path?: ErrorPath): Promise<KitValidationError[]>
+		}
 	})
 	& ([Delete] extends [never] ? {} : {
 		delete(id: string | number): ReturnType<Delete['xhr']>
@@ -78,10 +83,10 @@ export type RuneAPI<T, G, A> =
 	& {
 		[Symbol.iterator](): ArrayIterator<T>
 		list: T[]
-		entries: [string, T][]
-		keys: string[]
+		entries: MapIterator<[string | number, T]>
+		keys: MapIterator<string | number>
 		length: number
-		has: (key: string) => boolean
+		has(key: string): boolean
 		Paginator: new (count?: number) => Paginator<T>
 	}
 	& (A extends { GET: Endpoint }

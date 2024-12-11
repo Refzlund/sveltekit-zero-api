@@ -18,14 +18,6 @@ export function createProxyObject(
 	const modified = getProxyModified(proxiedObject.proxy)
 	const isModified = $derived(!!Object.keys($state.snapshot(modified)).length)
 
-	/** `null` if cannot fetch, `undefined` if haven't fetched */
-	let validator: ReturnType<EndpointValidator['stateful']> | undefined | null
-
-	EndpointValidator.fromEndpoint(instance.api.POST).then(v => {
-		if (v) return validator = v.stateful()
-		validator = null
-	})
-
 	const actions = {
 		post() {
 			if(id !== null) {
@@ -51,7 +43,7 @@ export function createProxyObject(
 			}
 			return instance.crud.DELETE(id)
 		},
-		get modified() {
+		get modifications() {
 			return modified
 		},
 		get item() {
@@ -59,15 +51,26 @@ export function createProxyObject(
 		},
 		get isModified() {
 			return isModified
-		},
-		async validate(path?: ErrorPath) {
-			return validator?.validate(path)
-		},
-		errors(path?: ErrorPath) {
-			let errors = validator?.errors(path)
-			return errors
 		}
 	}
+
+	Object.assign(actions.post, {
+		validate(path?: ErrorPath) {
+			return instance.crud.POST.validate($state.snapshot(proxiedObject.target), path)
+		}
+	})
+
+	Object.assign(actions.put, {
+		validate(path?: ErrorPath) {
+			return instance.crud.PUT.validate($state.snapshot(proxiedObject.target), path)
+		}
+	})
+
+	Object.assign(actions.patch, {
+		validate(path?: ErrorPath) {
+			return instance.crud.PATCH.validate($state.snapshot(proxiedObject.target), path)
+		}
+	})
 
 	return new Proxy(proxiedObject.target, {
 		get(target, p, receiver) {

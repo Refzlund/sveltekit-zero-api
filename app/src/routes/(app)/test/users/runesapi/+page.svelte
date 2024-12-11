@@ -21,8 +21,9 @@
 			}
 		}
 	})
-
+	
 	const user = data.users.create()
+	
 	// $inspect('modified', user.$.modified)
 	// $inspect('item', user.$.item)
 	// $inspect(user.$.isModified)
@@ -44,30 +45,18 @@
 	<label>
 		Name
 		<input name="name" bind:value={user.name} />
-		{#each user.$.errors('name') as { error }}
-			<error>{error}</error>
-		{/each}
 	</label>
 	<label>
 		E-mail
 		<input name="email" type="email" bind:value={user.email} />
-		{#each user.$.errors('email') as { error }}
-			<error>{error}</error>
-		{/each}
 	</label>
 	<label>
 		Birth
 		<input name="birth" type="date" bind:value={user.birth} />
-		{#each user.$.errors('birth') as { error }}
-			<error>{error}</error>
-		{/each}
 	</label>
 	<label>
 		Age
 		<input name="age" type="number" bind:value={user.age} />
-		{#each user.$.errors('age') as { error }}
-			<error>{error}</error>
-		{/each}
 	</label>
 
 	<button class="mt-4 mr-4" disabled={!!Form.errors.length}
