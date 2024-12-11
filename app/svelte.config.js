@@ -14,7 +14,8 @@ const config = {
 	kit: {
 		adapter: adapter(),
 		alias: {
-			'$api': './src/api.ts'
+			'$api': './src/api.ts',
+			'$routes': './src/routes'
 		},
 		
 	},
