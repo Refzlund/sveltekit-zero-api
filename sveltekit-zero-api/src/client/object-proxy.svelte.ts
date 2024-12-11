@@ -1,3 +1,4 @@
+import { untrack } from 'svelte'
 
 const IS_PROXY = Symbol('sveltekit-zero-api.objectproxy')
 const DELETE_KEY = Symbol('sveltekit-zero-api.objectproxy.delete')
@@ -9,13 +10,12 @@ const GET_MODIFIED = Symbol('sveltekit-zero-api.objectproxy.getmodified')
 
 /** Gets the root */
 export function getProxyModified(object: ObjectProxy) {
-	return object[GET_MODIFIED]
+	return object[GET_MODIFIED] as Record<PropertyKey, unknown>
 }
 
 export type ObjectProxy<T extends Record<PropertyKey, unknown> = Record<PropertyKey, unknown>> = T & {
 	[IS_PROXY]: true
 }
-
 
 function proxify(value: unknown) {
 	return typeof value === 'object'
@@ -24,19 +24,51 @@ function proxify(value: unknown) {
 		&& (Array.isArray(value) || String(value).endsWith('Object]'))
 }
 
+type TObject = Array<unknown> | Record<PropertyKey, unknown>
+
 /**
  * A proxy that structurally clones a reference, 
  * and tracks modification to that reference.
+ * 
+ * When the reference changes, the content is updated,
+ * but the modified content won't be overriden.
 */
-export function objectProxy<T extends Record<PropertyKey, unknown>>(ref: T): ObjectProxy<T> {
-	const combined = $state(structuredClone($state.snapshot(ref))) as T
+export function objectProxy<T extends Record<PropertyKey, unknown>>(input: {
+	/** ergo. { get ref() { return ... } } */
+	ref: T 
+}) {
 	const modified = $state({}) as T
 
-	const proxies = new Map<string, Array<unknown> | Record<PropertyKey, unknown>>()
+	const combined = $derived.by(() => {
+		let result = $state(structuredClone($state.snapshot(input.ref || {}))) as TObject
+		untrack(() => {
+			function recursive(mod: TObject, value: TObject) {
+				for (const key in mod) {
+					const item = mod[key]
+					if (typeof item === 'object' && item && (Array.isArray(item) || String(item).endsWith('Object]'))) {
+						if(!('key' in value)) {
+							const state = $state(Array.isArray(item) ? [] : {})
+							value[key] = state
+						}
+						recursive(item as TObject, value[key] as TObject)
+						continue
+					}
+					const a = value[key], b = mod[key]
+					if (a === b)
+						delete mod[key]
+					else
+						value[key] = b
+				}
+			}
+			recursive(modified, result)
+		})
+
+		return result
+	})
 
 	/** Compares the value, to the ref-value at given path */
 	function compare(value: unknown, path: PropertyKey[]) {
-		let refValue = ref as any
+		let refValue = input.ref as any
 		for (const p of path) {
 			refValue = refValue?.[p]
 			if (refValue === undefined)
@@ -83,9 +115,9 @@ export function objectProxy<T extends Record<PropertyKey, unknown>>(ref: T): Obj
 		parent[lastKey] = value
 	}
 
-	function makeProxy(obj: Array<unknown> | Record<PropertyKey, unknown>, path: string[]) {
-		for(const key in obj) {
-			const value = obj[key]
+	function makeProxy(obj: { target: TObject, proxies: Record<string, TObject> }, path: string[]) {
+		for(const key in obj.target) {
+			const value = obj.target[key]
 
 			if (proxify(value)) {
 				makeProxy(value as typeof obj, [...path, key])
@@ -93,26 +125,32 @@ export function objectProxy<T extends Record<PropertyKey, unknown>>(ref: T): Obj
 			else if (!compare(value, [...path, key])) {
 				modify(value, [...path, key])
 			}
-			obj[key] = value
+			obj.target[key] = value
 		}
 
-		const proxy = new Proxy(obj, {
+		return new Proxy(obj.target, {
 			get(target, p) {
 				if (p === IS_PROXY) return true
 				if (p === GET_MODIFIED) return modified
 
-				if(typeof p === 'symbol') return target[p]
+				if(typeof p === 'symbol') return obj.target[p]
 				
-				let value = proxies.get([...path, p].map(String).join('.')) ?? target[p]
+				let value = obj.proxies[p] ?? obj.target[p]
 				if (proxify(value)) {
-					value = makeProxy(value, [...path, p])
+					value = makeProxy({
+						get target() {
+							return value
+						},
+						proxies: {}
+					}, [...path, p])
+					obj.proxies[p] = value
 				}
 
 				return value
 			},
 			set(target, p, value) {
 				if (typeof p === 'symbol') {
-					target[p] = value
+					obj.target[p] = value
 					return true
 				} 
 
@@ -120,8 +158,14 @@ export function objectProxy<T extends Record<PropertyKey, unknown>>(ref: T): Obj
 					modify(DELETE_KEY, [...path, p])
 
 					const v = $state(value)
-					target[p] = v 
-					value = makeProxy(v, [...path, p])
+					obj.target[p] = v 
+					value = makeProxy({
+						get target() {
+							return v
+						},
+						proxies: {}
+					}, [...path, p])
+					obj.proxies[p] = value
 				}
 				else {
 					if (compare(value, [...path, p]))
@@ -129,15 +173,24 @@ export function objectProxy<T extends Record<PropertyKey, unknown>>(ref: T): Obj
 					else
 						modify(value, [...path, p])
 				}
-				target[p] = value
+				obj.target[p] = value
 
 				return true
 			}
 		})
-		proxies.set(path.join('.'), proxy)
-		return proxy
 	}
 
-	return makeProxy(combined, []) as ObjectProxy<T>
+	const proxy = makeProxy({
+		get target() {
+			return combined
+		},
+		proxies: {}
+	}, []) as ObjectProxy<T>
+
+	return {
+		get proxy() {
+			return proxy
+		}
+	}
 }
 
