@@ -2,8 +2,8 @@
 	import { npmjs, github } from '$lib/fetch'
 	import { browser } from '$app/environment'
 
-	let npmjsData: Promise<any> | undefined = $state()
-	let githubData: Promise<any> | undefined = $state()
+	let npmjsData: ReturnType<typeof npmjs> | undefined = $state()
+	let githubData: ReturnType<typeof github> | undefined = $state()
 
 	if(browser) {
 		npmjsData = npmjs()
@@ -22,10 +22,12 @@
 		<icon class='size-6 iconify devicon--github'></icon>
 		{#if githubData}
 			{#await githubData then data}
-				<span class='pl-2.5 text-sm text-gray-400'>
-					{data.stargazers_count} 
-					<span class='duration-100 group-hover:text-yellow-500'>★</span>
-				</span>
+				{#if data}
+					<span class='pl-2.5 text-sm text-gray-400'>
+						{data.stargazers_count} 
+						<span class='duration-100 group-hover:text-yellow-500'>★</span>
+					</span>
+				{/if}
 			{/await}
 		{/if}
 	</a>
@@ -37,10 +39,12 @@
 	>
 		{#if npmjsData}
 			{#await npmjsData then data}
-				<span class='pr-2.5 text-sm text-gray-400'>
-					<span class='duration-100 group-hover:text-blue-500'>↓</span>
-					{data.downloads}/mo
-				</span>
+				{#if data}
+					<span class='pr-2.5 text-sm text-gray-400'>
+						<span class='duration-100 group-hover:text-blue-500'>↓</span>
+						{data.downloads}/mo
+					</span>
+				{/if}
 			{/await}
 		{/if}
 		<icon class='size-6 iconify-color devicon--npm group-hover:text-yellow-300'></icon>
