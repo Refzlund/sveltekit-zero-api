@@ -52,8 +52,14 @@ export function getMethod(path: Endpoint) {
 
 export const genericAPI = createAPIProxy()
 
-export function fromUrl(api: APIProxy, url: string | URL): Record<typeof METHODS[number], Endpoint>
-export function fromUrl(url: string | URL): Record<typeof METHODS[number], Endpoint>
+export function fromUrl<
+	E extends Record<string, Endpoint> = Record<typeof METHODS[number], Endpoint>
+>(api: APIProxy, url: string | URL): E
+
+export function fromUrl<
+	E extends Record<string, Endpoint> = Record<typeof METHODS[number], Endpoint>
+>(url: string | URL): E
+
 export function fromUrl(api: APIProxy | string | URL, url?: string | URL) {
 	if (typeof api === 'string' || api instanceof URL) {
 		// Use generic
