@@ -8,6 +8,9 @@ import { Paginator } from './paginator.svelte'
 import { runedObjectStorage, runedSessionObjectStorage } from '../runed-storage.svelte'
 import { RunesDataInstance } from './instance.type'
 import { RuneAPIInstance } from './instance.svelte'
+import { getProxyModified, objectProxy } from '../object-proxy.svelte'
+import { EndpointValidator, ErrorPath, KitValidationError } from '../errors'
+import { createProxyObject } from './proxy-objects.svelte'
 
 
 
@@ -71,7 +74,7 @@ export function runesAPI(...args: any[]) {
 		instances = args[0]
 	}
 
-	const proxies = {} as Record<string, {}>
+	const proxies = {} as Record<string, _RuneAPI>
 	const setters = {} as Record<string, (data: any) => void>
 
 	const id = options?.id ?? Math.random().toString(36).slice(2)
@@ -103,6 +106,10 @@ export function runesAPI(...args: any[]) {
 	}
 
 	for (const key in instances) {
+		if(getAPI) {
+			instances[key]!.api = getAPI[key] as any
+		}
+
 		const instance = new RuneAPIInstance(instances[key]!)
 		setters[key] = (data: unknown) => instance.set(data)
 
@@ -112,7 +119,7 @@ export function runesAPI(...args: any[]) {
 		let updatedAt = 0
 		let itemUpdatedAt: Record<PropertyKey, number> = {}
 
-		proxies[key] = new Proxy({}, {
+		proxies[key] = new Proxy({} as _RuneAPI, {
 			getPrototypeOf() {
 				return _RuneAPI.prototype
 			},
@@ -152,8 +159,12 @@ export function runesAPI(...args: any[]) {
 					case 'delete': return instance.crud.DELETE
 
 					// Proxied objects
-					case 'modify': return
-					case 'create': return
+					case 'create': return () => {
+						return createProxyObject(proxies[key], null, instance)
+					}
+					case 'modify': return (id: string | number) => {
+						return createProxyObject(proxies[key], id, instance)
+					}
 
 					// Data
 					case 'groups': return instance.groups

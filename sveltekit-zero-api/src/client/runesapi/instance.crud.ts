@@ -10,7 +10,7 @@ export function createInstanceCRUD(instance: RuneAPIInstance) {
 			}
 			return instance.api.GET?.xhr().success(({ body }) => instance.set(body))
 		},
-		async POST(data: unknown) {
+		POST(data: unknown) {
 			const endpoint = instance.api.POST as Endpoint
 			const revert =
 				instance.discriminator.temp

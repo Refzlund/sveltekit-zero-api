@@ -13,3 +13,5 @@ export { type KitEvent, FakeKitEvent, ParseKitEvent } from './kitevent'
 
 export { SSE } from './sse'
 export { stream } from './stream'
+
+export type { Endpoint } from './endpoint'

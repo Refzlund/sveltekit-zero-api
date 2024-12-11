@@ -41,7 +41,7 @@ export class EndpointValidator {
 		this.#validate = EndpointValidator.#validationConstructor(this.schema).validate
 	}
 
-	validate(path: ErrorPath) {
+	validate(path?: ErrorPath) {
 		return this.#validate(path)
 	}
 
@@ -55,6 +55,10 @@ export class EndpointValidator {
 		const url = `${endpointMethod} ${endpointUrl}`
 
 		let validator = this.#endpointValidators.get(url)
+		if(validator instanceof EndpointValidator) {
+			return validator
+		}
+		
 		if(validator === false) {
 			return false
 		}
@@ -88,13 +92,37 @@ export class EndpointValidator {
 		return validator
 	}
 
+	/**
+	 * Returns a `validate` function, and a `errors` function that 
+	 * is a derivative of errors occurred from `validate`.
+	*/
+	async stateful() {
+		const validator = this
+		let errors = $state([] as KitValidationError[])
+		return {
+			validate(path?: ErrorPath) {
+				errors = validator.validate(path)
+				return errors
+			},
+			errors(path?: ErrorPath) {
+				if(!path) {
+					return errors
+				}
+				const derivative = $derived(errors.filter(err => {
+					return true // TODO filter based on path
+				}))
+				return derivative
+			}
+		}
+	}
+
 	static get constructable() {
 		return !!EndpointValidator.#validationConstructor
 	}
 
 	static validationConstructor(
 		validationConstructor: (schema: Record<string, unknown>) => {
-			validate: (path: ErrorPath) => KitValidationError[]
+			validate: (path?: ErrorPath) => KitValidationError[]
 		}
 	) {
 		this.#validationConstructor = validationConstructor

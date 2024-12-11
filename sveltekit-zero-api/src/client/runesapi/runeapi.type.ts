@@ -15,12 +15,10 @@ interface Create<T, P extends Endpoint> {
 		$: {
 			validate(
 				path?: (string | number) | (string | number)[]
-			): KitValidationError[]
+			): Promise<KitValidationError[]>
 			post(): ValidatedKitRequestXHR<ReturnType<P['xhr']>>
 			isModified: boolean
-			errors: {
-				(path?: ErrorPath): KitValidationError[]
-			} & KitValidationError[]
+			errors(path?: ErrorPath): KitValidationError[]
 		}
 	}
 }
@@ -43,11 +41,9 @@ type Modify<T, Put extends Endpoint, Patch extends Endpoint, Delete extends Endp
 			$: {
 				validate(
 					path?: (string | number) | (string | number)[]
-				): KitValidationError[]
+				): Promise<KitValidationError[]>
 				isModified: boolean
-				errors: {
-					(path?: ErrorPath): KitValidationError[]
-				} & KitValidationError[]
+				errors(path?: ErrorPath): KitValidationError[]
 			}
 			& ([Put] extends [never] ? {} : { put(): ValidatedKitRequestXHR<ReturnType<Put['xhr']>> })
 			& ([Patch] extends [never] ? {} : { patch(): ValidatedKitRequestXHR<ReturnType<Patch['xhr']>> })
