@@ -159,13 +159,9 @@ export function runesAPI(...args: any[]) {
 					case 'delete': return instance.crud.DELETE
 
 					// Proxied objects
-					case 'create': return () => {
-						return createProxyObject(proxies[key], null, instance)
-					}
-					case 'modify': return (id: string | number) => {
-						return createProxyObject(proxies[key], id, instance)
-					}
-
+					case 'create': return () => createProxyObject(proxies[key], null, instance)
+					case 'modify': return (id: string | number) => createProxyObject(proxies[key], id, instance)
+					
 					// Data
 					case 'groups': return instance.groups
 					case 'Paginator': return Paginator
@@ -173,8 +169,8 @@ export function runesAPI(...args: any[]) {
 					// Validation
 					case 'validate': return
 
-					case 'toJSON': return () => Array.from(instance.map.values())
-					case 'toString': return () => JSON.stringify(Array.from(instance.map.values()))
+					case 'toJSON': return () => instance.list
+					case 'toString': return () => JSON.stringify(instance.list)
 				}
 
 				// Return list-item based on discriminator

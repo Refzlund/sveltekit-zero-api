@@ -13,11 +13,15 @@ interface Create<T, P extends Endpoint> {
 	post(data: Input<P>['body']): ValidatedKitRequestXHR<ReturnType<P['xhr']>>
 	create(): T & {
 		$: {
+			/** Do NOT bind to this, as it won't track changes. */
+			readonly item: T
+			readonly isModified: boolean
+			/** The modifications to the item */
+			readonly modified: Partial<T>
 			validate(
 				path?: (string | number) | (string | number)[]
 			): Promise<KitValidationError[]>
 			post(): ValidatedKitRequestXHR<ReturnType<P['xhr']>>
-			isModified: boolean
 			errors(path?: ErrorPath): KitValidationError[]
 		}
 	}
@@ -39,10 +43,14 @@ type Modify<T, Put extends Endpoint, Patch extends Endpoint, Delete extends Endp
 	& {
 		modify(id: string): T & {
 			$: {
+				/** Do NOT bind to this, as it won't track changes. */
+				readonly item: T
+				readonly isModified: boolean
+				/** The modifications to the item */
+				readonly modified: Partial<T>
 				validate(
 					path?: (string | number) | (string | number)[]
 				): Promise<KitValidationError[]>
-				isModified: boolean
 				errors(path?: ErrorPath): KitValidationError[]
 			}
 			& ([Put] extends [never] ? {} : { put(): ValidatedKitRequestXHR<ReturnType<Put['xhr']>> })
@@ -61,6 +69,9 @@ type Modify<T, Put extends Endpoint, Patch extends Endpoint, Delete extends Endp
 			id: string | number,
 			data: Input<Patch>['body']
 		): ValidatedKitRequestXHR<ReturnType<Patch['xhr']>>
+	})
+	& ([Delete] extends [never] ? {} : {
+		delete(id: string | number): ReturnType<Delete['xhr']>
 	})
 
 export type RuneAPI<T, G, A> = 

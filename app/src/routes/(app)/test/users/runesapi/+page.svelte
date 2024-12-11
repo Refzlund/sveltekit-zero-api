@@ -22,9 +22,12 @@
 		}
 	})
 
-	const user = data.users.modify('User:2')
-	// $inspect(user)
-	$inspect(user.$.isModified)
+	const user = data.users.create()
+	// $inspect('modified', user.$.modified)
+	// $inspect('item', user.$.item)
+	// $inspect(user.$.isModified)
+
+	
 
 </script>
 
@@ -36,7 +39,7 @@
 
 <form onsubmit={e => {
 	e.preventDefault()
-	// user.$.post()
+	user.$.post()
 }}>
 	<label>
 		Name

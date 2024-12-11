@@ -5,7 +5,7 @@ import { createInstanceCRUD } from './instance.crud'
 
 export class RuneAPIInstance<T = unknown> {
 	list = $state([]) as unknown[]
-	map = new SvelteMap<string, unknown>()
+	map = new SvelteMap<string | number, unknown>()
 
 	#listeners = {} as Record<string, Function[] | undefined>
 	#options: RunesDataInstance<unknown>
@@ -63,7 +63,7 @@ export class RuneAPIInstance<T = unknown> {
 		}
 	}
 
-	remove(key: string) {
+	remove(key: string | number) {
 		const item = this.map.get(key)
 		this.map.delete(key)
 

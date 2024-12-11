@@ -35,7 +35,7 @@ type TObject = Array<unknown> | Record<PropertyKey, unknown>
 */
 export function objectProxy<T extends Record<PropertyKey, unknown>>(input: {
 	/** ergo. { get ref() { return ... } } */
-	ref: T 
+	readonly ref: T 
 }) {
 	const modified = $state({}) as T
 
@@ -128,7 +128,7 @@ export function objectProxy<T extends Record<PropertyKey, unknown>>(input: {
 			obj.target[key] = value
 		}
 
-		return new Proxy(obj.target, {
+		const proxy = new Proxy(obj.target, {
 			get(target, p) {
 				if (p === IS_PROXY) return true
 				if (p === GET_MODIFIED) return modified
@@ -142,7 +142,7 @@ export function objectProxy<T extends Record<PropertyKey, unknown>>(input: {
 							return value
 						},
 						proxies: {}
-					}, [...path, p])
+					}, [...path, p]).proxy
 					obj.proxies[p] = value
 				}
 
@@ -164,7 +164,7 @@ export function objectProxy<T extends Record<PropertyKey, unknown>>(input: {
 							return v
 						},
 						proxies: {}
-					}, [...path, p])
+					}, [...path, p]).proxy
 					obj.proxies[p] = value
 				}
 				else {
@@ -178,19 +178,27 @@ export function objectProxy<T extends Record<PropertyKey, unknown>>(input: {
 				return true
 			}
 		})
+
+		return {
+			get proxy() {
+				return proxy
+			},
+			get target() {
+				return obj.target
+			}
+		}
 	}
 
-	const proxy = makeProxy({
+	return makeProxy({
 		get target() {
 			return combined
 		},
 		proxies: {}
-	}, []) as ObjectProxy<T>
-
-	return {
-		get proxy() {
-			return proxy
-		}
+	}, []) as {
+		/** Reference this to when making bindings, tracking changes */
+		proxy: ObjectProxy<T>,
+		/** Reference this, for reactivity to the object, as the proxy can't do that. */
+		target: ObjectProxy<T>
 	}
 }
 

@@ -96,7 +96,7 @@ export class EndpointValidator {
 	 * Returns a `validate` function, and a `errors` function that 
 	 * is a derivative of errors occurred from `validate`.
 	*/
-	async stateful() {
+	stateful() {
 		const validator = this
 		let errors = $state([] as KitValidationError[])
 		return {

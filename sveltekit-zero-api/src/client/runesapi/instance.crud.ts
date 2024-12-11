@@ -26,18 +26,18 @@ export function createInstanceCRUD(instance: RuneAPIInstance) {
 				instance.set(body)
 			})
 		},
-		async PUT(key: string, data: unknown) {
+		async PUT(key: string | number, data: unknown) {
 			const endpoint = instance.api.id$!(key).PUT as Endpoint
 			const revert = instance.set(data)
 			return endpoint.xhr(data).error(revert).success(({ body }) => instance.set(body))
 		},
-		async PATCH(key: string, data: unknown) {
+		async PATCH(key: string | number, data: unknown) {
 			const endpoint = instance.api.id$!(key).PATCH as Endpoint
 			// TODO Merge instead of set
 			const revert = instance.set(data)
 			return endpoint.xhr(data).error(revert)
 		},
-		async DELETE(key: string) {
+		async DELETE(key: string | number) {
 			const endpoint = instance.api.id$!(key).DELETE as Endpoint
 			const revert = instance.remove(key)
 			return endpoint.xhr().error(revert)
