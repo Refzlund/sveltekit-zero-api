@@ -3,7 +3,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev --host",
-		"build": "vite build",
+		"build": "vite build && bunx rimraf './.svelte-kit/output/server/entries/endpoints/(app)/(test)' './.svelte-kit/output/server/entries/pages/(app)/(test)'",
 		"preview": "vite preview",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"

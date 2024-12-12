@@ -2,7 +2,7 @@
 
 	import api from '$api'
 	import { onMount } from 'svelte'
-	import { url } from 'sveltekit-zero-api/client'
+	import { getUrl } from 'sveltekit-zero-api/client'
 
 	// api.fns.someFunction().catch(res => console.log('caught', res.body))
 
@@ -30,7 +30,7 @@
 <!---------------------------------------------------->
 
 <div class='flex items-center gap-4'>
-	<img class='rounded hover:scale-110 duration-100' src={url(api.image.id$('cute.webp'))} alt='Shiba + Giraffe' width='200px'>
+	<img class='rounded hover:scale-110 duration-100' src={getUrl(api.image.id$('cute.webp'))} alt='Shiba + Giraffe' width='200px'>
 
 	<div>
 		<div>

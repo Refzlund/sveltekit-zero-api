@@ -1,7 +1,7 @@
 <script lang="ts">
 	import api from '$api'
 	import { formAPI } from 'sveltekit-zero-api/formapi.svelte'
-	import type { User } from '$routes/api/users'
+	import type { User } from '$routes/(app)/(test)/api/users'
 	import type z from 'zod'
 	import { fromUrl, runesAPI, statefulAPI, getUrl, getMethod, objectProxy, getProxyModified } from 'sveltekit-zero-api/client'
 	import { floatingUI } from '$lib/floating-ui.svelte'
