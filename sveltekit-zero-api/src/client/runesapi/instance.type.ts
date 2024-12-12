@@ -2,6 +2,7 @@ import { KitRequestProxy, KitRequestProxyXHR } from '../../endpoint-proxy.type'
 import { Endpoint } from '../../server/endpoint'
 import { KitResponse } from '../../server/http'
 import { Slugged } from '../../utils/slugs'
+import { PaginatorOptions } from './paginator.svelte'
 
 export type InstanceAPI<T> = {
 	GET?: Endpoint<
@@ -64,25 +65,7 @@ export interface RunesDataInstance<T> {
 	*/
 	fetch?: boolean | number
 	live?: (body: T | T[]) => void
-	paginator?:
-	| {
-		limit: string
-		skip: string
-		count: number
-		/** Start at `skip`, then `limit` that to `skip`+`count`  */
-		range: (query: Record<string, string>) =>
-			| Promise<T | T[]>
-			| KitRequestProxy<KitResponse<any, any, T | T[], true> | KitResponse<any, any, any, false>>
-			| KitRequestProxyXHR<KitResponse<any, any, T | T[], true> | KitResponse<any, any, any, false>>
-		total?: () => Promise<number>
-	}
-	| {
-		page: (index: number) =>
-			| Promise<T | T[]>
-			| KitRequestProxy<KitResponse<any, any, T | T[], true> | KitResponse<any, any, any, false>>
-			| KitRequestProxyXHR<KitResponse<any, any, T | T[], true> | KitResponse<any, any, any, false>>
-		total?: () => Promise<number>
-	}
+	paginator?: PaginatorOptions<T>
 	/** The groups filtering/sorting first happens when accessed */
 	groups?: Record<string, (list: Grouping<T>) => Grouping<T, boolean>>
 }
