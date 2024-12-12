@@ -1,5 +1,11 @@
 # SvelteKit-zero-API 2.0.0
 
+## Table of Contents
+1. [About the Project](#about-the-project)
+2. [Quick Start Guide](#quick-start-guide)
+3. [V2 Migration Guide](#v2-migration-guide)
+
+## About the Project
 A complete rewrite of SvelteKit-zero-API
 
 - All existing V1 features
@@ -34,3 +40,67 @@ A complete rewrite of SvelteKit-zero-API
 It's a massive update. I'll include a website for documentation, for a more pleasing dev experience in this update.
 
 When ready, I'll make a video or two show-casing both old and new.
+
+## Quick Start Guide
+
+
+### 1. Add the package to your project
+```bash
+npm i -D sveltekit-zero-api
+```
+or
+
+```bash
+pnpm add -D sveltekit-zero-api
+```
+
+
+### 2. Add the vite plugin
+```ts
+// vite.config.ts
+import zeroAPI from 'sveltekit-zero-api/vite'
+
+const config: UserConfig = {
+	plugins: [
+		sveltekit(),
+		zeroAPI()
+	]
+}
+```
+
+### 2. Update gitignore
+```
+// .gitignore
+**/sveltekit-zero-api.d.ts
+```
+
+## V2 Migration Guide
+
+
+### 1. vite.config.ts
+```diff
+- import { zeroAPI } from 'sveltekit-zero-api'
++ import zeroAPI from 'sveltekit-zero-api/vite'
+
+const config: UserConfig = {
+	plugins: [
+		sveltekit(),
+		zeroAPI()
+	]
+}
+```
+
+### 2. src/api.ts | src/lib/shared/api.ts
+```diff
+- import { createZeroApi } from "sveltekit-zero-api/api"
+- import type { GeneratedAPI } from "./sveltekit-zero-api"
++ import { createAPIProxy } from "sveltekit-zero-api/client"
++ import type { APIRoutes } from "./api.d"
+
+-const routes = createZeroApi() as GeneratedAPI
+-export default routes.api
+
++const proxy = createAPIProxy() as GeneratedAPI as APIRoutes
++const api = proxy.api
++export default api
+```
