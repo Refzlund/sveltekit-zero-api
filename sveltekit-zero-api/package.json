@@ -35,13 +35,13 @@
 		"@types/bun": "^1.1.13",
 		"@types/node": "^20.9.0",
 		"@typeschema/main": "^0.14.1",
+		"ts-add-js-extension": "^1.6.5",
 		"zod": "^3.23.8",
 		"zod-to-json-schema": "^3.23.5"
 	},
 	"dependencies": {
 		"@sveltejs/vite-plugin-svelte": "^5.0.1",
 		"svelte": "^5.11.0",
-		"ts-add-js-extension": "^1.6.5",
 		"typescript": "^5.7.2",
 		"vite": "^6.0.3"
 	}

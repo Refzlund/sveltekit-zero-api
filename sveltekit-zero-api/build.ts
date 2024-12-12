@@ -45,11 +45,17 @@ for (const path of [paths.package, paths.readme, paths.license]) {
 for (const path of [paths.dist]) {
 	let target = Path.join(paths.npm, Path.basename(path))
 	for (let i = 0; i < 20; i++) {
+		// When the file(s) has been recently modified, the file is locked,
+		// as its most likely being used by another process still.
+		// So we retry moving the file, until its not locked anymore.
 		await new Promise((res) => setTimeout(res, 100))
 		try {
 			fs.renameSync(path, target)
 		} catch (error) {
-			console.error(`Attempt ${i + 1} failed:`, error)
+			if(i === 19) {
+				console.error('Failed to rename file during build')
+				throw error
+			}
 			continue
 		}
 		break
