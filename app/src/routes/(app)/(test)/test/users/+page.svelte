@@ -3,7 +3,7 @@
 	import { formAPI } from 'sveltekit-zero-api/formapi.svelte'
 	import type { User } from '$routes/(app)/(test)/api/users'
 	import type z from 'zod'
-	import { fromUrl, runesAPI, statefulAPI, getUrl, getMethod, objectProxy, getProxyModified } from 'sveltekit-zero-api/client'
+	import { fromUrl, dataAPI, statefulAPI, getUrl, getMethod, objectProxy, getProxyModified } from 'sveltekit-zero-api/client'
 	import { floatingUI } from '$lib/floating-ui.svelte'
 	import { scale } from 'svelte/transition'
 
@@ -33,7 +33,7 @@
 	// 	query: o => ({ since: o.lastGetRequestAt })
 	// })
 
-	let data = runesAPI({
+	let data = dataAPI({
 		users: {
 			api: api.users,
 			discriminator: (body) => body.id,

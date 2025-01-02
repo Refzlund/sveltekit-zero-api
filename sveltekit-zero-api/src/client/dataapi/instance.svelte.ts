@@ -2,13 +2,14 @@ import { SvelteMap } from 'svelte/reactivity'
 import { RunesDataInstance } from './instance.type'
 import { createGroupsProxy } from './instance.groups.svelte'
 import { createInstanceCRUD } from './instance.crud'
+import { Paginator, paginatorProxy } from './instance.paginator.svelte'
 
 export class RuneAPIInstance<T = unknown> {
 	list = $state([]) as unknown[]
 	map = new SvelteMap<string | number, unknown>()
 
 	#listeners = {} as Record<string, Function[] | undefined>
-	#options: RunesDataInstance<unknown>
+	options: RunesDataInstance<unknown>
 
 	discriminator: {
 		/** Gets the discriminator from input body */
@@ -21,32 +22,37 @@ export class RuneAPIInstance<T = unknown> {
 
 	crud: ReturnType<typeof createInstanceCRUD>
 	groups?: ReturnType<typeof createGroupsProxy>
+	Paginator: Paginator<T>['constructor']
 
 	get fetch() {
-		return this.#options.fetch
+		return this.options.fetch
 	}
 	get api() {
-		return this.#options.api
+		return this.options.api
 	}
 
 	constructor(options: RunesDataInstance<unknown>) {
-		this.#options = options
+		this.options = options
 		this.discriminator = {} as typeof this.discriminator
 
 		const discriminator = typeof options.discriminator === 'function' ? { get: options.discriminator } : options.discriminator
 		this.discriminator.get = discriminator.get
 
-		if('temp' in discriminator) {
+		if ('temp' in discriminator) {
 			this.discriminator.temp = (body: unknown) => this.set(discriminator.temp(body))
 		}
-		if('set' in discriminator) {
+		if ('set' in discriminator) {
 			this.discriminator.set = (body: unknown) => this.set(discriminator.set!(body))
 		}
 
-		if(options.groups) {
+		if (options.groups) {
 			this.groups = createGroupsProxy(this, options.groups)
 		}
 		this.crud = createInstanceCRUD(this)
+
+		this.Paginator = paginatorProxy(this)
+
+		options.live?.((body) => this.set(body))
 	}
 
 	on(
@@ -57,7 +63,7 @@ export class RuneAPIInstance<T = unknown> {
 		this.#listeners[event].push(cb)
 		return () => {
 			const index = this.#listeners[event]?.indexOf(cb)
-			if (index !== undefined) {
+			if (index !== undefined && index !== -1) {
 				this.#listeners[event]?.splice(index, 1)
 			}
 		}
@@ -87,7 +93,7 @@ export class RuneAPIInstance<T = unknown> {
 				fns.forEach((fn) => fn())
 			}
 		}
-		
+
 		const key = this.discriminator.get(value)
 		if (key === undefined || key === false || key === null) {
 			return () => { }

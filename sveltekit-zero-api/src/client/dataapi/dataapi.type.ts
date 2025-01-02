@@ -6,7 +6,7 @@ import {
 	KitValidationError,
 	ValidatedKitRequestXHR,
 } from '../errors'
-import { Paginator } from './paginator.svelte'
+import { Paginator, PaginatorConstructorOptions } from './instance.paginator.svelte'
 
 type Input<P extends Endpoint> = P extends Endpoint<infer Input> ? Input : never
 
@@ -52,14 +52,18 @@ type Modify<T, Put extends Endpoint, Patch extends Endpoint, Delete extends Endp
 				/** The modifications to the item */
 				readonly modifications: DeepPartial<T>
 			}
-			& ([Put] extends [never] ? {} : { put: {
-				(): ValidatedKitRequestXHR<ReturnType<Put['xhr']>>
-				validate(path?: ErrorPath): Promise<KitValidationError[]>
-			} })
-			& ([Patch] extends [never] ? {} : { patch: {
-				(): ValidatedKitRequestXHR<ReturnType<Patch['xhr']>>
-				validate(path?: ErrorPath): Promise<KitValidationError[]>
-			} })
+			& ([Put] extends [never] ? {} : {
+				put: {
+					(): ValidatedKitRequestXHR<ReturnType<Put['xhr']>>
+					validate(path?: ErrorPath): Promise<KitValidationError[]>
+				}
+			})
+			& ([Patch] extends [never] ? {} : {
+				patch: {
+					(): ValidatedKitRequestXHR<ReturnType<Patch['xhr']>>
+					validate(path?: ErrorPath): Promise<KitValidationError[]>
+				}
+			})
 			& ([Delete] extends [never] ? {} : { delete(): ReturnType<Delete['xhr']> })
 		}
 	}
@@ -79,7 +83,7 @@ type Modify<T, Put extends Endpoint, Patch extends Endpoint, Delete extends Endp
 		delete(id: string | number): ReturnType<Delete['xhr']>
 	})
 
-export type RuneAPI<T, G, A> = 
+export type DataAPI<T, G, A> =
 	& {
 		[Symbol.iterator](): ArrayIterator<T>
 		list: T[]
@@ -87,36 +91,36 @@ export type RuneAPI<T, G, A> =
 		keys: MapIterator<string | number>
 		length: number
 		has(key: string): boolean
-		Paginator: new (count?: number) => Paginator<T>
+		Paginator: new (options?: PaginatorConstructorOptions) => Paginator<T>
 	}
 	& (A extends { GET: Endpoint }
 		? {
 			/** Calls GET */
 			get(): Promise<T[]>
-		} : {}) 
+		} : {})
 	& (A extends { POST: Endpoint } ? Create<T, A['POST']> : {})
 	& (A extends Slugged<{ GET: infer P }>
 		? P extends Endpoint
-			? {
-				/** Calls id$(...).GET */
-				get(id: string | number): ReturnType<P['xhr']>
-			}
-			: {}
+		? {
+			/** Calls id$(...).GET */
+			get(id: string | number): ReturnType<P['xhr']>
+		}
+		: {}
 		: {})
 	& (A extends Slugged<{ DELETE: infer P }>
 		? P extends Endpoint
-			? {
-				/** Calls id$(...).DELETE */
-				delete(id: string | number): ReturnType<P['xhr']>
-			} 
-			: {} 
+		? {
+			/** Calls id$(...).DELETE */
+			delete(id: string | number): ReturnType<P['xhr']>
+		}
+		: {}
 		: {})
-	& Modify<T, GetSluggedEndpointFn<A, 'PUT'>, GetSluggedEndpointFn<A, 'PATCH'>, GetSluggedEndpointFn<A, 'DELETE'>> 
+	& Modify<T, GetSluggedEndpointFn<A, 'PUT'>, GetSluggedEndpointFn<A, 'PATCH'>, GetSluggedEndpointFn<A, 'DELETE'>>
 	& ([G] extends [never]
 		? {}
 		: G extends Record<string, any>
 		? { groups: Record<keyof G, T[]> }
-		: {}) 
+		: {})
 	& {
 		[key: string]: T
 	}

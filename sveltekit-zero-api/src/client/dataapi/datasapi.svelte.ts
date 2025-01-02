@@ -2,19 +2,15 @@ import type { Endpoint } from '../../server/endpoint'
 import type { KitResponse } from '../../server/http'
 import { KeyOf } from '../../utils/types'
 import { APIProxy } from '../api-proxy'
-import { RuneAPI } from './runeapi.type'
-import { RuneAPI as _RuneAPI } from '.'
-import { Paginator } from './paginator.svelte'
+import { DataAPI } from './dataapi.type'
+import { DataAPI as _DataAPI } from '.'
 import { runedObjectStorage, runedSessionObjectStorage } from '../runed-storage.svelte'
 import { RunesDataInstance } from './instance.type'
 import { RuneAPIInstance } from './instance.svelte'
-import { getProxyModified, objectProxy } from '../object-proxy.svelte'
-import { EndpointValidator, ErrorPath, KitValidationError } from '../errors'
 import { createProxyObject } from './proxy-objects.svelte'
 
 
-
-interface RunesAPIOptions<T> {
+interface DataAPIOptions<T> {
 	/** The ID associated with this runesAPI */
 	id: string
 	/** Include this query on `api.GET` */
@@ -26,19 +22,19 @@ interface RunesAPIOptions<T> {
 	live?: (cb: (data: T) => void) => void
 }
 
-export function runesAPI<TItems, TType>(
+export function dataAPI<TItems, TType>(
 	instances: TItems & {
 		[K in keyof TType]: RunesDataInstance<KeyOf<TType, K>>
 	}
 ): {
-		[K in keyof TItems]: RuneAPI<
+		[K in keyof TItems]: DataAPI<
 			KeyOf<TType, K>,
 			KeyOf<KeyOf<TItems, K>, 'groups'>,
 			KeyOf<KeyOf<TItems, K>, 'api'>
 		>
 	}
 
-export function runesAPI<TAPI, TItems, TData extends Record<string, any[]>>(
+export function dataAPI<TAPI, TItems, TData extends Record<string, any[]>>(
 	api: TAPI & {
 		GET: Endpoint<
 			any,
@@ -51,19 +47,19 @@ export function runesAPI<TAPI, TItems, TData extends Record<string, any[]>>(
 			'discriminator' | 'groups'
 		>
 	},
-	options?: RunesAPIOptions<TData>
+	options?: DataAPIOptions<TData>
 ): {
-		[K in keyof TItems]: RuneAPI<
+		[K in keyof TItems]: DataAPI<
 			KeyOf<TData, K>[number],
 			KeyOf<KeyOf<TItems, K>, 'groups'>,
 			KeyOf<TAPI, K>
 		>
 	}
 
-export function runesAPI(...args: any[]) {
+export function dataAPI(...args: any[]) {
 	let getAPI: APIProxy | undefined
 	let instances: Partial<Record<string, RunesDataInstance<unknown>>>
-	let options: RunesAPIOptions<unknown> | undefined
+	let options: DataAPIOptions<unknown> | undefined
 
 	if (args[0] instanceof APIProxy) {
 		getAPI = args[0]
@@ -74,7 +70,7 @@ export function runesAPI(...args: any[]) {
 		instances = args[0]
 	}
 
-	const proxies = {} as Record<string, _RuneAPI>
+	const proxies = {} as Record<string, _DataAPI>
 	const setters = {} as Record<string, (data: any) => void>
 
 	const id = options?.id ?? Math.random().toString(36).slice(2)
@@ -82,14 +78,14 @@ export function runesAPI(...args: any[]) {
 	const defaultSession = { lastGetRequestAt: 0 }
 	const session = getAPI
 		? options?.indexedDB
-			? runedObjectStorage(`runesapi-${id}`, defaultSession) 
+			? runedObjectStorage(`runesapi-${id}`, defaultSession)
 			: runedSessionObjectStorage(`runesapi-${id}`, defaultSession)
 		: defaultSession
 
 	function refresh() {
 		if (getAPI) {
 			const GET = getAPI.GET as Endpoint
-			const opts = (options || {}) as RunesAPIOptions<unknown>
+			const opts = (options || {}) as DataAPIOptions<unknown>
 
 			GET(null, { query: opts.query?.(session) }).success(({ body }) => {
 				for (const key in body) {
@@ -106,7 +102,7 @@ export function runesAPI(...args: any[]) {
 	}
 
 	for (const key in instances) {
-		if(getAPI) {
+		if (getAPI) {
 			instances[key]!.api = getAPI[key] as any
 		}
 
@@ -119,16 +115,15 @@ export function runesAPI(...args: any[]) {
 		let updatedAt = 0
 		let itemUpdatedAt: Record<PropertyKey, number> = {}
 
-		proxies[key] = new Proxy({} as _RuneAPI, {
+		proxies[key] = new Proxy({} as _DataAPI, {
 			getPrototypeOf() {
-				return _RuneAPI.prototype
+				return _DataAPI.prototype
 			},
 			get(_, property) {
 				const update = (
 					(instance.fetch === true && updatedAt === 0)
 					|| (typeof instance.fetch === 'number' && Date.now() > updatedAt + cooldown)
-				)
-					&& (
+				) && (
 						property === Symbol.iterator
 						|| property === 'list'
 						|| property === 'entries'
@@ -136,6 +131,7 @@ export function runesAPI(...args: any[]) {
 						|| property === 'length'
 						|| property === 'has'
 						|| property === 'groups'
+						|| property === 'Paginator'
 					)
 
 				if (update) {
@@ -161,12 +157,12 @@ export function runesAPI(...args: any[]) {
 					// Proxied objects
 					case 'create': return () => createProxyObject(proxies[key], null, instance)
 					case 'modify': return (id: string | number) => createProxyObject(proxies[key], id, instance)
-					
+
 					// Data
 					case 'groups': return instance.groups
-					case 'Paginator': return Paginator
+					case 'Paginator': return instance.Paginator
 
-					case 'toJSON': return () => instance.list
+					case 'toJSON': return () => $state.snapshot(instance.list)
 					case 'toString': return () => JSON.stringify(instance.list)
 				}
 

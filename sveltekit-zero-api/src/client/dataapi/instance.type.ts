@@ -2,7 +2,7 @@ import { KitRequestProxy, KitRequestProxyXHR } from '../../endpoint-proxy.type'
 import { Endpoint } from '../../server/endpoint'
 import { KitResponse } from '../../server/http'
 import { Slugged } from '../../utils/slugs'
-import { PaginatorOptions } from './paginator.svelte'
+import { PaginatorOptions } from './instance.paginator.svelte'
 
 export type InstanceAPI<T> = {
 	GET?: Endpoint<
@@ -64,7 +64,7 @@ export interface RunesDataInstance<T> {
 	 * This is true for both when retrieving values like iteration; `{#each data.users as user}` and single items; `data.users[id]`
 	*/
 	fetch?: boolean | number
-	live?: (body: T | T[]) => void
+	live?(subscribe: (body: T | T[]) => void): void
 	paginator?: PaginatorOptions<T>
 	/** The groups filtering/sorting first happens when accessed */
 	groups?: Record<string, (list: Grouping<T>) => Grouping<T, boolean>>
