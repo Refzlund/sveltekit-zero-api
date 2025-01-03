@@ -2,7 +2,7 @@ import { Endpoint } from '../../server/endpoint'
 import { EndpointValidator, ErrorPath, KitValidationError } from '../errors'
 import { RuneAPIInstance } from './instance.svelte'
 
-export function createInstanceCRUD(instance: RuneAPIInstance) {
+export function createInstanceCRUD(instance: RuneAPIInstance<any>) {
 	const crud = {
 		async GET(key?: string) {
 			if (typeof key !== 'undefined') {

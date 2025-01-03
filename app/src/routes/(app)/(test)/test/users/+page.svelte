@@ -3,7 +3,15 @@
 	import { formAPI } from 'sveltekit-zero-api/formapi.svelte'
 	import type { User } from '$routes/(app)/(test)/api/users'
 	import type z from 'zod'
-	import { fromUrl, dataAPI, statefulAPI, getUrl, getMethod, objectProxy, getProxyModified } from 'sveltekit-zero-api/client'
+	import {
+		fromUrl,
+		dataAPI,
+		statefulAPI,
+		getUrl,
+		getMethod,
+		objectProxy,
+		getProxyModified,
+	} from 'sveltekit-zero-api/client'
 	import { floatingUI } from '$lib/floating-ui.svelte'
 	import { scale } from 'svelte/transition'
 
@@ -39,18 +47,34 @@
 			discriminator: (body) => body.id,
 			fetch: true,
 			groups: {
-				seniors: (v) => v.filter((v) => v.age > 50).sort((a, b) => a.age - b.age)
-			}
+				seniors: (v) =>
+					v.filter((v) => v.age > 50).sort((a, b) => a.age - b.age),
+			},
 		},
-		articles: {
+		paged: {
 			api: api.articles,
 			discriminator: (body) => body.id,
 			paginator: {
 				page: (index) => api.articles.paginate(index),
-				total: () => api.articles.total()
-			}
-		}
+				total: () => api.articles.totalPages(),
+			},
+		},
+		limited: {
+			api: api.articles,
+			discriminator: (body) => body.id,
+			paginator: {
+				skip: 'skip',
+				limit: 'limit',
+				count: 10,
+				range: (query) =>
+					api.articles.range({ limit: query.limit, skip: query.skip }),
+			},
+		},
 	})
+
+	const paginator = new data.paged.Paginator()
+
+	// $inspect(data.users.list)
 
 	/*
 	data.articles.get()

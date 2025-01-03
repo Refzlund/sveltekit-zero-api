@@ -57,6 +57,7 @@ export function dataAPI<TAPI, TItems, TData extends Record<string, any[]>>(
 	}
 
 export function dataAPI(...args: any[]) {
+	/** getAPI is is the core api when options are: `(api.core, {...})` */
 	let getAPI: APIProxy | undefined
 	let instances: Partial<Record<string, RunesDataInstance<unknown>>>
 	let options: DataAPIOptions<unknown> | undefined

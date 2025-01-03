@@ -8,7 +8,13 @@ export class RuneAPIInstance<T = unknown> {
 	list = $state([]) as unknown[]
 	map = new SvelteMap<string | number, unknown>()
 
-	#listeners = {} as Record<string, Function[] | undefined>
+	#listeners = {
+		set: [],
+		remove: []
+	} as {
+		set: Array<(values: T[]) => void>
+		remove: Array<(values: T[]) => void>
+	}
 	options: RunesDataInstance<unknown>
 
 	discriminator: {
@@ -57,26 +63,27 @@ export class RuneAPIInstance<T = unknown> {
 
 	on(
 		event: 'set' | 'remove',
-		cb: (key: string, values: unknown) => void
+		cb: (values: T[]) => void
 	) {
-		this.#listeners[event] ??= []
 		this.#listeners[event].push(cb)
 		return () => {
-			const index = this.#listeners[event]?.indexOf(cb)
+			const index = this.#listeners[event].indexOf(cb)
 			if (index !== undefined && index !== -1) {
-				this.#listeners[event]?.splice(index, 1)
+				this.#listeners[event].splice(index, 1)
 			}
 		}
 	}
 
 	remove(key: string | number) {
-		const item = this.map.get(key)
+		const item = this.map.get(key) as T
+		if(!item) return () => {}
+
 		this.map.delete(key)
 
 		const index = this.list.indexOf(item)
 		this.list.splice(index, 1)
 
-		this.#listeners.remove?.forEach((cb) => cb(key, item))
+		this.#listeners.remove.forEach((cb) => cb([item]))
 
 		/** Revert */
 		return () => {
@@ -84,10 +91,15 @@ export class RuneAPIInstance<T = unknown> {
 		}
 	}
 
-	set(value: unknown | unknown[]) {
+	set(value: unknown | unknown[], many?: (state: T) => void) {
 		if (Array.isArray(value)) {
 			const fns = [] as Function[]
-			value.forEach((v) => fns.push(this.set(v)))
+
+			let items = [] as T[]
+			value.forEach((v) => fns.push(this.set(v, state => items.push(state))))
+			this.list = [...this.list, ...items]
+			this.#listeners.set.forEach((cb) => cb(items))
+
 			/** Revert */
 			return () => {
 				fns.forEach((fn) => fn())
@@ -96,7 +108,7 @@ export class RuneAPIInstance<T = unknown> {
 
 		const key = this.discriminator.get(value)
 		if (key === undefined || key === false || key === null) {
-			return () => { }
+			return () => {}
 		}
 
 		if (value === undefined || value === null) {
@@ -104,11 +116,16 @@ export class RuneAPIInstance<T = unknown> {
 		}
 
 		let pre = $state.snapshot(this.map.get(key))
-		const state = $state(value)
+		const state = $state(value) as T
 
-		this.list.push(state)
+		if(many) {
+			// This prevents spamming if `.list` is used within an effect
+			many(state)
+		} else {
+			this.list.push(state)
+			this.#listeners.set.forEach((cb) => cb([value as T]))
+		}
 		this.map.set(key, state)
-		this.#listeners.set?.forEach((cb) => cb(key, value))
 		/** Revert action */
 		return () => {
 			if (!pre) {

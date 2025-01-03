@@ -10,9 +10,9 @@ export const POST = endpoint(
 	zod({ body: Article.omit({ id: true }) }),
 	(event) => {
 		let { title, content } = event.body
-		
+
 		articles.push({ id: `Article:${articles.length}`, title, content })
-		
+
 		return new Created(articles[articles.length - 1])
 	}
 )
@@ -23,7 +23,15 @@ export const PATCH = functions({
 			articles.slice(index, index + 12)
 		)
 	},
-	total() {
+	range(_, { skip, limit }: { skip: string; limit: string }) {
+		return new OK(
+			articles.slice(+skip, +skip + +limit)
+		)
+	},
+	totalPages() {
 		return new OK(Math.ceil(articles.length / 12))
+	},
+	totalArticles() {
+		return new OK(articles.length)
 	}
 })

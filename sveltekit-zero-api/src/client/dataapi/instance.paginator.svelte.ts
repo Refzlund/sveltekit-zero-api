@@ -62,12 +62,20 @@ export interface PaginatorConstructorOptions {
 }
 
 export class Paginator<T> {
-	#instance: RuneAPIInstance
-	#options?: PaginatorOptions<T>
+	#instance: RuneAPIInstance<T>
+	#options? = {} as PaginatorOptions<T>
 	#constructorOpts: PaginatorConstructorOptions
 
+	#paged = $derived(
+		this.#options && 'page' in this.#options
+	)
+
+	count = $derived(
+		this.#options && 'count' in this.#options && this.#options.count
+	)
+
 	/** Shared pagination content between Paginators for the same RuneAPI */
-	static #shared = new WeakMap<RuneAPIInstance, Array<unknown[]> | unknown[]>()
+	static #shared = new WeakMap<RuneAPIInstance<any>, Array<unknown[]> | unknown[]>()
 
 	/**
 	 * a sparse (holey) array of already populated ranges.
@@ -77,15 +85,19 @@ export class Paginator<T> {
 	*/
 	#ranges: Array<unknown[]> | unknown[]
 
+	#list: T[] = $state([])
 	/** The current viewing range of the paginator. */
-	list: T[] = $state([])
+	get list() {
+		return this.#list
+	}
+
 	/**
 	 * All items that has been viewed via this `Paginator`.
 	 * 
 	 * If you start (current) on ex. `4`, any `prev` will be preprended, 
 	 * while any `next` will be appended to the listed array.
 	*/
-	listed: T[] = $state([])
+	readonly listed: T[] = $state([])
 	/**
 	 * Current paginated "position".
 	 * 
@@ -94,14 +106,14 @@ export class Paginator<T> {
 	 * 
 	 * If using `page` in the configuration, it will indicate the paged index.
 	 */
-	position: number = $state(0)
+	readonly position: number = $state(0)
 	/** 
 	 * The total amount of items. 
 	 * For `range` it may represent an amount of items, while `page` might represent amount of pages. 
 	 * 
 	 * However, `total` is provided by the endpoint you provide in the configuration.
 	 */
-	total?: number = $state(0)
+	readonly total: number = $state(0)
 
 	get isLoading() {
 		return true
@@ -116,35 +128,86 @@ export class Paginator<T> {
 		if(!this.#ranges) {
 			Paginator.#shared.set(this.#instance, this.#ranges = [])
 		}
+
+		this.setPosition(this.#constructorOpts.startPosition ?? 0)
+		this.updateTotal()
 	}
 
 	/** Paginate to the right */
 	async next() {
-		
+		if(this.count && !this.#paged) {
+			return this.setPosition(this.position + this.count)
+		}
+		return this.setPosition(this.position + 1)
 	}
 
 	/** Paginate to the left */
 	async prev() {
-		
+		if (this.count && !this.#paged) {
+			return this.setPosition(this.position - this.count)
+		}
+		return this.setPosition(this.position - 1)
 	}
 
 	async #virtual(position: number) {
 		return this.#instance.list.slice(position, position + 10) as T[]
 	}
 
+	async updateTotal() {
+		if(this.#options && 'total' in this.#options) {
+			// @ts-expect-error
+			this.total = await this.#options.total?.()
+		}
+	}
+
 	/** Paginate to a specific position */
 	async setPosition(position: number) {
+		let _position = this.position
+		let _list = this.#list
+		
+		// @ts-expect-error
 		this.position = position
 
+		if(this.#paged) {
+			this.#list = (this.#ranges[position] ?? []) as T[]
+		} else {
+			this.#list = this.#ranges.slice(position, position + 10) as T[]
+		}
+
 		const promise = 
-			  !this.#options 
+			  !this.#options
 			? this.#virtual(position)
-			: 'page' in this.#options 
+			: 'page' in this.#options
 			? success(this.#options.page(position))
 			: success(this.#options.range({ 
 				[this.#options.skip ?? 'skip']: position.toString(),
 				[this.#options.limit ?? 'limit']: this.#constructorOpts.count?.toString() ?? this.#options.count?.toString()
 			}))
+
+		await new Promise(resolve => setTimeout(resolve, 1000))
+		let result = $state(await promise)
+
+		if(!result) {
+			if (this.position !== position) return
+
+			// @ts-expect-error
+			this.position = _position
+			this.#list = _list
+			return
+		}
+
+		if (this.position === position) {
+			this.#list = result
+			this.#instance.set(result)
+		}
+
+		if(this.#paged) {
+			this.#ranges[position] = result
+		} else {
+			for(let i = position; i < result.length + position; i++) {
+				this.#ranges[i] = result[i - position]
+			}
+		}
 	}
 }
 
@@ -155,7 +218,7 @@ function success<T>(item: PaginationPromise<T>) {
 	return item as Promise<T[]>
 }
 
-export function paginatorProxy(instance: RuneAPIInstance) {
+export function paginatorProxy<T>(instance: RuneAPIInstance<any>) {
 	return new Proxy(Paginator, {
 		construct(target, argArray) {
 			return new target(...[instance, ...argArray] as [any])
