@@ -128,8 +128,7 @@ export class Paginator<T> {
 	 * If you start (current) on ex. `4`, any `prev` will be preprended, 
 	 * while any `next` will be appended to the listed array.
 	*/
-	get listed() { return this.#listed }
-	#listed = $state([]) as T[]
+	get listed() { return this.#ranges.flat(this.#paged ? 1 : 0) as T[] }
 	
 	/**
 	 * Current VIEWED (aka `list`) paginated "position"
@@ -163,7 +162,9 @@ export class Paginator<T> {
 
 		this.#ranges = Paginator.#shared.get(this.#instance)!
 		if(!this.#ranges) {
-			Paginator.#shared.set(this.#instance, this.#ranges = [])
+			const ranges = $state([])
+			Paginator.#shared.set(this.#instance, ranges)
+			this.#ranges = ranges
 		}
 
 		this.setPosition(this.#constructorOpts.startPosition ?? 0)
@@ -229,7 +230,8 @@ export class Paginator<T> {
 			this.#ranges[position] = result
 		} else {
 			for (let i = position;i < result.length + position;i++) {
-				this.#ranges[i] = result[i - position]
+				const item = result[i - position]
+				this.#ranges[i] = item
 			}
 		}
 
@@ -251,13 +253,12 @@ export class Paginator<T> {
 		let _list = this.#list
 
 		this.#current = position
+		
+		const range = ((this.#paged 
+			? (this.#ranges[position] ?? [])
+			: this.#ranges.slice(position, position + this.count)
+		) as T[]).filter(v => v !== undefined)
 
-		let range = [] as T[]
-		if (this.#paged) {
-			range = (this.#ranges[position] ?? []) as T[]
-		} else {
-			range = this.#ranges.slice(position, position + this.count) as T[]
-		}
 		if(range.length || !this.#await) {
 			this.#position = position
 			this.#list = range
