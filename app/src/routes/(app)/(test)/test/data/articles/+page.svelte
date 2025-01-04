@@ -9,6 +9,7 @@
 			paginator: {
 				page: (index) => api.articles.paginate(index),
 				total: () => api.articles.totalPages(),
+				cooldown: 444
 			},
 		},
 		listed: {
@@ -17,7 +18,7 @@
 			paginator: {
 				skip: 'skip',
 				limit: 'limit',
-				count: 10,
+				count: 12,
 				total: () => api.articles.totalArticles(),
 				range: (query) =>
 					api.articles.range({ limit: query.limit, skip: query.skip }),
@@ -32,7 +33,7 @@
 <!---------------------------------------------------->
 
 <ul>
-	<div>page {paged.position+1} of {paged.total+1}</div>
+	<div>page {(paged.current)+1} of {paged.total+1}</div>
 	<div><button onclick={() => paged.next()}>Next</button></div>
 	<div><button onclick={() => paged.prev()}>Previous</button></div>
 
@@ -42,7 +43,7 @@
 </ul>
 
 <ul>
-	<div>Items {listed.position+1}-{listed.count} of {listed.total+1}</div>
+	<div>Items {listed.current+1}-{listed.current+listed.count} of {listed.total+1}</div>
 	<div><button onclick={() => listed.next()}>Next</button></div>
 	<div><button onclick={() => listed.prev()}>Previous</button></div>
 

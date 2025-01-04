@@ -20,7 +20,7 @@ export const POST = endpoint(
 export const PATCH = functions({
 	paginate(_, index: number) {
 		return new OK(
-			articles.slice(index, index + 12)
+			articles.slice(index * 12, index * 12 + 12)
 		)
 	},
 	range(_, { skip, limit }: { skip: string; limit: string }) {

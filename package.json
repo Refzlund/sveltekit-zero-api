@@ -3,6 +3,7 @@
 		"app": "cd ./sveltekit-zero-api && bun ./build.ts && cd ../app && bun dev",
 		"app:dev": "cd ./app && bun dev"
 	},
+	"license": "MIT",
 	"workspaces": [
 		"./app",
 		"./sveltekit-zero-api"
