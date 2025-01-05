@@ -3,6 +3,7 @@ import { KitResponse } from './http'
 import type { KitEvent } from './kitevent'
 import { sequence as sveltekitSequence } from '@sveltejs/kit/hooks'
 import { convertResponse } from './convert-response'
+import querySpread from './query-spread'
 
 export type KitHandle = (input: {
 	event: KitEvent
@@ -62,6 +63,9 @@ export function zeroAPI(options: ZeroAPIServerOptions) {
 		event.results ??= {}
 		// @ts-expect-error Just adding options to event
 		event.zeroAPIOptions = options
+
+		// @ts-expect-error RequestEvent should not have `query` inside of it.
+		event.query = querySpread(event as KitEvent)
 
 		let response: Response
 

@@ -5,7 +5,7 @@ import { OK } from 'sveltekit-zero-api/http'
 
 
 export const GET = endpoint(
-	() => {
+	(e) => {
 		return new OK({ users, articles })
 	}
 )
