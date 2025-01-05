@@ -50,61 +50,9 @@
 				seniors: (v) =>
 					v.filter((v) => v.age > 50).sort((a, b) => a.age - b.age),
 			},
-		},
-		paged: {
-			api: api.articles,
-			discriminator: (body) => body.id,
-			paginator: {
-				page: (index) => api.articles.paginate(index),
-				total: () => api.articles.totalPages(),
-			},
-		},
-		limited: {
-			api: api.articles,
-			discriminator: (body) => body.id,
-			paginator: {
-				skip: 'skip',
-				limit: 'limit',
-				count: 10,
-				range: (query) =>
-					api.articles.range({ limit: query.limit, skip: query.skip }),
-			},
-		},
+		}
 	})
 
-	const paginator = new data.paged.Paginator()
-
-	// $inspect(data.users.list)
-
-	/*
-	data.articles.get()
-	let post = data.articles.post({
-		title: 'Title',
-		content: 'Content'
-	})
-	post.catch(err => err)
-	post.then(v => v)
-	post.success(() => console.log('Article created!'))
-	
-	data.users.groups.seniors
-
-	data.users.test
-
-	const a1 = data.articles.modify('Article:0')
-	a1.$.patch()
-	a1.$.isModified
-	a1.$.validate()
-	a1.$.validate('nested.name')
-
-	const a2 = data.articles.create()	
-
-	const paginator = new data.articles.Paginator(10)
-	paginator.current
-	paginator.list
-	paginator.total
-	paginator.next()
-	paginator.prev()
-	*/
 </script>
 
 <!---------------------------------------------------->

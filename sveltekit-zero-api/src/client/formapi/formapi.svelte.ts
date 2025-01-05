@@ -531,13 +531,16 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 
 		// missing validation schema
 		if (schema === undefined) {
-			const opts = { headers: { 'x-json-schema': 'true' } }
+			const opts = { headers: { 'x-validation-schema': 'true' } }
 			let args: [any, any, any] =
 				method === 'POST' ? [undefined, opts, ,] : ['-', undefined, opts]
-			let [req] = apis[method]!(...args)
+
+			const request = apis[method]!(...args)
+
+			let [req] = request
 				.any(() => (validationSchemaPromise = undefined))
 				.clientError(({ body }) => {
-					if (body.code === 'no_json_schema') {
+					if (body.code === 'no_validation_schema') {
 						validationSchemas[method] = false
 						schema = false
 					}

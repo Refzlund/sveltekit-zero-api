@@ -298,7 +298,7 @@ export function createAPIProxy<T extends APIProxy>(options: APIProxyOptions = {}
 					}
 
 					let aborted = false
-					xhr.addEventListener('abort', () => (aborted = true))
+					xhr.addEventListener('abort', () => (aborted = true), { once: true })
 
 					function onloadend() {
 						if (aborted) {
@@ -316,7 +316,7 @@ export function createAPIProxy<T extends APIProxy>(options: APIProxyOptions = {}
 								const value = parts.join(': ')
 								if (header) headers.append(header, value)
 							})
-
+						
 						xhrResolve(
 							new Response(xhr!.response, {
 								status: xhr!.status,
@@ -326,8 +326,7 @@ export function createAPIProxy<T extends APIProxy>(options: APIProxyOptions = {}
 						)
 					}
 
-					xhr.addEventListener('loadend', onloadend)
-
+					xhr.addEventListener('load', onloadend, { once: true })
 					xhr.send(body as XMLHttpRequestBodyInit | Document | null | undefined)
 				}, 0)
 			}

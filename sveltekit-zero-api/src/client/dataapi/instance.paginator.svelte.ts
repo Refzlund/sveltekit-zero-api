@@ -97,8 +97,12 @@ export class Paginator<T> {
 	#resetCooldown = $derived(this.#options?.resetCooldown ?? 444)
 	#paged = $derived(this.#options && 'page' in this.#options)
 	
+	get #isVirtual() { return !this.#options }
+
 	/** If using a ranged pagination, this is the count per pagination */
 	count = $derived.by(() => {
+		if(this.#constructorOpts.count) return this.#constructorOpts.count
+		else if(!this.#options) return 10 // default
 		let result = this.#options && 'count' in this.#options && this.#options.count
 		if(result === undefined || result === false) return -1
 		return result
@@ -117,9 +121,8 @@ export class Paginator<T> {
 	/** Positions that has been fetched */
 	#fetches: number[] = []
 
-	
 	/** The current viewing range of the paginator. */
-	get list() { return this.#list }
+	get list() { return this.#isVirtual ? this.#virtual(this.#current) : this.#list }
 	#list: T[] = $state([])
 
 	/**
@@ -196,8 +199,8 @@ export class Paginator<T> {
 		this.loadPosition(this.#pos(-1))
 	}
 
-	async #virtual(position: number) {
-		return this.#instance.list.slice(position, position + 10) as T[]
+	#virtual(position: number) {
+		return this.#instance.list.slice(position, position + this.count) as T[]
 	}
 
 	async updateTotal() {
@@ -209,18 +212,20 @@ export class Paginator<T> {
 	async loadPosition(position: number) {
 		if(this.#loadingPositions.includes(position)) return
 
-		const promise =
-			!this.#options
-				? this.#virtual(position)
-				: 'page' in this.#options
-					? success(this.#options.page(position))
-					: success(this.#options.range({
-						[this.#options.skip ?? 'skip']: position.toString(),
-						[this.#options.limit ?? 'limit']: this.#constructorOpts.count?.toString() ?? this.#options.count?.toString()
-					}))
+		if (!this.#options || this.#isVirtual) {
+			return
+		}
+
+		const promise = (
+			'page' in this.#options
+				? success(this.#options.page(position))
+				: success(this.#options.range({
+					[this.#options.skip ?? 'skip']: position.toString(),
+					[this.#options.limit ?? 'limit']: this.#constructorOpts.count?.toString() ?? this.#options.count?.toString()
+				}))
+		).catch(() => false as const)
 
 		this.#loadingPositions.push(position)
-		await new Promise(resolve => setTimeout(resolve, 1000))
 		let result = $state(await promise)
 		this.#loadingPositions.splice(this.#loadingPositions.indexOf(position), 1)
 
@@ -254,6 +259,12 @@ export class Paginator<T> {
 
 		this.#current = position
 		
+		if(!this.#isVirtual) {
+			this.#position = position
+			this.#current = position
+			return
+		}
+
 		const range = ((this.#paged 
 			? (this.#ranges[position] ?? [])
 			: this.#ranges.slice(position, position + this.count)

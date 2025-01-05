@@ -72,6 +72,19 @@ export default function viteZeroAPI(options: ZeroAPIOptions = {}): Plugin {
 
 	return {
 		name: 'vite-plugin-sveltekit-zero-api',
+		transform(code, id, options) {
+			
+			// Note: KitResponse is extends Error, allowing it to be thrown by Vite.
+			if (id.endsWith('kit/src/runtime/server/endpoint.js')) {
+				const replaced = code.replace(
+					'!(response instanceof Response)',
+					'!(response instanceof KitResponse || response instanceof Response)'
+				)
+				code = `import { KitResponse } from 'sveltekit-zero-api/http'\n${replaced}`
+			}
+			
+			return code
+		},
 		async configureServer(vite) {
 			let routes = Path.resolve((await svelteConfig)?.kit?.files?.routes ?? './src/routes').split(Path.sep)
 

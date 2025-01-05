@@ -1,5 +1,4 @@
 import type { UnionToIntersection } from './../utils/types'
-import { convertResponse } from './convert-response'
 import type { Functions, FnsRecord } from './functions.type'
 import { Generic } from './generic'
 import { BadRequest, InternalServerError, KitResponse } from './http'
@@ -68,7 +67,7 @@ interface FunctionsBody {
  */
 export function functions<const Fns extends FnsRecord>(
 	fns: Fns
-): (event?: KitEvent<FunctionsBody>) => Promise<Response> & { use(): Functions<Fns> }
+): (event?: KitEvent<FunctionsBody>) => Promise<KitResponse> & { use(): Functions<Fns> }
 
 // #region functions overloads
 
@@ -168,10 +167,9 @@ export function functions(...args: (FnCallback | FnsRecord)[]) {
 
 		let proxyUse: ReturnType<typeof createUseProxy> | null = null
 		let promise = functionRequest(event, fns!, cbs, () => proxyUse)
-			.then((r) => convertResponse(r, event.zeroAPIOptions)!)
 			.catch((r) => {
 				if (r instanceof KitResponse)
-					return convertResponse(r, event.zeroAPIOptions)
+					return r
 				throw r
 			})
 		

@@ -24,13 +24,6 @@
 	
 	const user = data.users.create()
 
-	const paginator = new data.users.Paginator({})
-	
-	// $inspect('modified', user.$.modified)
-	// $inspect('item', user.$.item)
-	// $inspect(user.$.isModified)
-
-
 </script>
 
 <!---------------------------------------------------->

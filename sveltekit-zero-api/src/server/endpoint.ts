@@ -1,10 +1,9 @@
 import { createEndpointProxy } from '../endpoint-proxy'
 import type { FixKeys, MaybePromise, Simplify } from '../utils/types'
-import { Accepted, BadRequest, KitResponse, NotFound, OK } from './http'
+import { Accepted, BadRequest, KitResponse, OK, ImATeapot } from './http'
 import { ParseKitEvent, type KitEvent, type KitEventFn } from './kitevent'
 import type { KitRequestProxy } from '../endpoint-proxy.type'
 import { Generic } from './generic'
-import { convertResponse } from './convert-response'
 import { parseResponse } from '../utils/parse-response'
 import { SSE } from './sse'
 
@@ -223,11 +222,10 @@ function endpoint(
 			await new Promise((res) => res(true))
 
 			event.results ??= {}
-
 			if (event.request.headers.has('x-validation-schema')) {
 				let cb = callbacks.find((v) => v instanceof ParseKitEvent)
 				if (cb && cb.schema) throw new Accepted(cb.schema)
-				throw new NotFound({
+				throw new ImATeapot({
 					code: 'no_validation_schema',
 					error: 'No validation schema is associated with this endpoint.',
 				})
@@ -298,10 +296,9 @@ function endpoint(
 		}
 
 		const promise = endpointHandler()
-			.then((v) => convertResponse(v, event.zeroAPIOptions))
 			.catch((err) => {
 				if (err instanceof KitResponse) {
-					return convertResponse(err, event.zeroAPIOptions)
+					return err
 				}
 				throw err
 			}) as Promise<Response>
