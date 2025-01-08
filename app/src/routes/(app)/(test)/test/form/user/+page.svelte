@@ -12,11 +12,13 @@
 		children?: Person[]
 		pets: string[]
 	}
+
+	api.formdata
 	
-	const userForm = formAPI<Person & {bind: string}>(api.formdata)
+	const UserForm = formAPI<Person & {bind: string}>(api.formdata)
 	let progress = new Spring(0)
 	$effect(() => {
-		progress.target = userForm.request.progress
+		progress.target = UserForm.request.progress
 	})
 </script>
 
@@ -27,42 +29,37 @@
 	class='w-60 bg-green-400 h-4 bg-gradient-to-r to-white from-green-600 duration-150 rounded outline-gray-400 my-2'
 ></bar>
 
-<form use:userForm.action class="mb-4">
+<!-- <form use:UserForm.action class="mb-4"> -->
+<UserForm class="mb-4">
 	<button type="submit">Submit</button>
 
 	<!-- <input name='name' /> -->
-	<input placeholder="Name" use:userForm.$.name />
 	<input name="name" placeholder="Name" />
 
-	<div contenteditable bind:innerText={$userForm.bind} class='p-2 px-3 border border-gray-700 rounded-lg'>This is bound</div>
+	<div contenteditable bind:innerText={$UserForm.bind} class='p-2 px-3 border border-gray-700 rounded-lg'>This is bound</div>
 
 	<input name='value' placeholder='With value' value='Predefined value'>
 
 	<input type='file' name='file' multiple>
-
-	
 
 	<!-- <input name='so.name' /> -->
 	<input name='so.name' placeholder="SO Name" />
 	<input name='so.so.so.so.name' placeholder="Deeply nested" />
 
 	<div>
-		<button type="button" onclick={() => ($userForm.children ??= [{} as Person]).push({} as Person)}>
+		<button type="button" onclick={() => ($UserForm.children ??= [{} as Person]).push({} as Person)}>
 			Add child
 		</button>
-		{#each $userForm.children ?? [] as _, i}
-			{@const child = userForm.$.children[i]}
-			<input aria-label="Child" use:child.name />
-			<input name="children[{i}].name" />
+		{#each $UserForm.children ?? [] as _, i}
+			<input name="children.{i}.name" />
 		{/each}
 	</div>
-	<input use:userForm.$.pets[0] placeholder="Pets[0]" />
 	<input name="pets[0]" placeholder="Pets[0]" />
-</form>
+</UserForm>
 
 <Code
 	code={{
-		'result.json': JSON.stringify($userForm, null, '    ')
+		'result.json': JSON.stringify($UserForm, null, '    ')
 	}}
 />
 

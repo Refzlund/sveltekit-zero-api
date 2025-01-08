@@ -13,6 +13,3 @@ export type ServerType<T extends { GET?; POST?; PUT?; PATCH?; DELETE?; HEAD?; OP
 	} : {} : never)
 
 export { createAPIProxy, getMethod, getUrl, fromUrl, Endpoint, APIProxy } from './api-proxy'
-export { statefulAPI } from './statefulapi.svelte'
-export { dataAPI } from './dataapi/datasapi.svelte'
-export { objectProxy, type ObjectProxy, getProxyModified } from './object-proxy.svelte'

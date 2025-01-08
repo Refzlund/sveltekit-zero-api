@@ -74,7 +74,7 @@ export function functions<const Fns extends FnsRecord>(
 export function functions<const Fns extends FnsRecord, B1 extends FunctionCallbackResult>(
 	cb1: FnCallback<B1>,
 	fns: Fns
-): (event?: KitEvent<FunctionsBody>) => Promise<Response> & { use(): Functions<Fns, Extract<B1, KitResponse>> }
+): (event?: KitEvent<FunctionsBody>) => Promise<KitResponse> & { use(): Functions<Fns, Extract<B1, KitResponse>> }
 
 export function functions<
 	const Fns extends FnsRecord,
@@ -84,7 +84,7 @@ export function functions<
 	cb1: FnCallback<B1>,
 	cb2: FnCallback<B2, B1>,
 	fns: Fns
-): (event?: KitEvent<FunctionsBody>) => Promise<Response> & {
+): (event?: KitEvent<FunctionsBody>) => Promise<KitResponse> & {
 	use(): Functions<Fns, Extract<B1 | B2, KitResponse>>
 }
 
@@ -98,7 +98,7 @@ export function functions<
 	cb2: FnCallback<B2, B1>,
 	cb3: FnCallback<B3, B1, B2>,
 	fns: Fns
-): (event?: KitEvent<FunctionsBody>) => Promise<Response> & {
+): (event?: KitEvent<FunctionsBody>) => Promise<KitResponse> & {
 	use(): Functions<Fns, Extract<B1 | B2 | B3, KitResponse>>
 }
 
@@ -114,7 +114,7 @@ export function functions<
 	cb3: FnCallback<B3, B1, B2>,
 	cb4: FnCallback<B4, B1, B2, B3>,
 	fns: Fns
-): (event?: KitEvent<FunctionsBody>) => Promise<Response> & {
+): (event?: KitEvent<FunctionsBody>) => Promise<KitResponse> & {
 	use(): Functions<Fns, Extract<B1 | B2 | B3 | B4, KitResponse>>
 }
 
@@ -132,7 +132,7 @@ export function functions<
 	cb4: FnCallback<B4, B1, B2, B3>,
 	cb5: FnCallback<B5, B1, B2, B3, B4>,
 	fns: Fns
-): (event?: KitEvent<FunctionsBody>) => Promise<Response> & {
+): (event?: KitEvent<FunctionsBody>) => Promise<KitResponse> & {
 	use(): Functions<Fns, Extract<B1 | B2 | B3 | B4 | B5, KitResponse>>
 }
 
@@ -152,7 +152,7 @@ export function functions<
 	cb5: FnCallback<B5, B1, B2, B3, B4>,
 	cb6: FnCallback<B6, B1, B2, B3, B4, B5>,
 	fns: Fns
-): (event?: KitEvent<FunctionsBody>) => Promise<Response> & {
+): (event?: KitEvent<FunctionsBody>) => Promise<KitResponse> & {
 	use(): Functions<Fns, Extract<B1 | B2 | B3 | B4 | B5 | B6, KitResponse>>
 }
 

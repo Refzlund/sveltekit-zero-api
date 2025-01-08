@@ -6,7 +6,7 @@ import path from 'path'
 
 export const GET = endpoint(
 	(event) => {
-		let p = path.resolve(`./src/routes/api/image/[id]/${event.params.id}`)
+		let p = path.resolve(`./src/routes/(app)/(test)/api/image/[id]/${event.params.id}`)
 		if(!fs.existsSync(p)) {
 			return new NotFound({ code: 'image_not_found', error: 'Could not find image', details: p })
 		}

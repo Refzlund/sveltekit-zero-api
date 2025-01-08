@@ -6,6 +6,7 @@
 	"license": "MIT",
 	"workspaces": [
 		"./app",
-		"./sveltekit-zero-api"
+		"./sveltekit-zero-api",
+		"./svelte-data"
 	]
 }

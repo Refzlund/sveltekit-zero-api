@@ -1,6 +1,5 @@
-import { Endpoint, getMethod, getUrl } from '.'
-import { KitRequestXHR } from '../endpoint-proxy'
-import { Promisify } from '../utils/types'
+import { Endpoint, getMethod, getUrl, KitRequestXHR } from 'sveltekit-zero-api/client'
+import { Promisify } from '../../sveltekit-zero-api/src/utils/types'
 
 export type ErrorPath = string | number | (string | number)[]
 

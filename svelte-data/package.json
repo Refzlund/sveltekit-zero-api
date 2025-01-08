@@ -1,0 +1,11 @@
+{
+	"name": "svelte-data",
+	"version": "0.0.0",
+	"type": "module",
+	"devDependencies": {
+		"sveltekit-zero-api": "workspace:*"
+	},
+	"peerDependencies": {
+		"sveltekit-zero-api": "^2"
+	}
+}

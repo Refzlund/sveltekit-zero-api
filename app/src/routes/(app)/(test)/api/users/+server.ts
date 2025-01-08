@@ -20,7 +20,7 @@ export const POST = endpoint(
 )
 
 export const PATCH = functions({
-	search: (event: KitEvent, name: string) => {
+	search: (event: KitEvent, name: string) => {	
 		return new OK(
 			users.filter(user => user.name.includes(name))
 		)

@@ -1,5 +1,5 @@
-import type { KitResponse } from './server/http'
-import { proxyCrawl, type StateApply, type StateGet } from './utils/proxy-crawl'
+import type { KitResponse } from '../server/http'
+import { proxyCrawl, type StateApply, type StateGet } from '../utils/proxy-crawl'
 import type { KitRequestProxy } from './endpoint-proxy.type'
 
 /**

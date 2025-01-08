@@ -2,15 +2,16 @@ import { type Writable, toStore } from 'svelte/store'
 import { enhance as svelteEnhance } from '$app/forms'
 import { SvelteMap, SvelteSet, SvelteDate } from 'svelte/reactivity'
 
-import { proxyCrawl } from '../../utils/proxy-crawl'
-import { MapDeepTo } from '../../utils/types'
-import { Endpoint } from '../../server/endpoint'
-import { KitRequestXHR } from '../../endpoint-proxy'
+import { proxyCrawl } from '../utils/proxy-crawl'
+import type { MapDeepTo } from '../utils/types'
+import type { Endpoint } from 'sveltekit-zero-api/server'
+import { type KitRequestXHR, APIProxy } from 'sveltekit-zero-api'
 
 import Form from './Form.svelte'
-import { parseObjectToKeys } from '../../utils/parse-keys'
-import { APIProxy } from '../api-proxy'
-import { objectDifference } from '../../utils/object-difference'
+
+import { parseObjectToKeys } from '../utils/parse-keys'
+
+import { objectDifference } from '../utils/object-difference'
 import { getContext } from 'svelte'
 import { ErrorPath, KitValidationError, matchPath } from '../errors'
 

@@ -1,4 +1,4 @@
-import type { KitRequestProxy } from '../endpoint-proxy.type'
+import type { KitRequestProxy } from '../shared/endpoint-proxy.type'
 import type { Promisify } from '../utils/types'
 import type { InternalServerError, KitResponse, StatusCode } from './http'
 /**

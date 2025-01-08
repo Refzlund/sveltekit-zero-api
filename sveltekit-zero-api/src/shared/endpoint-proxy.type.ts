@@ -1,6 +1,6 @@
-import type { KitResponse, StatusCode, Statuses, StatusTextType } from './server/http'
-import { StatusCodeType } from './server/http'
-import type { AwaitAll, IfAny, IsAny, Promisify, AnyAsUnknownAll } from './utils/types'
+import type { KitResponse, StatusCode, Statuses, StatusTextType } from '../server/http'
+import { StatusCodeType } from '../server/http'
+import type { AwaitAll, IfAny, IsAny, Promisify, AnyAsUnknownAll } from '../utils/types'
 
 /**
 IfAny<Results, {}, {

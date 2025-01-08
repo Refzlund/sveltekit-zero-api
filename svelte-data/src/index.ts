@@ -1,0 +1,1 @@
+export { objectProxy, type ObjectProxy, getProxyModified } from './object-proxy.svelte'

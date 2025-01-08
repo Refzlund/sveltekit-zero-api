@@ -21,8 +21,7 @@
 		"./server": "./src/server/index.ts",
 		"./http": "./src/server/http.ts",
 		"./vite": "./src/server/vite.ts",
-		"./stream": "./src/utils/stream.ts",
-		"./formapi.svelte": "./src/client/formapi/formapi.svelte.ts"
+		"./stream": "./src/utils/stream.ts"
 	},
 	"peerDependencies": {
 		"@sveltejs/kit": "^2.8.0",
