@@ -1,17 +1,6 @@
-<!-- @component
-
-	This is a description, \
-	on how to use this.
-
-@example
-<Component />
-
--->
-
 <script lang="ts">
 
-	import api from '$lib/../api'
-
+	import api from '$api'
 	
 
 	interface TrackedReadableStream {

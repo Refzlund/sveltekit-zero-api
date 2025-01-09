@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Code from '$lib/Code/Code.svelte'
-	import { formAPI } from 'sveltekit-zero-api/formapi.svelte'
+	import { formAPI } from 'svelte-data'
 	import api from '$lib/../api'
 	import { Spring } from 'svelte/motion'
 

@@ -10,6 +10,6 @@ export type ServerType<T extends { GET?; POST?; PUT?; PATCH?; DELETE?; HEAD?; OP
 	& (T extends { PATCH: (...args: any[]) => { use(): infer K } } ? K extends Functions<any> ? K : {} : {})
 	& (T extends { GET: (...args: any[]) => { use(options?: infer R): infer K } } ? K extends KitSSE<any> ? {
 		SSE(options?: R): K
-	} : {} : never)
+	} : {} : {})
 
 export { createAPIProxy, getMethod, getUrl, fromUrl, Endpoint, APIProxy } from './api-proxy'

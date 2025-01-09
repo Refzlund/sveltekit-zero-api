@@ -1,6 +1,6 @@
 <script lang="ts">
 	import api from '$api'
-	import { dataAPI } from 'sveltekit-zero-api/client'
+	import { dataAPI } from 'svelte-data'
 
 	let data = dataAPI({
 		paged: {

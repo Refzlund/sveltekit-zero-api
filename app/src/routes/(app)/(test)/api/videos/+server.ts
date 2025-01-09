@@ -1,8 +1,8 @@
-import { BadRequest, OK } from 'sveltekit-zero-api/http'
-import { endpoint, ParseKitEvent } from 'sveltekit-zero-api/server'
+import { OK } from 'sveltekit-zero-api/http'
+import { endpoint, parseFormData } from 'sveltekit-zero-api/server'
 
 export const POST = endpoint(
-	async () => {},
+	parseFormData,
 	async (event) => {
 		
 		console.log(event.body)
