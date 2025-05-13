@@ -37,13 +37,15 @@ test('proxy indepedence ᵈᵃʸ', async () => {
 	const root = f().any(() => rootRuns++)
 	const $root = root.$.any((r) => 'root' as const)
 
-	let a = root.$.any((r) => 'any' as const)
-	let b = $root.OK((r) => 'ok' as const).BadRequest((r) => 'br' as const)
+	const a = root.$.any((r) => 'any' as const)
+	const b = $root.OK((r) => 'ok' as const).BadRequest((r) => 'br' as const)
 
-	let z = root.any(() => rootRuns++)
+	const z = root.any(() => rootRuns++)
 
-	let [a1] = a
-	let [root1, b1, b2] = b
+	const [a1] = a
+	const [root1,
+		b1,
+		b2] = b
 
 	expect(root1).resolves.toBe('root')
 	expect(a1).resolves.toBe('any')
@@ -71,7 +73,7 @@ test('proxy instanceof', async () => {
 	// Is an Endpoint Proxy
 	functionParamProxy(f.OK(() => ran++))
 
-	let r = functionParamReturnedProxy(f.$.OK(() => 'ok'))
+	const r = functionParamReturnedProxy(f.$.OK(() => 'ok'))
 
 	// @ts-expect-error Is not returned
 	expect(() => functionParamReturnedProxy(f.success(() => ran++))).toThrow()

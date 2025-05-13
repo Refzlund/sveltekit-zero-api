@@ -27,11 +27,9 @@ test('functions: receive readable stream', async () => {
 		return new OK(streamTest())
 	}
 
-	const PATCH = functions({
-		fn
-	})
+	const PATCH = functions({ fn })
 
-	let fns = PATCH(new FakeKitEvent()).use()
+	const fns = PATCH(new FakeKitEvent()).use()
 
 	let i = ''
 	for await (const chunk of await fns.fn()) {
@@ -82,14 +80,10 @@ test('functions: middleware', async () => {
 				return new BadRequest('error')
 			}
 			
-			return {
-				value: 123 as const
-			}
+			return { value: 123 as const }
 		},
 		(event) => {
-			return {
-				thing: 'text'
-			}
+			return { thing: 'text' }
 		},
 		event => {
 			return new Created(event.results.value)
@@ -128,9 +122,7 @@ test('functions', async () => {
 			return new BadRequest(null)
 		}
 
-		return new OK({
-			providedData: input
-		})
+		return new OK({ providedData: input })
 	}
 
 	const PATCH = functions({
@@ -138,14 +130,28 @@ test('functions', async () => {
 		specificFn: (event) => new Generic(<const T extends Input>(input: T) => Generic.fn(someFn(event, input)))
 	})
 
-	let fns = PATCH(new FakeKitEvent()).use()
+	const fns = PATCH(new FakeKitEvent()).use()
 
-	let result = fns.someFn({ name: 'Shiba', age: 23 })
+	const result = fns.someFn({
+		name: 'Shiba',
+		age: 23 
+	})
 	expect(result).rejects.toThrow() // Throws a response when not success
 
-	let result2 = fns.specificFn({ name: 'Bob', age: 69.69 })
+	const result2 = fns.specificFn({
+		name: 'Bob',
+		age: 69.69 
+	})
 	expect(result2).resolves.toBe(null)
 
-	let result3 = fns.specificFn({ name: 'Giraffe', age: 26 })
-	expect(result3).resolves.toEqual({ providedData: { name: 'Giraffe', age: 26 } })
+	const result3 = fns.specificFn({
+		name: 'Giraffe',
+		age: 26 
+	})
+	expect(result3).resolves.toEqual({
+		providedData: {
+			name: 'Giraffe',
+			age: 26 
+		} 
+	})
 })

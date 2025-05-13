@@ -1,8 +1,6 @@
 import { getContext, setContext } from 'svelte'
 
-export function createContext<T>(
-	name: string
-) {
+export function createContext<T>(name: string) {
 	return {
 		set(context: T) {
 			setContext(name, context)

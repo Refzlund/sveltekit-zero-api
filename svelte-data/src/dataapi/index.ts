@@ -7,6 +7,4 @@ export class DataAPI {
 }
 export interface DataAPI extends DataAPI_<unknown, unknown, unknown> { }
 
-export {
-	dataAPI
-} from './datasapi.svelte'
+export { dataAPI } from './datasapi.svelte'

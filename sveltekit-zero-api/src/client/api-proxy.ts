@@ -15,7 +15,13 @@ export interface APIProxyOptions {
 	url?: string | URL
 }
 
-const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'] as const
+const METHODS = ['GET',
+	'POST',
+	'PUT',
+	'PATCH',
+	'DELETE',
+	'HEAD',
+	'OPTIONS'] as const
 const URL_SYMBOL = Symbol('sveltekit-zero-api.url')
 const METHOD_SYMBOL = Symbol('sveltekit-zero-api.method')
 const FROM_URL_SYMBOL = Symbol('sveltekit-zero-api.from-url')
@@ -96,7 +102,7 @@ export function createAPIProxy<T extends APIProxy>(options: APIProxyOptions = {}
 				return state.crawl([FROM_URL_SYMBOL, ...state.args])
 			}
 
-			let key = state.key.toString()
+			const key = state.key.toString()
 			if (key.endsWith('$')) {
 				// * Slugged route
 
@@ -108,9 +114,7 @@ export function createAPIProxy<T extends APIProxy>(options: APIProxyOptions = {}
 				if (key.endsWith('$$')) {
 					// "rest$$": (...rest: string[])
 					if (state.args[0] === undefined) {
-						throw new Error('Cannot slug the lack of rest parameters', {
-							cause: state,
-						})
+						throw new Error('Cannot slug the lack of rest parameters', { cause: state })
 					}
 					return state.crawl(state.args)
 				}
@@ -130,8 +134,8 @@ export function createAPIProxy<T extends APIProxy>(options: APIProxyOptions = {}
 									result,
 									argCount: state.args.length,
 									slug: key,
-									expected: Array.from(key.matchAll(complexSlug)).length,
-								},
+									expected: Array.from(key.matchAll(complexSlug)).length
+								}
 							})
 						}
 
@@ -224,7 +228,7 @@ export function createAPIProxy<T extends APIProxy>(options: APIProxyOptions = {}
 				isMethod ? state.args[0]
 					: state.args[0] instanceof FormData || state.args[0] instanceof ReadableStream ? state.args[0] : state.args
 
-			let headers = new Headers(requestInit?.headers)
+			const headers = new Headers(requestInit?.headers)
 			headers.append('x-requested-with', 'sveltekit-zero-api')
 
 			if (key === 'GET' && !headers.has('cache-control'))
@@ -234,10 +238,8 @@ export function createAPIProxy<T extends APIProxy>(options: APIProxyOptions = {}
 				if (body instanceof ReadableStream) {
 					// https://caniuse.com/mdn-api_request_duplex - largely unsupported still
 					// headers.set('content-type', 'application/octet-stream')
-					throw new Error(
-						'Streaming data is largely unsupported in browsers, as Request Duplex is required. See ' +
-						'https://caniuse.com/mdn-api_request_duplex'
-					)
+					throw new Error('Streaming data is largely unsupported in browsers, as Request Duplex is required. See ' +
+						'https://caniuse.com/mdn-api_request_duplex')
 				} else if (body instanceof FormData) {
 					// https://stackoverflow.com/a/49510941 - fetch sets content-type automatically incl. form boundary
 					// headers.set('content-type', 'multipart/form-data')
@@ -275,7 +277,7 @@ export function createAPIProxy<T extends APIProxy>(options: APIProxyOptions = {}
 							body: (body === null ? undefined : body) as BodyInit,
 							headers,
 							method,
-							signal: abortController ? abortController.signal : undefined,
+							signal: abortController ? abortController.signal : undefined
 						}
 				)
 
@@ -316,13 +318,11 @@ export function createAPIProxy<T extends APIProxy>(options: APIProxyOptions = {}
 								if (header) headers.append(header, value)
 							})
 						
-						xhrResolve(
-							new Response(xhr!.response, {
-								status: xhr!.status,
-								statusText: xhr!.statusText,
-								headers,
-							})
-						)
+						xhrResolve(new Response(xhr!.response, {
+							status: xhr!.status,
+							statusText: xhr!.statusText,
+							headers
+						}))
 					}
 
 					xhr.addEventListener('load', onloadend, { once: true })

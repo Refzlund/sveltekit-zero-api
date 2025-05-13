@@ -27,10 +27,15 @@
 		.on.event2(e => message3 += `<u>${e.data2}</u> `)
 
 </script>
-<!---------------------------------------------------->
+<!-- ------------------------------------------------ -->
 
 <div class='flex items-center gap-4'>
-	<img class='rounded hover:scale-110 duration-100' src={getUrl(api.image.id$('cute.webp'))} alt='Shiba + Giraffe' width='200px'>
+	<img
+		class='rounded hover:scale-110 duration-100'
+		alt='Shiba + Giraffe'
+		src={getUrl(api.image.id$('cute.webp'))}
+		width='200px'
+	>
 
 	<div>
 		<div>
@@ -45,7 +50,7 @@
 	</div>
 </div>
 
-<!---------------------------------------------------->
+<!-- ------------------------------------------------ -->
 <style lang='postcss'>
 	
 	

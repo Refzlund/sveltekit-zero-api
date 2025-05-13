@@ -69,7 +69,7 @@ export function zeroAPI(options: ZeroAPIServerOptions) {
 
 		let response: Response
 
-		let time = Date.now()
+		const time = Date.now()
 
 		try {
 			response = await resolve(event)

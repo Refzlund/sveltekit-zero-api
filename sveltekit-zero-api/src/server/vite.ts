@@ -50,7 +50,7 @@ function update(
 ) {
 	if (timeout !== undefined) globalThis.clearTimeout(timeout)
 	timeout = setTimeout(() => {
-		let files = getEndpointFiles(routesPath, routesDirectory)
+		const files = getEndpointFiles(routesPath, routesDirectory)
 
 		fs.writeFileSync(
 			Path.resolve(options.customTypePath!),
@@ -86,24 +86,21 @@ export default function viteZeroAPI(options: ZeroAPIOptions = {}): Plugin {
 			return code
 		},
 		async configureServer(vite) {
-			let routes = Path.resolve((await svelteConfig)?.kit?.files?.routes ?? './src/routes').split(Path.sep)
+			const routes = Path.resolve((await svelteConfig)?.kit?.files?.routes ?? './src/routes').split(Path.sep)
 
-			let routesDirectory = routes.pop()!
-			let routesPath = routes.join('/') // for TS imports
+			const routesDirectory = routes.pop()!
+			const routesPath = routes.join('/') // for TS imports
 
 			// must be / instead of `Path.sep` for TS
-			let relativeTypePath = Array(options.customTypePath!.split(Path.sep).length - 1)
+			const relativeTypePath = Array(options.customTypePath!.split(Path.sep).length - 1)
 				.fill('..')
 				.join('/')
 			// when serializing, cut this part off for the routed types
-			let routesLength = Path.join((await svelteConfig)?.kit?.files?.routes ?? './src/routes').split(
-				Path.sep
-			).length
+			const routesLength = Path.join((await svelteConfig)?.kit?.files?.routes ?? './src/routes').split(Path.sep).length
 
 			update(options, relativeTypePath, routesPath, routesDirectory, routesLength)
 			vite.watcher.on('change', () =>
-				update(options, relativeTypePath, routesPath, routesDirectory, routesLength)
-			)
+				update(options, relativeTypePath, routesPath, routesDirectory, routesLength))
 		}
 	}
 }

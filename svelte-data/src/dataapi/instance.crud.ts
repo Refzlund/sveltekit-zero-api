@@ -15,10 +15,10 @@ export function createInstanceCRUD(instance: RuneAPIInstance<any>) {
 			const endpoint = instance.api.POST as Endpoint
 			const revert =
 				instance.discriminator.temp
-				? instance.discriminator.temp?.(data)
-				: instance.discriminator.set 
-				? instance.discriminator.set!(data)
-				: instance.set(data)
+					? instance.discriminator.temp?.(data)
+					: instance.discriminator.set 
+						? instance.discriminator.set!(data)
+						: instance.set(data)
 
 			return endpoint.xhr(data).error(revert).success(({ body }) => {
 				if (instance.discriminator.temp) {
@@ -69,8 +69,8 @@ export function createInstanceCRUD(instance: RuneAPIInstance<any>) {
 	})
 
 	return crud as typeof crud & {
-		POST: { validate(data: unknown, path?: ErrorPath): Promise<KitValidationError[]> },
-		PUT: { validate(data: unknown, path?: ErrorPath): Promise<KitValidationError[]> },
+		POST: { validate(data: unknown, path?: ErrorPath): Promise<KitValidationError[]> }
+		PUT: { validate(data: unknown, path?: ErrorPath): Promise<KitValidationError[]> }
 		PATCH: { validate(data: unknown, path?: ErrorPath): Promise<KitValidationError[]> }
 	}
 }

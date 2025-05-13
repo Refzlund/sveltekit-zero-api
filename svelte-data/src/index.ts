@@ -1,13 +1,9 @@
-export { objectProxy, type ObjectProxy, getProxyModified } from './object-proxy.svelte'
-
 export {
-	type DataAPI, dataAPI
-} from './dataapi'
+	objectProxy, type ObjectProxy, getProxyModified 
+} from './object-proxy.svelte'
 
-export {
-	statefulAPI
-} from './statefulapi.svelte'
+export { type DataAPI, dataAPI } from './dataapi'
 
-export {
-	formAPI
-} from './formapi'
+export { statefulAPI } from './statefulapi.svelte'
+
+export { formAPI } from './formapi'

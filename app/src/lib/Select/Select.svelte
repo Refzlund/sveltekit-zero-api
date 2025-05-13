@@ -11,7 +11,7 @@
 
 -->
 
-<script module lang='ts'>
+<script lang='ts' module>
 	
 	import { createContext } from '$lib/context.svelte'
 	import type { OptionProps } from './Option.svelte'
@@ -27,7 +27,7 @@
 
 </script>
 
-<script lang="ts" generics="T">
+<script generics="T" lang='ts'>
 
 	import { setContext, type Snippet } from 'svelte'
 	
@@ -54,8 +54,7 @@
 	let float = floatingUI({
 		placement: 'bottom',
 		middleware: [
-			offset(10),
-			flip()
+			offset(10), flip()
 		]
 	})
 
@@ -82,11 +81,11 @@
 	}
 
 </script>
-<!---------------------------------------------------->
+<!-- ------------------------------------------------ -->
 
 <button
-	class:open
 	class='group'
+	class:open
 	onclick={() => context.open = !context.open}
 	bind:clientWidth={width}
 	use:float.ref
@@ -113,15 +112,15 @@
 -->
 
 <dialog
-	{open}
 	style:width='{width}px'
+	{open}
 	use:float
 	use:portal
 >
 	{@render children?.()}
 </dialog>
 
-<!---------------------------------------------------->
+<!-- ------------------------------------------------ -->
 <style lang='postcss'>
 
 	button {

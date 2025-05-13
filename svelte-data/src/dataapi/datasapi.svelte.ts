@@ -27,12 +27,12 @@ export function dataAPI<TItems, TType>(
 		[K in keyof TType]: RunesDataInstance<KeyOf<TType, K>>
 	}
 ): {
-		[K in keyof TItems]: DataAPI<
-			KeyOf<TType, K>,
-			KeyOf<KeyOf<TItems, K>, 'groups'>,
-			KeyOf<KeyOf<TItems, K>, 'api'>
-		>
-	}
+	[K in keyof TItems]: DataAPI<
+		KeyOf<TType, K>,
+		KeyOf<KeyOf<TItems, K>, 'groups'>,
+		KeyOf<KeyOf<TItems, K>, 'api'>
+	>
+}
 
 export function dataAPI<TAPI, TItems, TData extends Record<string, any[]>>(
 	api: TAPI & {
@@ -49,12 +49,12 @@ export function dataAPI<TAPI, TItems, TData extends Record<string, any[]>>(
 	},
 	options?: DataAPIOptions<TData>
 ): {
-		[K in keyof TItems]: DataAPI<
-			KeyOf<TData, K>[number],
-			KeyOf<KeyOf<TItems, K>, 'groups'>,
-			KeyOf<TAPI, K>
-		>
-	}
+	[K in keyof TItems]: DataAPI<
+		KeyOf<TData, K>[number],
+		KeyOf<KeyOf<TItems, K>, 'groups'>,
+		KeyOf<TAPI, K>
+	>
+}
 
 export function dataAPI(...args: any[]) {
 	/** getAPI is is the core api when options are: `(api.core, {...})` */
@@ -114,7 +114,7 @@ export function dataAPI(...args: any[]) {
 
 		// getAPI will get all items
 		let updatedAt = 0
-		let itemUpdatedAt: Record<PropertyKey, number> = {}
+		const itemUpdatedAt: Record<PropertyKey, number> = {}
 
 		proxies[key] = new Proxy({} as _DataAPI, {
 			getPrototypeOf() {
@@ -125,7 +125,7 @@ export function dataAPI(...args: any[]) {
 					(instance.fetch === true && updatedAt === 0)
 					|| (typeof instance.fetch === 'number' && Date.now() > updatedAt + cooldown)
 				) && (
-						property === Symbol.iterator
+					property === Symbol.iterator
 						|| property === 'list'
 						|| property === 'entries'
 						|| property === 'keys'
@@ -133,7 +133,7 @@ export function dataAPI(...args: any[]) {
 						|| property === 'has'
 						|| property === 'groups'
 						|| property === 'Paginator'
-					)
+				)
 
 				if (update) {
 					updatedAt = Date.now()

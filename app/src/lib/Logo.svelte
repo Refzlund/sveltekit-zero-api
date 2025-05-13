@@ -7,23 +7,21 @@
 
 -->
 
-<script lang="ts">
+<script lang='ts'>
 
 	interface Props {
 		class?: string
 	}
 	
-	let {
-		class: classes
-	}: Props = $props()
+	let { class: classes }: Props = $props()
 
 </script>
-<!---------------------------------------------------->
+<!-- ------------------------------------------------ -->
 
 
 
 <h1 class={classes}>
-	<span class="iconify-color devicon--svelte size-8"></span>
+	<span class='iconify-color devicon--svelte size-8'></span>
 	<sveltekit>
 		<span>SVELTE</span>
 		<span class='text-secondary grayscale-[.4]'>KIT</span>
@@ -37,7 +35,7 @@
 
 
 
-<!---------------------------------------------------->
+<!-- ------------------------------------------------ -->
 <style lang='postcss'>
 	
 	h1 {

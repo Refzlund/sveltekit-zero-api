@@ -18,10 +18,10 @@ export function objectDifference(
 		return undefined
 	}
 	
-	let item = Array.isArray(use) ? [] : {}
+	const item = Array.isArray(use) ? [] : {}
 	for (const [key, value] of Object.entries(use)) {
 		if (value && typeof value === 'object') {
-			let result = objectDifference(value, match[key])
+			const result = objectDifference(value, match[key])
 			if(result)
 				item[key] = result
 			continue

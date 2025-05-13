@@ -15,8 +15,8 @@ import { ParseKitEvent } from '../kitevent'
  )
  */
 export const parseFormData = new ParseKitEvent(async (event) => {
-	let formDataMime = 'multipart/form-data' as const
-	let contentType = event.request.headers.get('content-type')
+	const formDataMime = 'multipart/form-data' as const
+	const contentType = event.request.headers.get('content-type')
 
 	if (!contentType || !contentType.includes(formDataMime)) {
 		return new BadRequest({

@@ -7,29 +7,31 @@
 
 -->
 
-<script lang="ts">
+<script lang='ts'>
 
 	interface Props {
 		class?: string
 	}
 	
-	let {
-		class: classes
-	}: Props = $props()
+	let { class: classes }: Props = $props()
 
 </script>
-<!---------------------------------------------------->
+<!-- ------------------------------------------------ -->
 
 
 
-<a class={classes} href='https://github.com/Refzlund/sveltekit-zero-api' target='_blank'>
-	<span class="iconify-color devicon--svelte size-5"></span>
+<a
+	class={classes}
+	href='https://github.com/Refzlund/sveltekit-zero-api'
+	target='_blank'
+>
+	<span class='iconify-color devicon--svelte size-5'></span>
 	SvelteKit Zero API
 </a>
 
 
 
-<!---------------------------------------------------->
+<!-- ------------------------------------------------ -->
 <style lang='postcss'>
 	
 	a {

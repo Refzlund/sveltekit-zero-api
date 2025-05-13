@@ -44,10 +44,10 @@ interface FormAPIOptions {
 		[slug: `${string}$`]: (id: string) =>
 			| undefined
 			| {
-					GET?: Endpoint
-					/** Will use `PUT` over `PATCH` */
-					PUT?: Endpoint
-			  }
+				GET?: Endpoint
+				/** Will use `PUT` over `PATCH` */
+				PUT?: Endpoint
+			}
 	}
 	onSubmit?(method: 'POST' | 'PUT' | 'PATCH', data: FormData): FormData | void
 	onRequest?(req: KitRequestXHR): void
@@ -89,29 +89,27 @@ type FormAPI<T extends Record<PropertyKey, any> = Record<PropertyKey, any>> =
 			}
 		}
 
-export function formAPI<T extends Record<PropertyKey, any>>(
-	options: FormAPIOptions | NonNullable<FormAPIOptions['api']>
-): FormAPI<T> {
-	let opts: FormAPIOptions =
+export function formAPI<T extends Record<PropertyKey, any>>(options: FormAPIOptions | NonNullable<FormAPIOptions['api']>): FormAPI<T> {
+	const opts: FormAPIOptions =
 		options instanceof APIProxy ? {} : <FormAPIOptions>options
-	let full = (
+	const full = (
 		options instanceof APIProxy ? options : (<FormAPIOptions>options).api
 	) as FormAPIOptions['api']
 
-	let apis = {
+	const apis = {
 		GET: ('get' in opts
 			? opts.get
 			: (id: string, options: RequestInit | undefined) =>
-					full?.slug$(id)?.GET?.xhr(null, options)!)!,
+				full?.slug$(id)?.GET?.xhr(null, options)!)!,
 		PUT: ('put' in opts
 			? opts.put
 			: (id: string, formData: any, options: RequestInit | undefined) =>
-					full?.slug$(id)?.PUT?.xhr(formData, options)!)!,
+				full?.slug$(id)?.PUT?.xhr(formData, options)!)!,
 		POST: ('post' in opts
 			? opts.post
 			: (formData: any, options: RequestInit | undefined) =>
-					full?.POST?.xhr(formData, options)!)!,
-		PATCH: opts.patch,
+				full?.POST?.xhr(formData, options)!)!,
+		PATCH: opts.patch
 	}
 
 	if (opts.validation) {
@@ -119,10 +117,10 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 	}
 
 	/** If a key-value is `undefined` it hasn't been fetched. If `false` it can't be fetched. */
-	let validationSchemas = {
+	const validationSchemas = {
 		PUT: undefined as undefined | false,
 		POST: undefined as undefined | false,
-		PATCH: undefined as undefined | false,
+		PATCH: undefined as undefined | false
 	}
 
 	/** current id of form content */
@@ -131,10 +129,8 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 	let value = $state({} as Record<PropertyKey, any>)
 	/** Stores the initial content */
 	let resetValue = {} as Record<PropertyKey, any>
-	let errors = $state([] as KitValidationError[])
-	let error = $state({
-		count: 0,
-	})
+	const errors = $state([] as KitValidationError[])
+	let error = $state({ count: 0 })
 
 	const store = toStore(
 		() => value,
@@ -145,15 +141,15 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 		progress: 0,
 		status: 'none',
 		uploaded: 0,
-		totalSize: 0,
+		totalSize: 0
 	})
 
 	let form = $state() as HTMLFormElement
 
 	/** A list (set) of properties that has a bound HTML Element */
-	let mapped = new SvelteSet<PropertyKey[]>()
+	const mapped = new SvelteSet<PropertyKey[]>()
 	/** Map of inputs, relative to the properties */
-	let inputMap = new SvelteMap<PropertyKey[], SvelteSet<HTMLInputElement>>()
+	const inputMap = new SvelteMap<PropertyKey[], SvelteSet<HTMLInputElement>>()
 
 	function getParent(
 		keys: PropertyKey[],
@@ -161,15 +157,15 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 		reaction: null | 'make' | 'nearest'
 	) {
 		let parent = value as Record<PropertyKey, any> | Array<any>
-		let property = keys[keys.length - 1]
+		const property = keys[keys.length - 1]
 
 		for (let i = 0; i < keys.length - 1; i++) {
-			let key = keys[i]
+			const key = keys[i]
 			if (!parent[key]) {
 				if (reaction === null) return undefined
 				if (reaction === 'nearest') return parent
 
-				let childKey = keys[i + 1] ?? property
+				const childKey = keys[i + 1] ?? property
 				parent[key] = typeof childKey === 'number' ? Array(childKey) : {}
 			}
 			parent = parent[key]
@@ -178,7 +174,8 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 	}
 
 	function nodeDate(
-		v: { toString(): string; toISOString(): string },
+		v: { toString(): string
+			toISOString(): string },
 		type: 'date' | 'datetime' | 'time' | 'datetime-local'
 	) {
 		if (!(v instanceof Date)) {
@@ -261,36 +258,36 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 				return node.type === 'checkbox'
 					? node.checked
 					: node.type === 'file'
-					? node.files
-					: node.type === 'radio'
-					? node.checked
-					: node.type === 'number'
-					? node.value
-						? parseFloat(node.value)
-						: undefined
-					: node.type === 'range'
-					? node.value
-						? parseFloat(node.value)
-						: undefined
-					: node.type === 'date'
-					? node.value
-						? new SvelteDate(node.value)
-						: undefined
-					: node.type === 'time'
-					? node.value
-						? new SvelteDate(node.value)
-						: undefined
-					: node.type === 'datetime'
-					? node.value
-						? new SvelteDate(node.value)
-						: undefined
-					: node.type === 'datetime-local'
-					? node.value
-						? new SvelteDate(node.value)
-						: undefined
-					: node.value !== null && node.value !== ''
-					? node.value
-					: undefined
+						? node.files
+						: node.type === 'radio'
+							? node.checked
+							: node.type === 'number'
+								? node.value
+									? parseFloat(node.value)
+									: undefined
+								: node.type === 'range'
+									? node.value
+										? parseFloat(node.value)
+										: undefined
+									: node.type === 'date'
+										? node.value
+											? new SvelteDate(node.value)
+											: undefined
+										: node.type === 'time'
+											? node.value
+												? new SvelteDate(node.value)
+												: undefined
+											: node.type === 'datetime'
+												? node.value
+													? new SvelteDate(node.value)
+													: undefined
+												: node.type === 'datetime-local'
+													? node.value
+														? new SvelteDate(node.value)
+														: undefined
+													: node.value !== null && node.value !== ''
+														? node.value
+														: undefined
 			}
 
 			function updateParent() {
@@ -315,16 +312,16 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 						inputMap.delete(propertyKeys)
 						mapped.delete(propertyKeys)
 					}
-				},
+				}
 			}
-		},
+		}
 	})
 
 	const formEnhance = (
 		node: HTMLFormElement,
 		actionOptions: FormAPIActionOptions<T> = {}
 	) => {
-		let { id: _id, value: _value } = actionOptions
+		const { id: _id, value: _value } = actionOptions
 
 		if (_value) {
 			Object.assign(value, _value)
@@ -368,14 +365,14 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 		}
 		form.addEventListener('focusin', getValidation)
 
-		let inputs = node.querySelectorAll('input[name]')
+		const inputs = node.querySelectorAll('input[name]')
 
 		function applyCrawl(inputs: HTMLElement[]) {
 			for (const input of inputs) {
 				const isValid = input.tagName === 'INPUT'
 				if (!isValid || !('getAttribute' in input)) continue
 
-				let name = input.getAttribute('name')
+				const name = input.getAttribute('name')
 				if (!name) continue
 
 				let crawler = crawl
@@ -388,11 +385,10 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 		resetValue = $state.snapshot(value)
 
 		const observer = new MutationObserver((mutations) =>
-			mutations.map((v) => applyCrawl(v.addedNodes as any))
-		)
+			mutations.map((v) => applyCrawl(v.addedNodes as any)))
 		observer.observe(node, {
 			childList: true,
-			subtree: true,
+			subtree: true
 		})
 
 		return {
@@ -400,12 +396,12 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 				observer.disconnect()
 			},
 			update(actionOptions: FormAPIActionOptions<T>) {
-				let { id: _id, value: _value } = actionOptions
+				const { id: _id, value: _value } = actionOptions
 				if (_value) {
 					Object.assign(value, _value)
 				}
 				id = _id
-			},
+			}
 		} as any
 	}
 
@@ -438,12 +434,12 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 			})
 	})
 
-	let getMethod = () =>
+	const getMethod = () =>
 		id === undefined || id === null
 			? ('POST' as const)
 			: apis.PATCH
-			? ('PATCH' as const)
-			: ('PUT' as const)
+				? ('PATCH' as const)
+				: ('PUT' as const)
 	async function submit() {
 		if (!(await validate())) return
 
@@ -452,7 +448,7 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 
 		let data = new FormData()
 
-		let body =
+		const body =
 			method === 'PATCH'
 				? objectDifference(resetValue, $state.snapshot(value)) ?? {}
 				: $state.snapshot(value)
@@ -468,12 +464,13 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 		}
 
 		if ('onSubmit' in opts) {
-			let result = opts.onSubmit!(method, data)
+			const result = opts.onSubmit!(method, data)
 			if (result) data = result
 		}
 
 		const args: [any, any, any] =
-			method === 'POST' ? [data, , ,] : [id, data, ,]
+			method === 'POST' ? [data, , ,] : [id,
+				data, ,]
 		const req = apis[method]!(...args)
 
 		currentRequest = req
@@ -483,24 +480,20 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 		}
 
 		return req
-			.xhrInit(
-				() =>
-					(request = {
-						progress: 0,
-						status: 'pending',
-						totalSize: 0,
-						uploaded: 0,
-					})
-			)
-			.uploadProgress(
-				(e) =>
-					(request = {
-						progress: e.loaded / e.total,
-						status: 'sending',
-						totalSize: e.total,
-						uploaded: e.loaded,
-					})
-			)
+			.xhrInit(() =>
+				(request = {
+					progress: 0,
+					status: 'pending',
+					totalSize: 0,
+					uploaded: 0
+				}))
+			.uploadProgress((e) =>
+				(request = {
+					progress: e.loaded / e.total,
+					status: 'sending',
+					totalSize: e.total,
+					uploaded: e.loaded
+				}))
 			.xhrError(() => (request.status = 'error'))
 			.success(() => (request.status = 'done'))
 			.error((res) => (error = res.body))
@@ -524,7 +517,7 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 	async function getValidationSchema() {
 		if (validationSchemaPromise) return await validationSchemaPromise
 
-		let method = getMethod()
+		const method = getMethod()
 
 		let schema = (opts.validation ?? validationSchemas[method]) as
 			| Record<any, any>
@@ -533,12 +526,15 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 		// missing validation schema
 		if (schema === undefined) {
 			const opts = { headers: { 'x-validation-schema': 'true' } }
-			let args: [any, any, any] =
-				method === 'POST' ? [undefined, opts, ,] : ['-', undefined, opts]
+			const args: [any, any, any] =
+				method === 'POST' ? [undefined,
+					opts, ,] : ['-',
+					undefined,
+					opts]
 
 			const request = apis[method]!(...args)
 
-			let [req] = request
+			const [req] = request
 				.any(() => (validationSchemaPromise = undefined))
 				.clientError(({ body }) => {
 					if (body.code === 'no_validation_schema') {
@@ -595,20 +591,20 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 		return true
 	}
 
-	const errorProxy = new Proxy(function () {} as any, {
+	const errorProxy = new Proxy(function() {} as any, {
 		get(target, key) {
 			if (key in errors) return errors[key]
 			return target[key]
 		},
 		apply(_, __, [path]: [ErrorPath | undefined]) {
 			if (!path) return errors
-			let property = Array.isArray(path) ? path.join('.') : path.toString()
+			const property = Array.isArray(path) ? path.join('.') : path.toString()
 			const errs = $derived(errors.filter((err) => matchPath(err, property)))
 			return errs
 		}
 	})
 
-	let proxy = new Proxy(function () {} as any, {
+	const proxy = new Proxy(function() {} as any, {
 		set(_, key, newValue, receiver) {
 			switch (key) {
 				case 'value':
@@ -649,7 +645,7 @@ export function formAPI<T extends Record<PropertyKey, any>>(
 			// * Form `<UserForm ...>`
 			attributes.__formApi = proxy
 			return Form(target, attributes)
-		},
+		}
 	})
 
 	return proxy as any

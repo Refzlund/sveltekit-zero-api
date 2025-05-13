@@ -1,4 +1,4 @@
-<script lang="ts">
+<script lang='ts'>
 
 	import '../app.pcss'
 
@@ -9,8 +9,12 @@
 </script>
 
 <svelte:head>
-	<link rel="preconnect" href="https://fonts.googleapis.com">
-	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin='anonymous'>
+	<link href='https://fonts.googleapis.com' rel='preconnect'>
+	<link
+		crossorigin='anonymous'
+		href='https://fonts.gstatic.com'
+		rel='preconnect'
+	>
 </svelte:head>
 
 {@render children()}

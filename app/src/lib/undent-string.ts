@@ -27,12 +27,12 @@ export function undentString(str: string) {
 	lines = lines.slice(start, end)
 
 	for (const line of lines) {
-		let match = whitespaceRegex.exec(line)
+		const match = whitespaceRegex.exec(line)
 		if (!match && !nonemptyLine.test(line)) {
 			continue
 		}
 
-		let length = match ? match[1]!.length : 0
+		const length = match ? match[1]!.length : 0
 
 		if (length < shortestWhitespace) {
 			shortestWhitespace = length

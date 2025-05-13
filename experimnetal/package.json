@@ -1,0 +1,4 @@
+{
+	"name": "@exp/api",
+	"description": "Makes Requests using the fetch API easy"
+}

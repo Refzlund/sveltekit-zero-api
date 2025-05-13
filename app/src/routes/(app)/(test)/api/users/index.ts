@@ -10,12 +10,12 @@ export const User = z.object({
 })
 
 export const users: z.output<typeof User>[] = Array(100).fill(null).map((_, i) => {
-	let birth = faker.date.birthdate()
+	const birth = faker.date.birthdate()
 	return {
 		id: `User:${i}`,
 		name: faker.person.fullName(),
 		email: faker.internet.email(),
 		birth: birth,
-		age: new Date().getFullYear() - birth.getFullYear(),
+		age: new Date().getFullYear() - birth.getFullYear()
 	}
 })

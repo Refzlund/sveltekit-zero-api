@@ -7,11 +7,11 @@ export function getEndpointFiles(path: string, file: string, array: string[] = [
 	function getEndpointFiles(path: string, file: string, array: string[] = []) {
 		const full = path + '/' + file
 
-		let stats = fs.statSync(full)
+		const stats = fs.statSync(full)
 
 		if (stats.isDirectory()) {
-			let files = fs.readdirSync(full)
-			for (let subfile of files) {
+			const files = fs.readdirSync(full)
+			for (const subfile of files) {
 				getEndpointFiles(full, subfile, array)
 			}
 		} else {

@@ -159,14 +159,14 @@ export function functions<
 // #endregion
 
 export function functions(...args: (FnCallback | FnsRecord)[]) {
-	let fns = args.pop()! as FnsRecord
-	let cbs = args as FnCallback[]
+	const fns = args.pop()! as FnsRecord
+	const cbs = args as FnCallback[]
 
 	function functionsHandler(event: KitEvent<FunctionsBody, never>) {
 		event ??= new FakeKitEvent() // when testing
 
 		let proxyUse: ReturnType<typeof createUseProxy> | null = null
-		let promise = functionRequest(event, fns!, cbs, () => proxyUse)
+		const promise = functionRequest(event, fns!, cbs, () => proxyUse)
 			.catch((r) => {
 				if (r instanceof KitResponse)
 					return r
@@ -201,7 +201,11 @@ async function functionRequest(
 		try {
 			args = await event.request.json()
 		} catch (error) {
-			throw new BadRequest({ code: 'invalid_json', error: 'Invalid JSON', details: error })
+			throw new BadRequest({
+				code: 'invalid_json',
+				error: 'Invalid JSON',
+				details: error 
+			})
 		}
 	} else if (contentType === 'application/octet-stream') {
 		args = [event.request.body]
@@ -209,7 +213,11 @@ async function functionRequest(
 		try {
 			args = [await event.request.formData()]
 		} catch (error) {
-			throw new BadRequest({ code: 'invalid_form_data', error: 'Invalid form data', details: error })
+			throw new BadRequest({
+				code: 'invalid_form_data',
+				error: 'Invalid form data',
+				details: error 
+			})
 		}
 	} else if (contentType !== null) {
 		throw new BadRequest({
@@ -222,7 +230,7 @@ async function functionRequest(
 		})
 	}
 
-	let fn = event.request.headers.get('x-function')
+	const fn = event.request.headers.get('x-function')
 	if (!fn || typeof fn !== 'string') {
 		throw new BadRequest({
 			code: 'missing_function',

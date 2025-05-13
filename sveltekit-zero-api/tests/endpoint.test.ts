@@ -20,7 +20,7 @@ function zod<Body extends z.ZodTypeAny = never, Query extends z.ZodTypeAny = nev
 			return new BadRequest({
 				code: 'invalid_body_schema',
 				error: 'Invalid body',
-				details: bodyResult.error,
+				details: bodyResult.error
 			})
 		}
 
@@ -29,43 +29,47 @@ function zod<Body extends z.ZodTypeAny = never, Query extends z.ZodTypeAny = nev
 			return new BadRequest({
 				code: 'invalid_query_schema',
 				error: 'Invalid query schema',
-				details: queryResult.error,
+				details: queryResult.error
 			})
 		}
 
 		return {
 			body: bodyResult?.data as z.output<Body>,
-			query: queryResult?.data as z.output<Query>,
+			query: queryResult?.data as z.output<Query>
 		}
 	}, body ? zodToJsonSchema(body) : undefined)
 }
 
 test('Generic endpoint', async () => {
-	function someEndpoint<Body, Query extends {}>(event: KitEvent<{ body: Body; query: Query }>) {
-		return new OK({ body: event.body, query: event.query })
+	function someEndpoint<Body, Query extends {}>(event: KitEvent<{ body: Body
+		query: Query }>) {
+		return new OK({
+			body: event.body,
+			query: event.query 
+		})
 	}
 
-	const POST = endpoint(
-		(event) =>
-			new Generic(<const Body, const Opts extends { query: {} } & RequestInit>(body: Body, options?: Opts) =>
-				Generic.endpoint(someEndpoint<Body, Opts['query']>(event))
-			)
-	)
+	const POST = endpoint((event) =>
+		new Generic(<const Body, const Opts extends { query: {} } & RequestInit>(body: Body, options?: Opts) =>
+			Generic.endpoint(someEndpoint<Body, Opts['query']>(event))))
 
-	let [r1] = POST(new FakeKitEvent())
+	const [r1] = POST(new FakeKitEvent())
 		.use({ name: 'bob' }, { query: { test: 123 } })
 		.$.OK((r) => r.body)
 
-	expect(r1).resolves.toEqual({ body: { name: 'bob' }, query: { test: 123 } })
+	expect(r1).resolves.toEqual({
+		body: { name: 'bob' },
+		query: { test: 123 } 
+	})
 
-	let test: (v: 'bob') => void = () => {}
+	const test: (v: 'bob') => void = () => {}
 	test((await r1)!.body.name) // type test
 })
 
 test('Simple endpoint', async () => {
 	const GET = endpoint((event) => new OK({ value: '123' }))
 
-	let [r1] = GET(new FakeKitEvent())
+	const [r1] = GET(new FakeKitEvent())
 		.use()
 		.$.OK((r) => r.body)
 
@@ -73,9 +77,7 @@ test('Simple endpoint', async () => {
 })
 
 test('endpoint ParseKitEvent', async () => {
-	const body = z.object({
-		name: z.string().optional()
-	})
+	const body = z.object({ name: z.string().optional() })
 
 	const POST = endpoint(
 		zod({ body }),
@@ -90,18 +92,18 @@ test('endpoint ParseKitEvent', async () => {
 	let ran = 0
 
 	// @ts-expect-error name must be string
-	let r1 = POST(new FakeKitEvent()).use({ name: 123 })
+	const r1 = POST(new FakeKitEvent()).use({ name: 123 })
 		.any(() => ran++)
 		.$.BadRequest((r) => {
 			throw new Error('Failed validation', { cause: r })
 		})
 		.success(() => '')
 
-	let [badRequest] = r1
+	const [badRequest] = r1
 
 	expect(badRequest).rejects.toThrow('Failed validation')
 
-	let r2 = POST(new FakeKitEvent())
+	const r2 = POST(new FakeKitEvent())
 		.use({ name: 'John' })
 		.any(() => ran++)
 		.$.BadRequest((r) => {
@@ -109,7 +111,7 @@ test('endpoint ParseKitEvent', async () => {
 		})
 		.success((r) => r.body)[1]
 
-	let success = await r2
+	const success = await r2
 	expect(success).toEqual({ name: 'John' })
 
 	expect(ran).toBe(2)
@@ -120,6 +122,6 @@ test('endpoint: xhr-types', () => {
 	const POST = endpoint((event) => new OK({ value: '123' }))
 
 	// not available on server-side
-	let xhr = expect(() => POST(new FakeKitEvent()).use.xhr()).toThrow()
+	const xhr = expect(() => POST(new FakeKitEvent()).use.xhr()).toThrow()
 	
 })

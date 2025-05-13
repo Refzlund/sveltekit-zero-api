@@ -4,7 +4,7 @@ import { DeepPartial } from '../../utils/types'
 import {
 	ErrorPath,
 	KitValidationError,
-	ValidatedKitRequestXHR,
+	ValidatedKitRequestXHR
 } from '../errors'
 import { Paginator, PaginatorConstructorOptions } from './instance.paginator.svelte'
 
@@ -35,8 +35,8 @@ type GetSluggedEndpointFn<T, Key extends string> = T extends {
 	[Slug in `${string}$`]: (...args: any[]) => { [K in Key]: infer V }
 }
 	? V extends Endpoint
-	? V
-	: never
+		? V
+		: never
 	: never
 
 type Modify<T, Put extends Endpoint, Patch extends Endpoint, Delete extends Endpoint> = [
@@ -101,26 +101,26 @@ export type DataAPI<T, G, A> =
 	& (A extends { POST: Endpoint } ? Create<T, A['POST']> : {})
 	& (A extends Slugged<{ GET: infer P }>
 		? P extends Endpoint
-		? {
+			? {
 			/** Calls id$(...).GET */
-			get(id: string | number): ReturnType<P['xhr']>
-		}
-		: {}
+				get(id: string | number): ReturnType<P['xhr']>
+			}
+			: {}
 		: {})
 	& (A extends Slugged<{ DELETE: infer P }>
 		? P extends Endpoint
-		? {
+			? {
 			/** Calls id$(...).DELETE */
-			delete(id: string | number): ReturnType<P['xhr']>
-		}
-		: {}
+				delete(id: string | number): ReturnType<P['xhr']>
+			}
+			: {}
 		: {})
 	& Modify<T, GetSluggedEndpointFn<A, 'PUT'>, GetSluggedEndpointFn<A, 'PATCH'>, GetSluggedEndpointFn<A, 'DELETE'>>
 	& ([G] extends [never]
 		? {}
 		: G extends Record<string, any>
-		? { groups: Record<keyof G, T[]> }
-		: {})
+			? { groups: Record<keyof G, T[]> }
+			: {})
 	& {
 		[key: string]: T
 	}

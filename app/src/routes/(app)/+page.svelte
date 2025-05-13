@@ -48,17 +48,22 @@
 <article>
 	<h1 class='!mb-0'>Less code, more types</h1>
 	<button 
-		id=next
+		id='next'
 		style='--tw-gradient-from-position: {tween.current}%; --tw-gradient-to-position: {tween.current}%;'
 	>
 		<span>Next up</span><span>Endpoint middlewares</span>
 	</button>
 	<p>
-		<LogoText/> aims to provide a seamless experience,
+		<LogoText /> aims to provide a seamless experience,
 		developing between frontend and backend.
 	</p>
 	<p>
-		I think it's well established, the code can speak for itself<img class='inline !m-0' src='/star_struck.gif' alt='star-struck' width="30" />
+		I think it's well established, the code can speak for itself<img
+			class='inline !m-0'
+			alt='star-struck'
+			src='/star_struck.gif'
+			width='30'
+		/>
 	</p>
 
 	<Code {code} />

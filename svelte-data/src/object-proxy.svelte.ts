@@ -40,7 +40,7 @@ export function objectProxy<T extends Record<PropertyKey, unknown>>(input: {
 	const modified = $state({}) as T
 
 	const combined = $derived.by(() => {
-		let result = $state(structuredClone($state.snapshot(input.ref || {}))) as TObject
+		const result = $state(structuredClone($state.snapshot(input.ref || {}))) as TObject
 		untrack(() => {
 			function recursive(mod: TObject, value: TObject) {
 				for (const key in mod) {
@@ -92,7 +92,10 @@ export function objectProxy<T extends Record<PropertyKey, unknown>>(input: {
 
 			if(!parent[p]) {
 				const key = path[i + 1] ?? lastKey
-				const state = $state(Object.assign(/[1-9]+[0-9]*/.test(key) ? [] : {}, { [PARENT]: parent, [KEY]: p }))
+				const state = $state(Object.assign(/[1-9]+[0-9]*/.test(key) ? [] : {}, {
+					[PARENT]: parent,
+					[KEY]: p 
+				}))
 				parent[p] = state
 			}
 			parent = parent[p]
@@ -115,7 +118,8 @@ export function objectProxy<T extends Record<PropertyKey, unknown>>(input: {
 		parent[lastKey] = value
 	}
 
-	function makeProxy(obj: { target: TObject, proxies: Record<string, TObject> }, path: string[]) {
+	function makeProxy(obj: { target: TObject
+		proxies: Record<string, TObject> }, path: string[]) {
 		for(const key in obj.target) {
 			const value = obj.target[key]
 
@@ -196,7 +200,7 @@ export function objectProxy<T extends Record<PropertyKey, unknown>>(input: {
 		proxies: {}
 	}, []) as {
 		/** Reference this to when making bindings, tracking changes */
-		proxy: ObjectProxy<T>,
+		proxy: ObjectProxy<T>
 		/** Reference this, for reactivity to the object, as the proxy can't do that. */
 		target: ObjectProxy<T>
 	}

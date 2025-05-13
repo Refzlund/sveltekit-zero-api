@@ -24,7 +24,7 @@ function isObject(str: string) {
  * ```
 */
 export function querySpread<T extends KitEvent>(event: T) {
-	let obj: Record<any, any> = {}
+	const obj: Record<any, any> = {}
 	for (const [key, value] of event.url.searchParams.entries()) {
 		if (key in obj) {
 			obj[key] = Array.isArray(obj[key]) ? [...obj[key], determine(value)] : [obj[key], determine(value)]

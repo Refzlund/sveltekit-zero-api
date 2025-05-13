@@ -8,7 +8,7 @@
 
 -->
 
-<script lang="ts">
+<script lang='ts'>
 
 	/*
 		homepage: Snippet
@@ -44,17 +44,16 @@
 		fromTop = page.scrollTop
 	}
 
-	let header = $derived(
-		Math.max(100,
-			Math.min(
-				200,
-				200 / Math.max(1, 1 + fromTop * 0.005)
-			)
+	let header = $derived(Math.max(
+		100,
+		Math.min(
+			200,
+			200 / Math.max(1, 1 + fromTop * 0.005)
 		)
-	)
+	))
 
 </script>
-<!---------------------------------------------------->
+<!-- ------------------------------------------------ -->
 
 <svelte:body bind:clientWidth />
 
@@ -77,7 +76,7 @@
 </app>
 
 
-<!---------------------------------------------------->
+<!-- ------------------------------------------------ -->
 <style lang='postcss'>
 	
 	app {

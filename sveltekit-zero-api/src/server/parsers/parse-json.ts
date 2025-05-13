@@ -21,8 +21,8 @@ export const parseJSON = new ParseKitEvent(async (event) => {
 	type T = Record<string | number, unknown>
 	let json: T
 
-	let contentTypes = ['application/json', 'multipart/form-data'] as const
-	let contentType = event.request.headers.get('content-type') as (typeof contentTypes)[number]
+	const contentTypes = ['application/json', 'multipart/form-data'] as const
+	const contentType = event.request.headers.get('content-type') as (typeof contentTypes)[number]
 
 	if (!contentType || !contentTypes.some((v) => contentType.includes(v))) {
 		return new BadRequest({

@@ -95,7 +95,7 @@ export class RuneAPIInstance<T = unknown> {
 		if (Array.isArray(value)) {
 			const fns = [] as Function[]
 
-			let items = [] as T[]
+			const items = [] as T[]
 			value.forEach((v) => fns.push(this.set(v, state => items.push(state))))
 			this.list = [...this.list, ...items]
 			this.#listeners.set.forEach((cb) => cb(items))
@@ -115,7 +115,7 @@ export class RuneAPIInstance<T = unknown> {
 			return this.remove(key)
 		}
 
-		let pre = $state.snapshot(this.map.get(key))
+		const pre = $state.snapshot(this.map.get(key))
 		const state = $state(value) as T
 
 		if(many) {

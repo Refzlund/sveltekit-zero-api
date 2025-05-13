@@ -23,9 +23,7 @@ export interface KitRequestXHR extends KitRequestProxy<KitResponse<any, any, any
  */
 export class ReturnedKitRequest {
 	constructor() {
-		throw new Error(
-			'Cannot construct ReturnedEndpointProxy. Please use `createEndpointProxy` and use `.$` instead.'
-		)
+		throw new Error('Cannot construct ReturnedEndpointProxy. Please use `createEndpointProxy` and use `.$` instead.')
 	}
 }
 export interface ReturnedKitRequest extends KitRequestProxy<KitResponse<any, any, any, boolean>, any[]> { }
@@ -40,13 +38,13 @@ type ResponseType = KitResponse | Response
 export function createEndpointProxy<T extends KitResponse>(
 	pureResponse: Promise<T | Response>,
 	abort?: () => void,
-	xhr?: XMLHttpRequest,
+	xhr?: XMLHttpRequest
 ): KitRequestProxy<T, never> {
 	// Proxy
 	// ex. `let [result] = GET(event, { body: { ... }}).error(...).$.OK(...)`
 
 	/** Callbacks */
-	let cbs: [string, (response: ResponseType) => any][] = []
+	const cbs: [string, (response: ResponseType) => any][] = []
 
 	const response = new Promise<T | Response>((resolve, reject) => {
 		pureResponse
@@ -60,7 +58,7 @@ export function createEndpointProxy<T extends KitResponse>(
 						throw res
 					}
 
-					let response = res as T | Response
+					const response = res as T | Response
 
 					if (response instanceof Response) {
 						// * Do some magic? (e.g. if frontend, do .json())
@@ -86,12 +84,18 @@ export function createEndpointProxy<T extends KitResponse>(
 			return KitRequest.prototype
 		},
 		get(state) {
-			let { keys, key, props, crawl, parent } = state
+			const {
+				keys, key, props, crawl, parent 
+			} = state
 
 			if (key === '$' && keys.includes(key)) {
 				throw new Error('.$. cannot be used multiple times.', {
 					cause: {
-						state: { keys, key, $promises: props.$promises?.map((v) => v[0]) },
+						state: {
+							keys,
+							key,
+							$promises: props.$promises?.map((v) => v[0]) 
+						},
 						cbs: cbs.map((v) => v[0])
 					}
 				})
@@ -102,7 +106,7 @@ export function createEndpointProxy<T extends KitResponse>(
 				if (key === Symbol.iterator) {
 					// -> const [promiseOK, promiseError] = GET(...).$...
 					const closest = closest$promisesParent(state)
-					let array = closest.is$root ? [] : closest.$promises!.map((v) => v[1])
+					const array = closest.is$root ? [] : closest.$promises!.map((v) => v[1])
 					return array[Symbol.iterator].bind(array)
 				}
 
@@ -113,7 +117,7 @@ export function createEndpointProxy<T extends KitResponse>(
 
 				// * `...$.success(...).error(...)[0]`
 				if (typeof key !== 'symbol') {
-					let index = Number(key)
+					const index = Number(key)
 					if (!isNaN(index)) {
 						const closest = closest$promisesParent(state)
 						if (closest.is$root)
@@ -127,7 +131,9 @@ export function createEndpointProxy<T extends KitResponse>(
 			return crawl(key)
 		},
 		apply(state) {
-			let { keys, key, args, props, crawl, parent } = state
+			const {
+				keys, key, args, props, crawl, parent 
+			} = state
 
 			if (key === 'abort') {
 				return abort?.()
@@ -149,9 +155,9 @@ export function createEndpointProxy<T extends KitResponse>(
 				}
 
 				const promise = (closest.parent!.props.$cache ??= new Promise((resolve, reject) => {
-					let $promises = closest.$promises!
+					const $promises = closest.$promises!
 
-					let results = Array($promises.length).fill(undefined)
+					const results = Array($promises.length).fill(undefined)
 					let error: unknown = false
 					let resolved = 0
 					for (let i = 0;i < $promises.length;i++) {
@@ -177,7 +183,7 @@ export function createEndpointProxy<T extends KitResponse>(
 			}
 
 			if (key === Symbol.toPrimitive) {
-				let $promises = keys[0] === '$' ? closest$promisesParent(state).$promises : undefined
+				const $promises = keys[0] === '$' ? closest$promisesParent(state).$promises : undefined
 
 				let str = 'EndpointProxy' + (cbs.length || $promises ? ':' : '')
 				if (cbs.length) str += ` [${cbs.map((v) => v[0]).join(', ')}]`
@@ -187,22 +193,32 @@ export function createEndpointProxy<T extends KitResponse>(
 				return str
 			}
 
-			let crawler = crawl([])
+			const crawler = crawl([])
 
 			if (typeof args[0] !== 'function') {
-				throw new Error('Callback must be a function', { cause: { keys, key, args } })
+				throw new Error('Callback must be a function', {
+					cause: {
+						keys,
+						key,
+						args 
+					} 
+				})
 			}
 
-			let k = key.toString()
+			const k = key.toString()
 			if (k.startsWith('xhr') || k.startsWith('upload')) {
 				if (!xhr) {
 					throw new Error('This request is not associated with an XMLHttpRequest (xhr)', {
-						cause: { keys, key, args }
+						cause: {
+							keys,
+							key,
+							args 
+						} 
 					})
 				}
 
-				let upload = k.startsWith('upload')
-				let event = k.slice(upload ? 6 : 3).toLowerCase()
+				const upload = k.startsWith('upload')
+				const event = k.slice(upload ? 6 : 3).toLowerCase()
 
 				const fn = (ev: any) => {
 					if (event === 'init') return args[0](xhr)
@@ -223,21 +239,21 @@ export function createEndpointProxy<T extends KitResponse>(
 			}
 
 			// * If `...$.success().error().map(v => ...)` for instance.
-			let fn = props.$promises?.[key as string]
+			const fn = props.$promises?.[key as string]
 			if (typeof fn === 'function') {
 				return fn.apply(fn, args)
 			}
 
-			let promise = new Promise((resolve, reject) => {
+			const promise = new Promise((resolve, reject) => {
 				response
 					.then((response) => {
-						let fn = args[0]
+						const fn = args[0]
 						endpointProxyCallback(response, key as string, fn).then(resolve).catch(reject)
 					})
 					.catch(reject)
 			})
 
-			let closest = closest$promisesParent(state.parent)
+			const closest = closest$promisesParent(state.parent)
 			props.$promises = [...(closest.$promises || []), [key as string, promise]]
 
 			return crawler

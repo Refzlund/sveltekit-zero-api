@@ -1,4 +1,4 @@
-<script lang="ts">
+<script lang='ts'>
 	import api from '$api'
 	import type { User } from '$routes/(app)/(test)/api/users'
 	import type z from 'zod'
@@ -16,7 +16,7 @@
 
 	let search = statefulAPI(
 		(name: string) => (name ? api.users.search(name) : undefined),
-		{ warmup: 500 },
+		{ warmup: 500 }
 	)
 
 	const searchFloat = floatingUI({})
@@ -43,51 +43,51 @@
 			fetch: true,
 			groups: {
 				seniors: (v) =>
-					v.filter((v) => v.age > 50).sort((a, b) => a.age - b.age),
-			},
+					v.filter((v) => v.age > 50).sort((a, b) => a.age - b.age)
+			}
 		}
 	})
 
 </script>
 
-<!---------------------------------------------------->
+<!-- ------------------------------------------------ -->
 
 <!-- elders: {data.users.groups.seniors.length} -->
 
-<div class="flex gap-2 items-center mb-8 relative">
+<div class='flex gap-2 items-center mb-8 relative'>
 	{#if search.isLoading && search.args[0]}
-		<loading transition:scale class="top-1/2 -translate-y-1/2 -left-6 absolute">
-			<icon class="animate-spin iconify fluent--spinner-ios-20-filled"></icon>
+		<loading class='top-1/2 -translate-y-1/2 -left-6 absolute' transition:scale>
+			<icon class='animate-spin iconify fluent--spinner-ios-20-filled'></icon>
 		</loading>
 	{/if}
 	<input
-		use:searchFloat.ref
+		class='!m-0 w-56'
+		placeholder='Search users'
+		type='search'
 		bind:value={search.args[0]}
-		class="!m-0 w-56"
-		type="search"
-		placeholder="Search users"
+		use:searchFloat.ref
 	/>
 	{#if search.args[0] && search.result}
 		<div
+			class='bg-gray-950 z-50 rounded flex flex-col gap-2 p-1 w-56 max-h-80 overflow-y-auto'
 			use:searchFloat
-			class="bg-gray-950 z-50 rounded flex flex-col gap-2 p-1 w-56 max-h-80 overflow-y-auto"
 		>
 			{#each search.result as user}
 				<button
-					class="!bg-transparent hover:!bg-gray-900"
+					class='!bg-transparent hover:!bg-gray-900'
 					onclick={() => {
 						id = user.id
 						search.result = undefined
 						search.args[0] = ''
-					}}>{user.name}</button
-				>
+					}}
+				>{user.name}</button>
 			{/each}
 		</div>
 	{/if}
 
 	<select
+		class='bg-gray-950 border-gray-800 rounded-md m-0 text-primary'
 		bind:value={id}
-		class="bg-gray-950 border-gray-800 rounded-md m-0 text-primary"
 	>
 		<option value={undefined}>None</option>
 		{#each data.users as user}
@@ -96,35 +96,35 @@
 	</select>
 </div>
 
-<h3 class="text-xl md-2">
+<h3 class='text-xl md-2'>
 	{id ? 'Updating ' + $Form.name : 'Create new user'}
 </h3>
 
 <Form {id}>
 	<label>
 		Name
-		<input name="name" />
+		<input name='name' />
 		{#each Form.errors('name') as { error }}
 			<error>{error}</error>
 		{/each}
 	</label>
 	<label>
 		E-mail
-		<input name="email" type="email" />
+		<input name='email' type='email' />
 		{#each Form.errors('email') as { error }}
 			<error>{error}</error>
 		{/each}
 	</label>
 	<label>
 		Birth
-		<input name="birth" type="date" />
+		<input name='birth' type='date' />
 		{#each Form.errors('birth') as { error }}
 			<error>{error}</error>
 		{/each}
 	</label>
 	<label>
 		Age
-		<input name="age" type="number" />
+		<input name='age' type='number' />
 		{#each Form.errors('age') as { error }}
 			<error>{error}</error>
 		{/each}
@@ -134,14 +134,12 @@
 		{Form.error?.error}
 	</error>
 
-	<button class="mt-4 mr-4" disabled={!!Form.errors.length}
-		>{id === undefined ? 'Create User' : 'Update User'}</button
-	>
-	<button type="reset">Reset</button>
+	<button class='mt-4 mr-4' disabled={!!Form.errors.length}>{id === undefined ? 'Create User' : 'Update User'}</button>
+	<button type='reset'>Reset</button>
 </Form>
 
-<!---------------------------------------------------->
-<style lang="postcss">
+<!-- ------------------------------------------------ -->
+<style lang='postcss'>
 	input {
 		@apply mb-2;
 	}

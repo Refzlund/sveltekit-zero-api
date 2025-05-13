@@ -1,4 +1,4 @@
-<script lang="ts">
+<script lang='ts'>
 
 	import api from '$api'
 	
@@ -44,7 +44,10 @@
 			}
 		})
 
-		return { stream, state }
+		return {
+			stream,
+			state 
+		}
 	}
 
 	let uploadState = $state({}) as TrackedReadableStream
@@ -63,7 +66,7 @@
 	
 
 </script>
-<!---------------------------------------------------->
+<!-- ------------------------------------------------ -->
 
 <input bind:this={input} type='file'>
 
@@ -71,7 +74,7 @@
 {JSON.stringify(uploadState)}
 
 
-<!---------------------------------------------------->
+<!-- ------------------------------------------------ -->
 <style lang='postcss'>
 	
 	

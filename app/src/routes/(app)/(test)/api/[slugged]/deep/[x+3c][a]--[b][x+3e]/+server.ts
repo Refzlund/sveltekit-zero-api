@@ -15,6 +15,4 @@ function someFunction() {
 	return new OK({ message: 'ok' })
 }
 
-export const PATCH = functions({
-	someFunction
-})
+export const PATCH = functions({ someFunction })

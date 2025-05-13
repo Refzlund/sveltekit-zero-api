@@ -1,7 +1,7 @@
 export async function parseResponse(res: Response) {
-	let contentType = res.headers.get('content-type')
+	const contentType = res.headers.get('content-type')
 	if (contentType?.includes('application/json')) {
-		let body = await res.json()
+		const body = await res.json()
 		Object.defineProperty(res, 'body', {
 			get() {
 				return body
@@ -13,15 +13,18 @@ export async function parseResponse(res: Response) {
 		Object.assign(res.body, {
 			async *[Symbol.asyncIterator]() {
 				const reader = res.body!.getReader()
-				let decode = new TextDecoder()
+				const decode = new TextDecoder()
 				while (true) {
 					const { value, done } = await reader.read()
 					if (done) return
 					if (!contentType?.includes('plain/text')) yield value
 					else {
-						let text = decode.decode(value)
+						const text = decode.decode(value)
 						try {
-							yield JSON.parse(text)
+							if(text[0] !== '{' && text[0] !== '[')
+								yield text
+							else
+								yield JSON.parse(text)
 						} catch (error) {
 							yield text
 						}

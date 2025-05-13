@@ -1,6 +1,8 @@
 import { createEndpointProxy } from '../shared/endpoint-proxy'
 import type { FixKeys, MaybePromise, Simplify } from '../utils/types'
-import { Accepted, BadRequest, KitResponse, OK, ImATeapot } from './http'
+import {
+	Accepted, BadRequest, KitResponse, OK, ImATeapot 
+} from './http'
 import { ParseKitEvent, type KitEvent, type KitEventFn } from './kitevent'
 import type { KitRequestProxy } from '../shared/endpoint-proxy.type'
 import { Generic } from './generic'
@@ -67,19 +69,20 @@ export type EndpointSSE<T extends SSE> = (
 	options?: { query?: any } & Omit<RequestInit, 'body'>
 ) => T extends SSE<infer _, infer K> ? KitSSE<K> : never
 
-export type KitSSE<T extends { event: string; data: any }> = {
-	on: {
-		[Key in T as Key['event']]: (cb: (event: Key['data']) => void) => KitSSE<T>
+export type KitSSE<T extends { event: string
+	data: any }> = {
+		on: {
+			[Key in T as Key['event']]: (cb: (event: Key['data']) => void) => KitSSE<T>
+		}
+		onClose(cb: () => void): KitSSE<T>
+		onOpen(cb: (event: Event) => void): KitSSE<T>
+		/** When connection to EventSource fails to be opened */
+		onError(cb: (event: Event) => void): KitSSE<T>
+		isClosed: boolean
+		isOpen: boolean
+		isConnecting: boolean
+		close(): void
 	}
-	onClose(cb: () => void): KitSSE<T>
-	onOpen(cb: (event: Event) => void): KitSSE<T>
-	/** When connection to EventSource fails to be opened */
-	onError(cb: (event: Event) => void): KitSSE<T>
-	isClosed: boolean
-	isOpen: boolean
-	isConnecting: boolean
-	close(): void
-}
 
 type EndpointResponseResult<
 	Responses extends KitResponse,
@@ -88,16 +91,16 @@ type EndpointResponseResult<
 	TGenericResult extends null | GenericCallback = null
 > = Promise<Responses> & {
 	use: null extends TGenericResult
-	? [Tsse] extends [never]
-	? Endpoint<
-		EndpointInput<P>,
+		? [Tsse] extends [never]
+			? Endpoint<
+				EndpointInput<P>,
 		| Responses
 		| Extract<Awaited<ReturnType<P['fn']>>, KitResponse<any, any>>
-	>
-	: EndpointSSE<Tsse>
-	: TGenericResult extends Generic<infer Input>
-	? Input
-	: never
+			>
+			: EndpointSSE<Tsse>
+		: TGenericResult extends Generic<infer Input>
+			? Input
+			: never
 }
 
 /**
@@ -115,8 +118,8 @@ export interface EndpointResponse<
 		Extract<Results, SSE>,
 		// @ts-expect-error works
 		Results extends (event: KitEvent) => MaybePromise<GenericCallback>
-		? Awaited<ReturnType<Results>>
-		: null
+			? Awaited<ReturnType<Results>>
+			: null
 	>
 }
 
@@ -212,9 +215,8 @@ function endpoint<
 
 // #endregion
 
-function endpoint(
-	...callbacks: (Callback<any, any> | ParseKitEvent<{ body?; query?}>)[]
-) {
+function endpoint(...callbacks: (Callback<any, any> | ParseKitEvent<{ body?
+	query? }>)[]) {
 	return (event: KitEvent) => {
 		let useProxy: ReturnType<typeof createEndpointProxy> | null = null
 
@@ -223,11 +225,11 @@ function endpoint(
 
 			event.results ??= {}
 			if (event.request.headers.has('x-validation-schema')) {
-				let cb = callbacks.find((v) => v instanceof ParseKitEvent)
+				const cb = callbacks.find((v) => v instanceof ParseKitEvent)
 				if (cb && cb.schema) throw new Accepted(cb.schema)
 				throw new ImATeapot({
 					code: 'no_validation_schema',
-					error: 'No validation schema is associated with this endpoint.',
+					error: 'No validation schema is associated with this endpoint.'
 				})
 			}
 
@@ -240,8 +242,8 @@ function endpoint(
 							headers: {
 								'Content-Type': 'text/event-stream',
 								'Cache-Control': 'no-cache, no-transform',
-								Connection: 'keep-alive',
-							},
+								Connection: 'keep-alive'
+							}
 						})
 					}
 
@@ -271,7 +273,7 @@ function endpoint(
 							throw new BadRequest({
 								code: 'invalid_json',
 								error: 'A generic endpoint must receive JSON',
-								details: error,
+								details: error
 							})
 						}
 						result = await result.function()
@@ -320,7 +322,7 @@ function endpoint(
 					...event.request,
 					method,
 					headers,
-					body,
+					body
 				})
 
 				event.query ??= {}
@@ -334,11 +336,11 @@ function endpoint(
 						})
 						.then(parseResponse),
 					() => {
-						throw new Error("Can't abort on server.")
+						throw new Error('Can\'t abort on server.')
 					}
 				)
 				return useProxy
-			},
+			}
 		})
 
 		return promise

@@ -1,4 +1,4 @@
-<script module lang='ts'>
+<script lang='ts' module>
 	
 	export interface OptionProps {
 		children?: Snippet<[boolean]>
@@ -7,7 +7,7 @@
 
 </script>
 
-<script lang="ts">
+<script lang='ts'>
 
 	import { onMount, type Snippet } from 'svelte'
 	import { selectContext } from './Select.svelte'
@@ -27,9 +27,7 @@
 
 
 {#if select.selected?.value !== props.value}
-	<button
-		onclick={() => select.selectValue(props.value)}
-	>
+	<button onclick={() => select.selectValue(props.value)}>
 		{#if props.children}
 			{@render props.children(false)}
 		{:else}

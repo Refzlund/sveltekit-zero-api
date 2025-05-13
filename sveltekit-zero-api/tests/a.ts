@@ -1,4 +1,4 @@
-import type { ServerType as S } from "../src/client/index.ts"
+import type { ServerType as S } from '../src/client/index.ts'
 
 export type APIRoutes = {
 	api: {
@@ -22,5 +22,5 @@ export type APIRoutes = {
 
 const api = {} as APIRoutes['api']
 
-let value = api.someFn(123)
+const value = api.someFn(123)
 api.POST({ hello: 'shiba' })

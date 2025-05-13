@@ -12,7 +12,7 @@ export interface StateGet<Props extends Record<PropertyKey, any>> {
 	/**
 	 * Returns the proxy crawler, with or without the new provided key
 	 *
-	 * @example // return a function to be called that replaces current key, with other key
+	// return a function to be called that replaces current key, with other key
 	 * return function fn(str: string) { return crawl(str) }
 	 */
 	crawl: (key: PropertyKey | PropertyKey[]) => Record<PropertyKey, any> & ((...args: any[]) => any)
@@ -37,7 +37,7 @@ export interface StateApply<Props extends Record<PropertyKey, any>> {
 	/**
 	 * Returns the proxy crawler, with or without the new provided key
 	 *
-	 * @example // return a function to be called that replaces current key, with other key
+	// return a function to be called that replaces current key, with other key
 	 * return function fn(str: string) { return crawl(str) }
 	 */
 	crawl: (key: PropertyKey | PropertyKey[]) => Record<PropertyKey, any> & ((...args: any[]) => any)
@@ -96,10 +96,10 @@ const isNumber = /^[0-9]+$/
 */
 export function proxyCrawl<Props extends Record<PropertyKey, any> = {}>(handler: CrawlHandler<Props>) {
 	const createCrawler = (keys: PropertyKey[], parent?: StateGet<Props> | StateApply<Props>, nested: string[] = []) => {
-		let proxy = {} as Record<PropertyKey, ReturnType<typeof createCrawler>>
-		let props = {} as Props
+		const proxy = {} as Record<PropertyKey, ReturnType<typeof createCrawler>>
+		const props = {} as Props
 
-		return new Proxy(function () {}, {
+		return new Proxy(function() {}, {
 			getPrototypeOf(target) {
 				if(handler.getPrototypeOf) {
 					return handler.getPrototypeOf({ keys })
@@ -114,11 +114,11 @@ export function proxyCrawl<Props extends Record<PropertyKey, any> = {}>(handler:
 					let matches: string[] | undefined
 					while ((match = String(key).match(lastBracketRegEx))) {
 						/** in `crawler['key["array"][0]']` this becomes `key["array"]`, then `key` */
-						let property = match[1]
+						const property = match[1]
 						/** in `crawler['key["array"][0]']` this becomes `0` then `"array"` */
 						let bracketed = match[2]
 
-						if (bracketed.startsWith("'") || bracketed.startsWith('"') || bracketed.startsWith("`")) {
+						if (bracketed.startsWith('\'') || bracketed.startsWith('"') || bracketed.startsWith('`')) {
 							bracketed = bracketed.slice(1, -1)
 						}
 
@@ -132,7 +132,7 @@ export function proxyCrawl<Props extends Record<PropertyKey, any> = {}>(handler:
 					}
 				}
 
-				let next = nested.pop()
+				const next = nested.pop()
 				
 				// Couldn't use `this` inside `crawl` so we do this
 				function getState() { return state }
@@ -172,20 +172,22 @@ export function proxyCrawl<Props extends Record<PropertyKey, any> = {}>(handler:
 				return proxy[key]
 			},
 			apply(_, thisArg, args) {
-				let keysCopy = [...keys]
+				const keysCopy = [...keys]
 				let key = keysCopy.pop()!
 				key = handler.numberedKeys && isNumber.test(key as string) ? +(key as string) : (key as string)
 
 				if(!handler.allowNoKeys && key === undefined) {
-					throw new Error(
-						'If you see this, you might have done `return state.crawl([])` in `get`, causing the `state.key` in `apply` to be undefined. To allow this behaviour, please provide `allowNoKeys: true` in the handler proxyCrawl handler.', {
-							cause: { keys, key: key, args }
-						}
-					)
+					throw new Error('If you see this, you might have done `return state.crawl([])` in `get`, causing the `state.key` in `apply` to be undefined. To allow this behaviour, please provide `allowNoKeys: true` in the handler proxyCrawl handler.', {
+						cause: {
+							keys,
+							key: key,
+							args 
+						} 
+					})
 				}
 
 				if (handler.apply) {
-					let next = nested.pop()
+					const next = nested.pop()
 
 					// Couldn't use `this` inside `crawl` so we do this
 					// deno-lint-ignore no-inner-declarations

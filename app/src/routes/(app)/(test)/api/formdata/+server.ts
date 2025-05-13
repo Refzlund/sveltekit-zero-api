@@ -9,6 +9,9 @@ export const POST = endpoint(
 		
 		console.log(event.body)
 
-		return new OK({ message: 'Form data received.', data: event.body })
+		return new OK({
+			message: 'Form data received.',
+			data: event.body 
+		})
 	}
 )

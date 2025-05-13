@@ -1,0 +1,1 @@
+No semi-colons. Use tabs. Follow best practices.

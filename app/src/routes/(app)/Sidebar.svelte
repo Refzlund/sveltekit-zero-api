@@ -7,7 +7,7 @@
 
 -->
 
-<script lang="ts">
+<script lang='ts'>
 	import { drag } from '$lib/drag.svelte'
 	import { floatingUI } from '$lib/floating-ui.svelte'
 	import Logo from '$lib/Logo.svelte'
@@ -36,27 +36,36 @@
 	})
 
 </script>
-<!---------------------------------------------------->
+<!-- ------------------------------------------------ -->
 
 {#snippet navitem(text: string, href: string = '/', selected = false)}
 	{#if selected}
-		<a {href} class:selected use:float.ref onmouseenter={() => float.untether()}>
+		<a
+			class:selected
+			{href}
+			onmouseenter={() => float.untether()}
+			use:float.ref
+		>
 			{text}
 		</a>
 	{:else}
-		<a {href} onmouseenter={(e) => float.tether(e.target as HTMLElement)} aria-details='>v0.0.1'>
+		<a
+			aria-details='>v0.0.1'
+			{href}
+			onmouseenter={(e) => float.tether(e.target as HTMLElement)}
+		>
 			{text}
 		</a>
 	{/if}
 {/snippet}
 
 <nav 
-	bind:clientWidth 
-	class:moving={navdrag.moving} 
+	style={mobile ? `transform: translateX(${navdrag.x}px)` : `margin-top: ${marginTop}px;`} 
 	class:mobile 
-	style={mobile ? `transform: translateX(${navdrag.x}px)` : `margin-top: ${marginTop}px;`}
+	class:moving={navdrag.moving} 
+	bind:clientWidth
 >
-	<div style={mobile ? `` : `padding-top: ${200-marginTop+48}px;`}>
+	<div style={mobile ? `` : `padding-top: ${200 - marginTop + 48}px;`}>
 		{#if mobile}
 			<handle use:navdrag.action>
 				<icon class='iconify fluent--re-order-20-regular pointer-events-none'></icon>
@@ -67,7 +76,11 @@
 				<Logo class='justify-self-center scale-125 py-6' />
 			</header>
 		{/if}
-		<div class='grid-flow-row' onmouseleave={() => float.untether()} role='navigation'>
+		<div
+			class='grid-flow-row'
+			onmouseleave={() => float.untether()}
+			role='navigation'
+		>
 			<cursor use:float></cursor>
 			{@render navitem('Home', '/', true)}
 			<section>
@@ -98,7 +111,7 @@
 </nav>
 
 
-<!---------------------------------------------------->
+<!-- ------------------------------------------------ -->
 <style lang='postcss'>
 
 	cursor {

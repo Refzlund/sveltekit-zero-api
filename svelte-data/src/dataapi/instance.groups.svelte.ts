@@ -17,7 +17,7 @@ export function createGroupsProxy(instance: RuneAPIInstance<any>, groups: NonNul
 				const groupArray = $state([]) as unknown[]
 				target[property] = groupArray
 
-				let filters = [] as Parameters<Grouping<unknown>['filter']>[0][]
+				const filters = [] as Parameters<Grouping<unknown>['filter']>[0][]
 				let sort: Parameters<Grouping<unknown>['sort']>[0] | undefined
 
 				const proxy = {
@@ -52,9 +52,7 @@ export function createGroupsProxy(instance: RuneAPIInstance<any>, groups: NonNul
 				})
 				instance.on('remove', (values) => {
 					for(const value of values) {
-						const index = groupArray.findIndex(
-							v => instance.discriminator.get(v) === instance.discriminator.get(value)
-						)
+						const index = groupArray.findIndex(v => instance.discriminator.get(v) === instance.discriminator.get(value))
 						if (index !== -1) {
 							groupArray.splice(index, 1)
 						}

@@ -103,7 +103,7 @@ export class Paginator<T> {
 	count = $derived.by(() => {
 		if(this.#constructorOpts.count) return this.#constructorOpts.count
 		else if(!this.#options) return 10 // default
-		let result = this.#options && 'count' in this.#options && this.#options.count
+		const result = this.#options && 'count' in this.#options && this.#options.count
 		if(result === undefined || result === false) return -1
 		return result
 	})
@@ -226,7 +226,7 @@ export class Paginator<T> {
 		).catch(() => false as const)
 
 		this.#loadingPositions.push(position)
-		let result = $state(await promise)
+		const result = $state(await promise)
 		this.#loadingPositions.splice(this.#loadingPositions.indexOf(position), 1)
 
 		if(!result) return
@@ -254,8 +254,8 @@ export class Paginator<T> {
 
 	/** Paginate to a specific position */
 	async setPosition(position: number) {
-		let _position = this.position
-		let _list = this.#list
+		const _position = this.position
+		const _list = this.#list
 
 		this.#current = position
 		
@@ -280,7 +280,7 @@ export class Paginator<T> {
 		}
 
 		if(this.#refetch >= 0) {
-			let lastFetch = this.#fetches[position] ?? 0
+			const lastFetch = this.#fetches[position] ?? 0
 			const now = Date.now()
 
 			if (lastFetch + this.#refetch > now)
@@ -294,7 +294,7 @@ export class Paginator<T> {
 				if(this.#resetCooldown > 0) {
 					this.#rejectCoolingReset?.()
 					this.#coolingReset = new Promise((resolve, reject) => {
-						let id = setTimeout(() => {
+						const id = setTimeout(() => {
 							resolve(true)
 							this.#coolingReset = undefined
 							this.#rejectCoolingReset = undefined
@@ -325,7 +325,7 @@ export class Paginator<T> {
 			}, this.#cooldown))
 		}
 
-		let result = await this.loadPosition(position)
+		const result = await this.loadPosition(position)
 		
 		if(!result) {
 			if (this.current !== position) return
@@ -347,7 +347,7 @@ export class Paginator<T> {
 
 function success<T>(item: PaginationPromise<T>) {
 	if(item instanceof KitRequest) {
-		return item.$.success(({body}) => body as T[])[0]
+		return item.$.success(({ body }) => body as T[])[0]
 	}
 	return item as Promise<T[]>
 }
@@ -356,6 +356,6 @@ export function paginatorProxy<T>(instance: RuneAPIInstance<any>) {
 	return new Proxy(Paginator, {
 		construct(target, argArray) {
 			return new target(...[instance, ...argArray] as [any])
-		},
+		}
 	})
 }

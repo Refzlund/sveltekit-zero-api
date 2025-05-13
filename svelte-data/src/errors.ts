@@ -1,4 +1,6 @@
-import { Endpoint, getMethod, getUrl, KitRequestXHR } from 'sveltekit-zero-api/client'
+import {
+	Endpoint, getMethod, getUrl, KitRequestXHR 
+} from 'sveltekit-zero-api/client'
 import { Promisify } from '../../sveltekit-zero-api/src/utils/types'
 
 export type ErrorPath = string | number | (string | number)[]
@@ -119,11 +121,9 @@ export class EndpointValidator {
 		return !!EndpointValidator.#validationConstructor
 	}
 
-	static validationConstructor(
-		validationConstructor: (schema: Record<string, unknown>) => {
-			validate: (data: unknown, path?: ErrorPath) => KitValidationError[]
-		}
-	) {
+	static validationConstructor(validationConstructor: (schema: Record<string, unknown>) => {
+		validate: (data: unknown, path?: ErrorPath) => KitValidationError[]
+	}) {
 		this.#validationConstructor = validationConstructor
 	}
 }

@@ -32,12 +32,18 @@
 	setContext('formapi', __formApi)
 	
 </script>
-<!---------------------------------------------------->
+<!-- ------------------------------------------------ -->
 
 
-<form use:__formApi.action={{ id, value }} {...formAttributes}>
+<form
+	use:__formApi.action={{
+		id,
+		value 
+	}}
+	{...formAttributes}
+>
 	{@render children()}
 </form>
 
 
-<!---------------------------------------------------->
+<!-- ------------------------------------------------ -->

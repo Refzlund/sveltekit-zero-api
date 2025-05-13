@@ -1,4 +1,4 @@
-<script module lang='ts'>
+<script lang='ts' module>
 	import { npmjs, github } from '$lib/fetch'
 	import { browser } from '$app/environment'
 

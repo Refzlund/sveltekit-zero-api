@@ -23,7 +23,7 @@ export function SSE(url: string) {
 		evtSource = null as any
 	}
 
-	let state = $state({
+	const state = $state({
 		isClosed: false,
 		isConnecting: true,
 		isOpen: false
@@ -60,13 +60,13 @@ export function SSE(url: string) {
 				on = false
 				return (cb: (data: any) => void) => {
 					evtSource.addEventListener(key.toString(), (e) => {
-						let isJSON = (e.data.startsWith('{') && e.data.endsWith('}')) || (e.data.startsWith('[') && e.data.endsWith(']'))
+						const isJSON = (e.data.startsWith('{') && e.data.endsWith('}')) || (e.data.startsWith('[') && e.data.endsWith(']'))
 						cb(isJSON ? JSON.parse(e.data) : e.data)
 					})
 					return proxy
 				}
 			}
-		},
+		}
 	})
 	return proxy
 }

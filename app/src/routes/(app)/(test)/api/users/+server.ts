@@ -4,16 +4,22 @@ import { User, users } from '.'
 import { zod } from '$lib/zod'
 
 
-export const GET = endpoint(
-	() => new OK(users)
-)
+export const GET = endpoint(() => new OK(users))
 
 export const POST = endpoint(
 	zod({ body: User.omit({ id: true }) }),
 	(event) => {
-		let { name, email, age, birth } = event.body
+		const {
+			name, email, age, birth 
+		} = event.body
 		
-		users.push({ id: `User:${users.length}`, name, email, age, birth })
+		users.push({
+			id: `User:${users.length}`,
+			name,
+			email,
+			age,
+			birth 
+		})
 		
 		return new Created(users[users.length - 1])
 	}
@@ -21,8 +27,6 @@ export const POST = endpoint(
 
 export const PATCH = functions({
 	search: (event: KitEvent, name: string) => {	
-		return new OK(
-			users.filter(user => user.name.includes(name))
-		)
+		return new OK(users.filter(user => user.name.includes(name)))
 	}
 })

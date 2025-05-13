@@ -9,6 +9,4 @@ export {
 	ReturnedKitRequestXHR
 } from './shared/endpoint-proxy'
 
-export {
-	APIProxy
-} from './client/api-proxy'
+export { APIProxy } from './client/api-proxy'

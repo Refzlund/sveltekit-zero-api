@@ -15,7 +15,7 @@ test('test', async () => {
 		foods: z.array(z.string()).min(1),
 		avatar: z
 			.instanceof(File)
-			.refine((v) => v.size < 1_000_000, 'Avatar must be less than 1MB'),
+			.refine((v) => v.size < 1_000_000, 'Avatar must be less than 1MB')
 	})
 
 	const schema = zodToJsonSchema(body)

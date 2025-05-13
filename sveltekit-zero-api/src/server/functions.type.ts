@@ -23,11 +23,11 @@ export type Functions<T extends FnsRecord, Results extends KitResponse = never> 
 	[K in keyof T]: ReturnType<T[K]> extends Generic<infer Fn>
 		? Fn
 		: (...args: FnArgs<T[K]>) => Promisify<
-				Extract<FnResult<T[K]> | Results, KitResponse<StatusCode['Success']>>['body'],
+			Extract<FnResult<T[K]> | Results, KitResponse<StatusCode['Success']>>['body'],
 				| Exclude<Extract<FnResult<T[K]>, KitResponse> | Results, KitResponse<StatusCode['Success']>>
 				| InternalServerError<{
-						code: 'function_failed'
-						error: 'An unexpected error occurred when running the function.'
-				  }>
-		  >
+					code: 'function_failed'
+					error: 'An unexpected error occurred when running the function.'
+				}>
+		>
 }

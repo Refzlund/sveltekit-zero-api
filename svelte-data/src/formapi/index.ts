@@ -1,3 +1,1 @@
-export {
-	formAPI
-} from './formapi.svelte'
+export { formAPI } from './formapi.svelte'

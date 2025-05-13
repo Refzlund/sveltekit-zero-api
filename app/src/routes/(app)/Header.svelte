@@ -7,7 +7,7 @@
 
 -->
 
-<script lang="ts">
+<script lang='ts'>
 	import Logo from '$lib/Logo.svelte'
 	import Pill from '$lib/Pill.svelte'
 	import Select from '$lib/Select'
@@ -20,16 +20,16 @@
 
 	let documentationVersion = $state('2.0.0')
 </script>
-<!---------------------------------------------------->
+<!-- ------------------------------------------------ -->
 
 
-<header style="height: {height}px">
+<header style='height: {height}px'>
 	<Logo />
 
 	<div>Seamless TypeSafety === Better DX</div>
 
 	<Select bind:value={documentationVersion}>
-		<Select.Option value="2.0.0">
+		<Select.Option value='2.0.0'>
 			{#snippet children(selected)}
 				<span class:selected>
 					Docs v2.0.0
@@ -39,13 +39,13 @@
 		</Select.Option>
 	</Select>
 
-	<circle id=a></circle>
-	<circle id=b></circle>
+	<circle id='a'></circle>
+	<circle id='b'></circle>
 </header>
 
 
-<!---------------------------------------------------->
-<style lang="postcss">
+<!-- ------------------------------------------------ -->
+<style lang='postcss'>
 	header {
 		@apply fixed top-0 left-0 right-0 grid bg-gray-950 items-center z-[9999]
 			grid-cols-[14rem,1fr,14rem] px-24 overflow-hidden bg-opacity-80 backdrop-blur-lg;

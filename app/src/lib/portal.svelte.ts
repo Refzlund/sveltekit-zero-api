@@ -15,7 +15,7 @@ export function portal(
 		(target ?? document.body).appendChild(node)
 	})
 	onDestroy(() => {
-		let parent = target ?? document.body
+		const parent = target ?? document.body
 		if(!node || node.parentElement !== parent)
 			return
 		parent?.removeChild(node)

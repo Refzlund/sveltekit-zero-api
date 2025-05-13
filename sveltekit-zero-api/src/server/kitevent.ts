@@ -21,7 +21,8 @@ export interface KitEvent<
 	zeroAPIOptions: ZeroAPIServerOptions
 }
 
-type T = Awaited<ReturnType<ParseKitEvent<{ body?, query?}>['fn']>>
+type T = Awaited<ReturnType<ParseKitEvent<{ body?
+	query? }>['fn']>>
 
 /**
  * A helper function to create a KitEvent from the results
@@ -98,7 +99,8 @@ function zod({ body, query }) {
 
 ```
 */
-export class ParseKitEvent<Result extends { body?: any, query?: any } | KitResponse<any, any> = {}> {
+export class ParseKitEvent<Result extends { body?: any
+	query?: any } | KitResponse<any, any> = {}> {
 	fn: (event: KitEvent) => MaybePromise<Result>
 	/** The `schema` is sent to frontend to be reconstructed as a validator. */
 	schema?: Record<string, any>
@@ -111,7 +113,8 @@ export class ParseKitEvent<Result extends { body?: any, query?: any } | KitRespo
 		this.schema = jsonSchema
 	}
 
-	extend<ExtendeResult extends { body?: any, query?: any } | KitResponse<any, any>>(
+	extend<ExtendeResult extends { body?: any
+		query?: any } | KitResponse<any, any>>(
 		fn: (body: Exclude<Result, KitResponse<any, any>>['body'], query: Exclude<Result, KitResponse<any, any>>['query']) => MaybePromise<ExtendeResult>,
 		schema?: typeof this.schema
 	) {
@@ -119,7 +122,7 @@ export class ParseKitEvent<Result extends { body?: any, query?: any } | KitRespo
 		return new ParseKitEvent<
 			ExtendeResult | R
 		>(async (event) => {
-			let result = await this.fn(event)
+			const result = await this.fn(event)
 			if (result instanceof KitResponse) return result
 			return fn(result.body!, result.query ?? event.query) as any
 		}, schema || this.schema)

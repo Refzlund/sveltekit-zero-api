@@ -1,5 +1,7 @@
-export function drag({ minX = -Infinity, maxX = Infinity, snap = true } = {}) {
-	let state = $state({
+export function drag({
+	minX = -Infinity, maxX = Infinity, snap = true 
+} = {}) {
+	const state = $state({
 		x: 0,
 		y: 0,
 		moving: false,
@@ -18,8 +20,8 @@ export function drag({ minX = -Infinity, maxX = Infinity, snap = true } = {}) {
 		if(!state.moving) {
 			if (state.snap && (state.minX !== -Infinity || state.maxX !== Infinity)) {
 				// snap state.x to minX or maxX
-				let distMin = Math.abs(state.x - state.minX)
-				let distMax = Math.abs(state.x - state.maxX)
+				const distMin = Math.abs(state.x - state.minX)
+				const distMax = Math.abs(state.x - state.maxX)
 
 				if (distMin < distMax) {
 					state.x = state.minX

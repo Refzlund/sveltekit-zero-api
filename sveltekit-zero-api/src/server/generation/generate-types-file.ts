@@ -1,4 +1,6 @@
-import { complexSlug, optionalSlug, restSlug, simpleSlug } from '../../utils/slugs'
+import {
+	complexSlug, optionalSlug, restSlug, simpleSlug 
+} from '../../utils/slugs'
 import { serializeFiles } from './serialize-files'
 
 export function generateTypes(
@@ -7,7 +9,7 @@ export function generateTypes(
 	relativeTypePath: string,
 	routesLength: number
 ) {
-	let serializedFiles = serializeFiles(files, routesLength)
+	const serializedFiles = serializeFiles(files, routesLength)
 
 	interface TypePath {
 		type: string | null
@@ -22,8 +24,8 @@ export function generateTypes(
 			children: {},
 			indent,
 			toString() {
-				let children = Object.values(this.children).map((v) => v.toString())
-				let tabs = '\t'.repeat(indent)
+				const children = Object.values(this.children).map((v) => v.toString())
+				const tabs = '\t'.repeat(indent)
 				let str = ''
 
 				if (key) {
@@ -36,7 +38,7 @@ export function generateTypes(
 						str += `"${m[1]}$": (${m[1]}: string) => `
 					} else if ((m = key.match(complexSlug))) {
 						let k = key
-						let complex: string[] = []
+						const complex: string[] = []
 						do {
 							complex.push(m[1])
 							k = k.replace(complexSlug, '')
@@ -54,11 +56,11 @@ export function generateTypes(
 		} as TypePath
 	}
 
-	let root = serverPath(null)
+	const root = serverPath(null)
 
-	for (let [file, serialized] of serializedFiles) {
+	for (const [file, serialized] of serializedFiles) {
 		let current = root
-		for (let key of serialized) {
+		for (const key of serialized) {
 			if (!current.children[key]) {
 				current = current.children[key] = serverPath(key, current.indent + 1)
 			} else {

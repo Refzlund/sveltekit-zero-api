@@ -8,7 +8,7 @@
 
 -->
 
-<script lang="ts">
+<script lang='ts'>
 	import { undentString } from '$lib/undent-string'
 	import hljs from 'highlight.js'
 	import 'highlight.js/styles/atom-one-dark.min.css'
@@ -26,11 +26,11 @@
 	}: Props = $props()
 
 	let formatted = $derived.by(() => {
-		let formatted = {...code}
+		let formatted = { ...code }
 		for(let key in formatted) {
 			const lines = hljs.highlight(undentString(formatted[key]), { language: key.split('.').pop()! }).value.split('\n')
 			const html = lines.map((line, index) => {
-				return `<span class='line-count'>${index+1}</span><span>${line}</span>`
+				return `<span class='line-count'>${index + 1}</span><span>${line}</span>`
 			}).join('\n')
 
 			formatted[key] = html
@@ -41,7 +41,7 @@
 	let active = $state(Object.keys(code)[0])
 
 </script>
-<!---------------------------------------------------->
+<!-- ------------------------------------------------ -->
 
 
 
@@ -49,8 +49,8 @@
 	<tabs>
 		{#each Object.keys(code) as tab}
 			<button
-				class:active={tab === active}
 				class='text-gray-500'
+				class:active={tab === active}
 				onclick={() => active = tab}
 			>
 				{tab}
@@ -60,7 +60,7 @@
 	<container style='height: {height}px'>
 		{#if dynamicHeight}
 			<pre bind:clientHeight={height}><code>{@html formatted[active]}</code></pre>
-			{:else}
+		{:else}
 			<pre><code>{@html formatted[active]}</code></pre>
 		{/if}
 	</container>
@@ -68,7 +68,7 @@
 
 
 
-<!---------------------------------------------------->
+<!-- ------------------------------------------------ -->
 <style lang='postcss'>
 
 	.active {

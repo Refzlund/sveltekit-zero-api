@@ -3,7 +3,8 @@ import { KitEvent } from './kitevent'
 
 export class SSE<
 	TEvent extends KitEvent = KitEvent,
-	T extends { event: string; data: any } = any
+	T extends { event: string
+		data: any } = any
 > {
 	fn: (event: TEvent) => Generator<T> | AsyncGenerator<T>
 	createStream: (event: TEvent) => ReadableStream
@@ -19,7 +20,7 @@ export class SSE<
 					close = () => controller.close()
 					await new Promise((resolve) => setTimeout(resolve, 0))
 					for await (const chunk of fn(event)) {
-						let data =
+						const data =
 							typeof chunk.data === 'string'
 								? chunk.data
 								: JSON.stringify(chunk.data)
@@ -44,7 +45,10 @@ export class SSE<
 	}
 
 	static event<E extends string, T>(event: E, data: T) {
-		return { event, data }
+		return {
+			event,
+			data 
+		}
 	}
 }
 

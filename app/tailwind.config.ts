@@ -11,15 +11,15 @@ export default {
 	theme: {
 		extend: {
 			colors: {
-				primary: {
-					DEFAULT: '#FF3E00'
-				},
-				secondary: {
-					DEFAULT: '#1B98DE'
-				}
+				primary: { DEFAULT: '#FF3E00' },
+				secondary: { DEFAULT: '#1B98DE' }
 			}
 		}
 	},
 
-	plugins: [typography, forms, containerQueries, aspectRatio, addIconSelectors(['devicon', 'fluent'])]
+	plugins: [typography,
+		forms,
+		containerQueries,
+		aspectRatio,
+		addIconSelectors(['devicon', 'fluent'])]
 } satisfies Config

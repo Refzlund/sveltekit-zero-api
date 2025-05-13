@@ -11,6 +11,6 @@ export const articles: z.output<typeof Article>[] = Array(3000).fill(null).map((
 	return {
 		id: `Article:${i}`,
 		title: faker.lorem.words(3),
-		content: faker.lorem.paragraphs(3),
+		content: faker.lorem.paragraphs(3)
 	}
 })

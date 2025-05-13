@@ -1,9 +1,11 @@
-<script lang="ts">
+<script lang='ts'>
 	import api from '$api'
 	import { formAPI } from 'sveltekit-zero-api/formapi.svelte'
 	import type { User } from '$routes/(app)/(test)/api/users'
 	import type z from 'zod'
-	import { fromUrl, dataAPI, statefulAPI, getUrl, getMethod, objectProxy, getProxyModified } from 'sveltekit-zero-api/client'
+	import {
+		fromUrl, dataAPI, statefulAPI, getUrl, getMethod, objectProxy, getProxyModified 
+	} from 'sveltekit-zero-api/client'
 	import { floatingUI } from '$lib/floating-ui.svelte'
 	import { scale } from 'svelte/transition'
 
@@ -16,9 +18,7 @@
 			api: api.users,
 			discriminator: (body) => body.id,
 			fetch: true,
-			groups: {
-				seniors: (v) => v.filter((v) => v.age > 50).sort((a, b) => a.age - b.age)
-			}
+			groups: { seniors: (v) => v.filter((v) => v.age > 50).sort((a, b) => a.age - b.age) }
 		}
 	})
 	
@@ -26,41 +26,53 @@
 
 </script>
 
-<!---------------------------------------------------->
+<!-- ------------------------------------------------ -->
 
-<h3 class="text-xl md-2">
+<h3 class='text-xl md-2'>
 	{id ? 'Updating ' + $Form.name : 'Create new user'}
 </h3>
 
-<form onsubmit={e => {
-	e.preventDefault()
-	user.$.post()
-}}>
+<form
+	onsubmit={e => {
+		e.preventDefault()
+		user.$.post()
+	}}
+>
 	<label>
 		Name
-		<input name="name" bind:value={user.name} />
+		<input name='name' bind:value={user.name} />
 	</label>
 	<label>
 		E-mail
-		<input name="email" type="email" bind:value={user.email} />
+		<input
+			name='email'
+			type='email'
+			bind:value={user.email}
+		/>
 	</label>
 	<label>
 		Birth
-		<input name="birth" type="date" bind:value={user.birth} />
+		<input
+			name='birth'
+			type='date'
+			bind:value={user.birth}
+		/>
 	</label>
 	<label>
 		Age
-		<input name="age" type="number" bind:value={user.age} />
+		<input
+			name='age'
+			type='number'
+			bind:value={user.age}
+		/>
 	</label>
 
-	<button class="mt-4 mr-4" disabled={!!Form.errors.length}
-		>{id === undefined ? 'Create User' : 'Update User'}</button
-	>
-	<button type="reset">Reset</button>
+	<button class='mt-4 mr-4' disabled={!!Form.errors.length}>{id === undefined ? 'Create User' : 'Update User'}</button>
+	<button type='reset'>Reset</button>
 </form>
 
-<!---------------------------------------------------->
-<style lang="postcss">
+<!-- ------------------------------------------------ -->
+<style lang='postcss'>
 	input {
 		@apply mb-2;
 	}
