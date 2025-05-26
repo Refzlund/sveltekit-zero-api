@@ -88,10 +88,7 @@ export default function handler(options: IOptions, api: APIContent) {
 	
 	const requestInit: RequestInit = { ...baseData, ...api, headers: { ...(baseData['headers'] || {}), ...(api['headers'] || {}) } }
 	if (api.body === undefined) delete requestInit['body']
-	// avoid making the "preflight http request", which will make it twice as fast
-	const collapsedRequestInit = api.method === 'GET' ? undefined : requestInit
-	
-	const response = fetch(url, collapsedRequestInit);
+	const response = fetch(url, requestInit)
 	response.then(async (res) => {
 		const json = (res.headers.get('content-type')||'').includes('application/json') && await res[options.config.format || 'json']()
 		// TODO: Handle other responses than just JSON
