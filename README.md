@@ -1,3 +1,19 @@
+<br>
+
+> [!IMPORTANT]  
+> It is with happy consideration, that sveltekit-zero-api is being **deprecated** in favor of SvelteKits
+> [Remote Functions](https://github.com/sveltejs/kit/discussions/13897) which includes both networking improvements,
+> taking advantage of SvelteKit's other features such as [Transport Hooks](https://svelte.dev/docs/kit/hooks#Universal-hooks-transport)
+> and general best practices when writing clean code.  This library is no longer in active development, and stands proud as an artifact from the past.
+> 
+> Happy coding and may the <img height="24" align="center" src="https://raw.githubusercontent.com/sveltejs/branding/c4dfca6743572087a6aef0e109ffe3d95596e86a/svelte-logo.svg"> Svelte be with you!
+
+<br><br>
+
+----
+
+<br><br>
+
 <p align="center">
     <img width="542" src="https://raw.githubusercontent.com/Refzlund/sveltekit-zero-api/master/SvelteKit%20Zero%20API.png" alt="SurrealDB Icon">
 </p>
@@ -8,6 +24,8 @@
 	 
 	<img src="https://img.shields.io/npm/dt/sveltekit-zero-api.svg">
 </p>
+
+<br><br>
 
 ## Quick Start
 
@@ -32,6 +50,7 @@ const config: UserConfig = {
 **/sveltekit-zero-api.d.ts
 ```
 
+<br>
 <h2><img height="24" src="https://raw.githubusercontent.com/sveltejs/branding/c4dfca6743572087a6aef0e109ffe3d95596e86a/svelte-logo.svg">  What is SvelteKit Zero API?</h2>
 <p>
 <b>Zero API</b> attempts to sow the gap between the frontend and backend. This includes typing backend response codes and their content and dealing with them effectively using <a href="https://github.com/Refzlund/sveltekit-zero-api/wiki/2.-Frontend#callbacks">callback functions</a>. This may also include error handling. 
